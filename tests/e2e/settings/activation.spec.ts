@@ -38,30 +38,36 @@ test.describe( 'plugin activation', () => {
 		// Dismiss modal before interacting with plugin row.
 		await dismissOnboardingModal();
 
-		const activateLink = pluginRow.locator( 'a', { hasText: 'Activate' } );
+		const activateLink = pluginRow.locator( 'a[href*="action=activate"]' );
+		const deactivateLink = pluginRow.locator(
+			'a[href*="action=deactivate"]'
+		);
+
+		// wp-env activates mapped plugins on start, so the plugin may already be active — normalize to a known "inactive" starting state first.
+		if ( await deactivateLink.isVisible() ) {
+			await Promise.all( [
+				page.waitForURL( /plugins.php/ ),
+				deactivateLink.click(),
+			] );
+			await expect( activateLink ).toBeVisible( { timeout: 10000 } );
+			await dismissOnboardingModal();
+		}
 
 		await Promise.all( [
 			page.waitForURL( /plugins.php/ ),
 			activateLink.click(),
 		] );
 
-		await expect(
-			pluginRow.locator( 'a', { hasText: 'Deactivate' } )
-		).toBeVisible( { timeout: 10000 } );
+		await expect( deactivateLink ).toBeVisible( { timeout: 10000 } );
 
 		// Dismiss modal again after activation.
 		await dismissOnboardingModal();
 
-		const deactivateLink = pluginRow.locator( 'a', {
-			hasText: 'Deactivate',
-		} );
 		await Promise.all( [
 			page.waitForURL( /plugins.php/ ),
 			deactivateLink.click(),
 		] );
 
-		await expect(
-			pluginRow.locator( 'a', { hasText: 'Activate' } )
-		).toBeVisible( { timeout: 10000 } );
+		await expect( activateLink ).toBeVisible( { timeout: 10000 } );
 	} );
 } );

@@ -29,7 +29,9 @@ test.describe( 'scaffold: built plugin loads', () => {
 			await modal.evaluate( ( el ) => el.remove() );
 		}
 
-		const activate = pluginRow.locator( 'a', { hasText: 'Activate' } );
+		// `hasText` does a substring match, so filtering by "Activate" would
+		// also match a "Deactivate" link — key off the action in the href instead.
+		const activate = pluginRow.locator( 'a[href*="action=activate"]' );
 		if ( await activate.isVisible() ) {
 			await Promise.all( [
 				page.waitForURL( /plugins.php/ ),
@@ -38,7 +40,7 @@ test.describe( 'scaffold: built plugin loads', () => {
 		}
 
 		await expect(
-			pluginRow.locator( 'a', { hasText: 'Deactivate' } )
+			pluginRow.locator( 'a[href*="action=deactivate"]' )
 		).toBeVisible( { timeout: 10000 } );
 	} );
 

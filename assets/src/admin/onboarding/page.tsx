@@ -70,9 +70,8 @@ const OnboardingScreen = () => {
 	const [ notice, setNotice ] = useState< NoticeState | null >( null );
 	const [ isSaving, setIsSaving ] = useState( false );
 
-	apiFetch.use( apiFetch.createNonceMiddleware( nonce ) );
-
 	useEffect( () => {
+		apiFetch.use( apiFetch.createNonceMiddleware( nonce ) );
 		apiFetch< { onedesign_site_type?: SiteType } >( {
 			path: '/wp/v2/settings',
 		} )
@@ -87,7 +86,7 @@ const OnboardingScreen = () => {
 					message: __( 'Error fetching site type.', 'onedesign' ),
 				} );
 			} );
-	}, [] ); // for initial component mount
+	}, [ nonce ] ); // for initial component mount (the nonce never changes)
 
 	const handleSiteTypeChange = async ( value: SiteType | '' ) => {
 		// Optimistically set site type.

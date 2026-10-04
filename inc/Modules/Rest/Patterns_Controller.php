@@ -163,7 +163,8 @@ class Patterns_Controller extends Abstract_REST_Controller {
 						'required'          => true,
 						'type'              => 'array',
 						'items'             => [
-							'oneOf' => [
+							// Numeric strings (multisite blog IDs) match both, so `oneOf` would reject them.
+							'anyOf' => [
 								[ 'type' => 'string' ],
 								[ 'type' => 'integer' ],
 							],

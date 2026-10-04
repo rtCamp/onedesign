@@ -1,4 +1,4 @@
-![Banner V3](./wp-assets/banner.webp)
+![Banner V3](./.wordpress-org/banner.webp)
 
 # OneDesign
 
