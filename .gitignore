@@ -4,7 +4,6 @@ vendor/
 
 # Enviroment
 .env
-.wp-env.override.json
 
 # Local configs
 phpcs.xml

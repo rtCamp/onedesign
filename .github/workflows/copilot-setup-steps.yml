@@ -1,57 +1,55 @@
-name: "Copilot Setup Steps"
+# This workflow sets up the environment for GitHub Copilot coding agent.
+# It is triggered manually or when this file is modified.
+#
+# Copilot uses this to understand how to set up the development environment.
 
-# Automatically run the setup steps when they are changed to allow for easy validation, and
-# allow manual testing through the repository's "Actions" tab
+name: Copilot Setup Steps
+
 on:
-  workflow_dispatch:
-  push:
-    paths:
-      - .github/workflows/copilot-setup-steps.yml
-  pull_request:
-    paths:
-      - .github/workflows/copilot-setup-steps.yml
+    workflow_dispatch:
+    push:
+        paths:
+            - '.github/workflows/copilot-setup-steps.yml'
+    pull_request:
+        paths:
+            - .github/workflows/copilot-setup-steps.yml
+
+permissions:
+    contents: read
 
 jobs:
-  # The job MUST be called `copilot-setup-steps` or it will not be picked up by Copilot.
-  copilot-setup-steps:
-    runs-on: ubuntu-latest
+    # The job MUST be called `copilot-setup-steps` or it will not be picked up by Copilot.
+    copilot-setup-steps:
+        name: Setup Copilot Environment
+        runs-on: ubuntu-24.04
+        timeout-minutes: 20
 
-    permissions:
-      contents: read
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+              with:
+                  show-progress: ${{ runner.debug == '1' && 'true' || 'false' }}
+                  persist-credentials: false
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          show-progress: ${{ runner.debug == '1' && 'true' || 'false' }}
-          persist-credentials: false
+            - name: Set up PHP
+              uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
+              with:
+                  php-version: '8.3'
+                  coverage: none
 
-      ##
-      # This allows Composer dependencies to be installed using a single step.
-      #
-      # Since the tests are currently run within the Docker containers where the PHP version varies,
-      # the same PHP version needs to be configured for the action runner machine so that the correct
-      # dependency versions are installed and cached.
-      ##
-      - name: Set up PHP
-        uses: shivammathur/setup-php@44454db4f0199b8b9685a5d763dc37cbf79108e1 # v2.36.0
-        with:
-          php-version: "8.3"
-          coverage: none
+            - name: Install Composer dependencies
+              uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # v4.0.0
 
-      - name: Install Composer dependencies
-        uses: ramsey/composer-install@3cf229dc2919194e9e36783941438d17239e8520 # v3.1.1
+            - name: Setup Node.js
+              uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+              with:
+                  node-version-file: '.nvmrc'
+                  cache: 'npm'
 
-      - name: Setup Node
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v5.0.0
-        with:
-          cache: "npm"
-          node-version-file: ".nvmrc"
+            - name: Install npm dependencies
+              run: npm ci
+              env:
+                  CI: true
 
-      - name: Install NPM dependencies
-        run: npm ci
-        env:
-          CI: true
-
-      - name: Build assets for development
-        run: npm run build:dev
+            - name: Build development assets
+              run: npm run build:dev

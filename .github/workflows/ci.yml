@@ -1,0 +1,189 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  detect:
+    name: Detect Changes
+    runs-on: ubuntu-24.04
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      php: ${{ steps.filter.outputs.php }}
+      phpcs: ${{ steps.filter.outputs.phpcs }}
+      phpstan: ${{ steps.filter.outputs.phpstan }}
+      phpunit: ${{ steps.filter.outputs.phpunit }}
+      js: ${{ steps.filter.outputs.js }}
+      css: ${{ steps.filter.outputs.css }}
+      e2e: ${{ steps.filter.outputs.e2e }}
+      jest: ${{ steps.filter.outputs.jest }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Detect file changes
+        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+        id: filter
+        with:
+          filters: |
+            php:
+              - '**.php'
+              - 'composer.*'
+            phpcs:
+              - '.github/workflows/reusable-phpcs.yml'
+              - 'phpcs.xml.dist'
+            phpstan:
+              - '.github/workflows/reusable-phpstan.yml'
+              - 'phpstan.neon.dist'
+            phpunit:
+              - 'tests/**/*.php'
+              - '.github/workflows/reusable-phpunit.yml'
+              - 'phpunit.xml.dist'
+              - '.wp-env*.json'
+              - 'package*.json'
+            js:
+              - .github/workflows/reusable-lint-css-js.yml
+              - '**.cjs'
+              - '**.js'
+              - '**.jsx'
+              - '**.mjs'
+              - '**.cts'
+              - '**.mts'
+              - '**.ts'
+              - '**.tsx'
+              - 'package*.json'
+              - '.eslintrc*'
+              - 'tsconfig*.json'
+            css:
+              - .github/workflows/reusable-lint-css-js.yml
+              - '**.css'
+              - '**.scss'
+              - '.stylelintignore'
+              - '.stylelintrc*'
+            e2e:
+              - '.github/workflows/reusable-e2e.yml'
+              - 'tests/e2e/**/*'
+              - 'playwright.config.ts'
+              - '.wp-env*.json'
+              - 'package*.json'
+            jest:
+              - '.github/workflows/reusable-jest.yml'
+              - 'assets/src/**/__tests__/**/*'
+              - 'assets/src/**/*.test.ts'
+              - 'assets/src/**/*.test.tsx'
+              - 'assets/src/**/*.spec.ts'
+              - 'assets/src/**/*.spec.tsx'
+              - 'tests/js/**/*'
+              - 'jest.config.js'
+              - 'package*.json'
+
+  phpcs:
+    name: PHPCS
+    needs: detect
+    if: needs.detect.outputs.php == 'true' || needs.detect.outputs.phpcs == 'true'
+    uses: ./.github/workflows/reusable-phpcs.yml
+    permissions:
+      contents: read
+    with:
+      php-version: '8.3'
+
+  phpstan:
+    name: PHPStan
+    needs: detect
+    if: needs.detect.outputs.php == 'true' || needs.detect.outputs.phpstan == 'true'
+    uses: ./.github/workflows/reusable-phpstan.yml
+    permissions:
+      contents: read
+    with:
+      php-version: '8.3'
+
+  lint-css-js:
+    name: CSS/JS Lint
+    needs: detect
+    if: needs.detect.outputs.css == 'true' || needs.detect.outputs.js == 'true'
+    uses: ./.github/workflows/reusable-lint-css-js.yml
+    permissions:
+      contents: read
+
+  jest:
+    name: Jest Unit Tests
+    needs: detect
+    if: needs.detect.outputs.js == 'true' || needs.detect.outputs.jest == 'true'
+    uses: ./.github/workflows/reusable-jest.yml
+    permissions:
+      contents: read
+    with:
+      coverage: true
+
+  phpunit:
+    name: PHPUnit (PHP ${{ matrix.php }}, WP ${{ matrix.wp }})
+    needs: detect
+    if: needs.detect.outputs.php == 'true' || needs.detect.outputs.phpunit == 'true'
+    uses: ./.github/workflows/reusable-phpunit.yml
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.4', '8.3', '8.2']
+        wp: ['latest']
+        include:
+          - php: '8.4'
+            wp: 'latest'
+            coverage: true
+    with:
+      php-version: ${{ matrix.php }}
+      wp-version: ${{ matrix.wp }}
+      coverage: ${{ matrix.coverage == true }}
+    secrets: inherit
+
+  e2e:
+    name: E2E Tests
+    needs: detect
+    if: needs.detect.outputs.php == 'true' || needs.detect.outputs.e2e == 'true' || needs.detect.outputs.js == 'true' || needs.detect.outputs.css == 'true'
+    uses: ./.github/workflows/reusable-e2e.yml
+    permissions:
+      contents: read
+    with:
+      php-version: '8.3'
+
+  build-plugin-zip:
+    name: Build Plugin Zip
+    permissions:
+      contents: read
+    uses: ./.github/workflows/reusable-build.yml
+    with:
+      php-version: '8.3'
+      artifact-name: onedesign-pr${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+    secrets: inherit
+
+  playground-preview:
+    name: Playground Preview
+    needs: build-plugin-zip
+    if: github.event_name == 'pull_request'
+    uses: ./.github/workflows/reusable-wp-playground-pr-preview.yml
+    permissions:
+      actions: read
+      contents: write
+      pull-requests: write
+    with:
+      run-id: ${{ github.run_id }}
+      artifact-prefix: 'onedesign-pr'
+      artifact-filename: 'onedesign.zip'
