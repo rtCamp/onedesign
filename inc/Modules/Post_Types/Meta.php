@@ -1,12 +1,11 @@
 <?php
-
-declare(strict_types = 1);
-
 /**
  * Class Meta to register all the metas based on post type.
  *
  * @package OneDesign
  */
+
+declare(strict_types = 1);
 
 namespace OneDesign\Modules\Post_Types;
 

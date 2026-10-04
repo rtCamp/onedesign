@@ -1,12 +1,11 @@
 <?php
-
-declare(strict_types = 1);
-
 /**
  * Patterns class to handle all the REST API related to patterns sharing.
  *
  * @package OneDesign
  */
+
+declare(strict_types = 1);
 
 namespace OneDesign\Modules\Rest;
 

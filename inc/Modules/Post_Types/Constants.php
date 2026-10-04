@@ -1,12 +1,11 @@
 <?php
-
-declare(strict_types = 1);
-
 /**
  * Class Constants -- this is to define plugin constants.
  *
  * @package OneDesign
  */
+
+declare(strict_types = 1);
 
 namespace OneDesign\Modules\Post_Types;
 

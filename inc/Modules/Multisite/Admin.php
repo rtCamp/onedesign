@@ -1,12 +1,11 @@
 <?php
-
-declare(strict_types = 1);
-
 /**
  * This file is to handle OneDesign Multisite related functionality.
  *
  * @package OneDesign
  */
+
+declare(strict_types = 1);
 
 namespace OneDesign\Modules\Multisite;
 

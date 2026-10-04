@@ -1,12 +1,11 @@
 <?php
-
-declare(strict_types = 1);
-
 /**
  * This file will contain routes for OneDesign Multisite handling.
  *
  * @package OneDesign
  */
+
+declare(strict_types = 1);
 
 namespace OneDesign\Modules\Rest;
 

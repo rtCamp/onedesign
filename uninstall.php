@@ -13,7 +13,7 @@ namespace OneDesign;
 defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
 
 // We use local constants so this plugin can be uninstalled even if the autoloader is corrupted or missing.
-const PLUGIN_PREFIX = PLUGIN_PREFIX . '';
+const PLUGIN_PREFIX = 'onedesign_';
 
 /**
  * Uninstalls the plugin. If multisite, uninstalls from all sites.

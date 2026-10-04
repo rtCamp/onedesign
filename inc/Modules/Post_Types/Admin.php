@@ -1,12 +1,11 @@
 <?php
-
-declare(strict_types = 1);
-
 /**
  * Hooks class to handle all the hooks related functionalities.
  *
  * @package OneDesin\Modules\Post_Types;
  */
+
+declare(strict_types = 1);
 
 namespace OneDesign\Modules\Post_Types;
 
