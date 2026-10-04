@@ -1,71 +1,28 @@
 {
-	"$schema": "https://json.schemastore.org/tsconfig",
-
+	"$schema": "https://json.schemastore.org/tsconfig.json",
+	"extends": "./tsconfig.base.json",
 	"compilerOptions": {
-		"allowJs": true,
-		"checkJs": true,
-
-		// Type checking.
-		"strict": true,
-		"allowSyntheticDefaultImports": true,
-		"allowUnreachableCode": false,
-		"allowUnusedLabels": false,
-		"exactOptionalPropertyTypes": true,
-		"noFallthroughCasesInSwitch": true,
-		"noImplicitOverride": true,
-		"noImplicitReturns": true,
-		"noPropertyAccessFromIndexSignature": true,
-		"noUncheckedIndexedAccess": true,
-		"noUnusedLocals": true,
-		"noUnusedParameters": true,
-		"strictFunctionTypes": true,
-
-		// Modules
-		"module": "nodenext",
-		"moduleResolution": "nodenext",
-		"resolveJsonModule": true,
-
-		// Emit
-		"declaration": true,
-		"declarationMap": true,
-		"sourceMap": true,
-
-		// Interop Constraints
-		"esModuleInterop": true,
-		"forceConsistentCasingInFileNames": true,
-		"isolatedModules": true,
-		// @todo: make true when we can use `type: "module"` in package.json
-		"verbatimModuleSyntax": false,
-
-		// Language and Environment
-		"jsx": "react-jsx",
-		"lib": [ "ES2022", "DOM.Iterable", "DOM" ],
-		"moduleDetection": "force",
-		"target": "ES2022",
-
-		// Projects
-		"composite": true,
-		"disableSourceOfProjectReferenceRedirect": true,
-		"incremental": true,
-
-		// Completeness
-		"skipLibCheck": true,
-
-		// File config
-		"baseUrl": "./assets/src",
+		"noEmit": true,
+		"rootDir": ".",
 		"outDir": "./build",
 		"paths": {
-			"@/*": ["./*"]
+			"@/*": [ "./assets/src/*" ]
 		},
+		"types": [ "jest", "node" ]
 	},
 	"include": [
+		"**/*.d.ts",
+		"**/*.cjs",
 		"**/*.mjs",
 		"**/*.ts",
 		"**/*.tsx",
+		"**/*.json"
 	],
 	"exclude": [
 		"**/build/*",
 		"vendor/*",
-		"node_modules/*"
+		"vendor-prefixed/*",
+		"node_modules/*",
+		"eslint.config.mjs"
 	]
 }
