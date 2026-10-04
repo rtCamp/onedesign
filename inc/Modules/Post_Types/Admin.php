@@ -221,8 +221,10 @@ class Admin implements Registrable {
 	/**
 	 * Allow only specific block types.
 	 *
-	 * @param bool|array               $allowed_block_types Array of allowed block types or boolean to allow all or disallow all.
-	 * @param \WP_Block_Editor_Context $editor_context               The post being edited, provided by the 'allowed_block_types_all' filter.
+	 * @param bool|string[]            $allowed_block_types Array of allowed block types or boolean to allow all or disallow all.
+	 * @param \WP_Block_Editor_Context $editor_context      The post being edited, provided by the 'allowed_block_types_all' filter.
+	 *
+	 * @return bool|string[]
 	 */
 	public function allowed_block_types( bool|array $allowed_block_types, \WP_Block_Editor_Context $editor_context ): array|bool {
 		// Allow all block types in the Pattern Library post type.
@@ -373,6 +375,7 @@ class Admin implements Registrable {
 		}
 
 		// Check if a Pattern Library post already exists.
+		// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.get_posts_get_posts -- `suppress_filters` is false.
 		$existing_posts = get_posts(
 			[
 				'post_type'        => Template::get_slug(),
@@ -429,6 +432,7 @@ class Admin implements Registrable {
 	 */
 	private function create_and_open_pattern_library_post(): void {
 		// Check if a Pattern Library post already exists.
+		// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.get_posts_get_posts -- `suppress_filters` is false.
 		$existing_posts = get_posts(
 			[
 				'post_type'        => Pattern::get_slug(),

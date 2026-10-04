@@ -458,7 +458,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 					'Content-Type'      => 'application/json',
 				],
 				'method'  => 'DELETE',
-				'body'    => wp_json_encode(
+				'body'    => (string) wp_json_encode(
 					[
 						'template_ids'  => $template_ids,
 						'is_remove_all' => $is_remove_all,
@@ -647,7 +647,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 						'X-OneDesign-Token' => $site_api_key,
 						'Content-Type'      => 'application/json',
 					],
-					'body'    => wp_json_encode(
+					'body'    => (string) wp_json_encode(
 						[
 							'synced_patterns' => $new_synced_patterns,
 						]
@@ -677,7 +677,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 						'X-OneDesign-Token' => $site_api_key,
 						'Content-Type'      => 'application/json',
 					],
-					'body'    => wp_json_encode(
+					'body'    => (string) wp_json_encode(
 						[
 							'templates'      => $new_templates,
 							'patterns'       => $new_patterns,
@@ -743,7 +743,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 						'X-OneDesign-Token' => $api_key,
 						'Content-Type'      => 'application/json',
 					],
-					'timeout' => 15,
+					'timeout' => 15, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout -- Admin-only request to a brand site that may be slow.
 				]
 			);
 			$handled_response = $this->handle_remote_response( $response );
@@ -788,9 +788,15 @@ class Templates_Controller extends Abstract_REST_Controller {
 	/**
 	 * Handle remote response.
 	 *
-	 * @param array|\WP_Error $response The response from wp_remote_get or wp_remote_post.
+	 * @param array<string,mixed>|\WP_Error $response The response from wp_remote_get or wp_remote_post.
 	 *
-	 * @return array The processed response data.
+	 * @return array{
+	 *   success: true,
+	 *   data: mixed
+	 * }|array{
+	 *   success: false,
+	 *   error: string
+	 * }
 	 */
 	private function handle_remote_response( array|\WP_Error $response ): array {
 		if ( is_wp_error( $response ) ) {
@@ -837,7 +843,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 	 *
 	 * @param string $site_id Site ID.
 	 *
-	 * @return array|null Site info array or null if not found.
+	 * @return ?array<string,mixed> Site info array or null if not found.
 	 */
 	private function get_site_by_id( string $site_id ): array|null {
 		$sites    = Settings::get_shared_sites();
@@ -1081,11 +1087,11 @@ class Templates_Controller extends Abstract_REST_Controller {
 	 * This function identifies and extracts blocks, template parts, and patterns from the provided content.
 	 * It handles nested structures and ensures that each unique content is processed only once to avoid duplication.
 	 *
-	 * @param string $content The block template content to parse.
-	 * @param array  $already_tracked An array to keep track of already processed content to avoid duplication.
-	 *                                This should be passed by reference to maintain state across recursive calls.
+	 * @param string   $content         The block template content to parse.
+	 * @param string[] $already_tracked An array to keep track of already processed content to avoid duplication.
+	 *                                  This should be passed by reference to maintain state across recursive calls.
 	 *
-	 * @return array An array of parsed elements, each containing type, attributes, and content.
+	 * @return array<array<string,mixed>> An array of parsed elements, each containing type, attributes, and content.
 	 */
 	private function parse_block_template( string $content, array &$already_tracked ): array {
 		$results = [];

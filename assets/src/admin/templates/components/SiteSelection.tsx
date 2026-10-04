@@ -192,14 +192,14 @@ const SiteSelection = ( {
 									{ __( 'Select Brand Sites', 'onedesign' ) }
 								</h4>
 								<span className="onedesign-selection-count">
-									{ selectedCount > 0
+									{ selectedSelectableSiteCount > 0
 										? sprintf(
 												/* translators: %1$d: Number of selected sites, %2$d: Total number of sites. */
 												__(
 													'%1$d of %2$d selected',
 													'onedesign'
 												),
-												selectedCount,
+												selectedSelectableSiteCount,
 												selectableSiteCount
 											)
 										: sprintf(

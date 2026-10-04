@@ -50,10 +50,10 @@ class CPT_Restriction implements Registrable {
 	/**
 	 * Callback function to restrict CPT creation.
 	 *
-	 * @param array  $args      Array of arguments for registering a post type.
-	 * @param string $post_type Post type key.
+	 * @param array<string,mixed> $args      Array of arguments for registering a post type.
+	 * @param string              $post_type Post type key.
 	 *
-	 * @return array Modified arguments.
+	 * @return array<string,mixed> Modified arguments.
 	 */
 	public function restrict_cpt( array $args, string $post_type ): array {
 		if ( ! in_array( $post_type, [ Pattern::get_slug(), Template::get_slug() ], true ) ) {
@@ -129,6 +129,7 @@ class CPT_Restriction implements Registrable {
 		}
 
 		// Get the existing post.
+		// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.get_posts_get_posts -- `suppress_filters` is false.
 		$existing_post = get_posts(
 			[
 				'post_type'        => Pattern::get_slug(),
@@ -170,6 +171,7 @@ class CPT_Restriction implements Registrable {
 		}
 
 		// Get the existing post.
+		// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.get_posts_get_posts -- `suppress_filters` is false.
 		$existing_post = get_posts(
 			[
 				'post_type'        => Template::get_slug(),
@@ -189,10 +191,10 @@ class CPT_Restriction implements Registrable {
 	/**
 	 * Callback function to modify pattern library labels.
 	 *
-	 * @param array  $args      Array of arguments for registering a post type.
-	 * @param string $post_type Post type key.
+	 * @param array<string,mixed> $args      Array of arguments for registering a post type.
+	 * @param string              $post_type Post type key.
 	 *
-	 * @return array Modified arguments.
+	 * @return array<string,mixed> Modified arguments.
 	 */
 	public function modify_pattern_library_labels( array $args, string $post_type ): array {
 		// Only modify if it's our post type.
@@ -252,6 +254,7 @@ class CPT_Restriction implements Registrable {
 			}
 
 			// Get the existing post.
+			// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.get_posts_get_posts -- `suppress_filters` is false.
 			$existing_post = get_posts(
 				[
 					'post_type'        => Pattern::get_slug(),
@@ -273,12 +276,12 @@ class CPT_Restriction implements Registrable {
 	/**
 	 * Callback function to add default content to the editor.
 	 *
-	 * @param string $content The default content.
-	 * @param object $post    The post object.
+	 * @param string   $content The default content.
+	 * @param \WP_Post $post    The post object.
 	 *
 	 * @return string Modified content.
 	 */
-	public function add_default_content_to_editor( string $content, object $post ): string {
+	public function add_default_content_to_editor( $content, $post ): string {
 		if ( Pattern::get_slug() === $post->post_type && empty( $content ) ) {
 			$content = '<!-- wp:heading {"level":2} -->
 			<h2>Click on the "Patterns Selection" to push patterns to brand site.</h2>

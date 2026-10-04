@@ -161,7 +161,7 @@ class Multisite_Controller extends Abstract_REST_Controller {
 		$multisite_info = MU_Settings::get_all_multisites_info();
 
 		foreach ( $multisite_info as $site ) {
-			if ( ! switch_to_blog( (int) $site['id'] ) ) {
+			if ( ! switch_to_blog( (int) $site['id'] ) ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.switch_to_blog_switch_to_blog -- Only site options are read/written while switched.
 				continue;
 			}
 
@@ -233,7 +233,7 @@ class Multisite_Controller extends Abstract_REST_Controller {
 		foreach ( $site_ids as $site_id ) {
 
 			// switch to each site and update option of onedesign_site_type as brand-site.
-			if ( ! switch_to_blog( (int) $site_id ) ) {
+			if ( ! switch_to_blog( (int) $site_id ) ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.switch_to_blog_switch_to_blog -- Only site options are read/written while switched.
 				continue;
 			}
 
@@ -256,7 +256,7 @@ class Multisite_Controller extends Abstract_REST_Controller {
 		}
 
 		// update shared sites in governing site.
-		if ( ! switch_to_blog( (int) $governing_site_id ) ) {
+		if ( ! switch_to_blog( (int) $governing_site_id ) ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.switch_to_blog_switch_to_blog -- Only site options are read/written while switched.
 			return new \WP_Error(
 				sprintf( 'failed_to_switch_blog_%d', $governing_site_id ),
 				__( 'Failed to switch to governing site blog.', 'onedesign' ),

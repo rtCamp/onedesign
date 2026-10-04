@@ -60,6 +60,14 @@ class Meta implements Registrable {
 	/**
 	 * Function to register the meta array with
 	 * required information to posttype, metakey, type and default values.
+	 *
+	 * @return array{
+	 *   post_type: string[],
+	 *   meta: string,
+	 *   type: string,
+	 *   show_in_rest: bool|array<string,mixed>,
+	 *   single: bool
+	 * }[]
 	 */
 	private function get_post_meta_array(): array {
 		return [

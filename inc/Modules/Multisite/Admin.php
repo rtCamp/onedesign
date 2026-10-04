@@ -37,10 +37,8 @@ class Admin implements Registrable {
 
 	/**
 	 * Enqueue admin scripts.
-	 *
-	 * @param string $hook Current admin page hook.
 	 */
-	public function enqueue_scripts( string $hook ): void {
+	public function enqueue_scripts(): void {
 		$current_screen = get_current_screen();
 
 		if ( ! $current_screen instanceof \WP_Screen || 'plugins-network' !== $current_screen->id || MU_Settings::is_governing_site_selected() ) {
