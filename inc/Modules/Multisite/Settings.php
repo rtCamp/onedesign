@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types = 1);
+
 /**
  * Multisite-specific settings and utilities.
  *
@@ -111,7 +114,6 @@ class Settings implements Registrable {
 	 *
 	 * @param string $secret_key The generated secret key.
 	 * @param int    $blog_id The blog ID where the key is generated.
-	 * @return void
 	 */
 	public function sync_api_key_to_governing_site( string $secret_key, int $blog_id ): void {
 		// get the governing site id.
@@ -142,8 +144,6 @@ class Settings implements Registrable {
 	 * Assign brand-site on new site creation if governing site is set.
 	 *
 	 * @param \WP_Site $new_site The new site object.
-	 *
-	 * @return void
 	 */
 	public function assign_brand_site_on_new_site_creation( \WP_Site $new_site ): void {
 
@@ -168,8 +168,6 @@ class Settings implements Registrable {
 	 * @param string $option_name The name of the updated option.
 	 * @param mixed  $old_value The old value of the option.
 	 * @param mixed  $new_value The new value of the option.
-	 *
-	 * @return void
 	 */
 	public function update_site_details_in_governing_site_table( string $option_name, $old_value, $new_value ): void {
 

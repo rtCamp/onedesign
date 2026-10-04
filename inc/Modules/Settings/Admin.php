@@ -1,20 +1,22 @@
 <?php
 /**
- * Settings class.
- * This class handles the settings page for the OneDesign plugin,
+ * Registers the Admin menu and settings screen.
  *
- * @package OneDesign
+ * @package OneDesign\Modules\Settings
  */
+
+declare(strict_types = 1);
 
 namespace OneDesign\Modules\Settings;
 
 use OneDesign\Contracts\Interfaces\Registrable;
 use OneDesign\Modules\Core\Assets;
 use OneDesign\Modules\Multisite\Settings as MU_Settings;
+
 /**
- * Class Settings
+ * Class - Admin
  */
-class Admin implements Registrable {
+final class Admin implements Registrable {
 	/**
 	 * The menu slug for the admin menu.
 	 *
@@ -42,7 +44,7 @@ class Admin implements Registrable {
 		add_action( 'admin_menu', [ $this, 'add_admin_menu' ] );
 		add_action( 'admin_menu', [ $this, 'add_submenu' ], 20 ); // 20 priority to make sure settings page respect its position.
 		add_action( 'admin_menu', [ $this, 'remove_default_submenu' ], 999 );
-		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_scripts' ], 20, 1 );
+		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_scripts' ] );
 		add_action( 'admin_footer', [ $this, 'inject_site_selection_modal' ] );
 
 		add_filter( 'plugin_action_links_' . ONEDESIGN_PLUGIN_BASENAME, [ $this, 'add_action_links' ], 2 );
@@ -50,9 +52,7 @@ class Admin implements Registrable {
 	}
 
 	/**
-	 * Add a settings page.
-	 *
-	 * @return void
+	 * Add admin menu.
 	 */
 	public function add_admin_menu(): void {
 		add_menu_page(
@@ -70,7 +70,6 @@ class Admin implements Registrable {
 	 * Register the settings page.
 	 */
 	public function add_submenu(): void {
-
 		// Add the settings submenu page.
 		add_submenu_page(
 			self::MENU_SLUG,
@@ -108,35 +107,19 @@ class Admin implements Registrable {
 	 * @param string $hook Current admin page hook.
 	 */
 	public function enqueue_scripts( string $hook ): void {
-		$current_screen = get_current_screen();
-
-		if ( ! $current_screen instanceof \WP_Screen ) {
-			return;
-		}
-
-		if ( ( 'plugins.php' === $hook || str_contains( $hook, 'plugins' ) || str_contains( $hook, 'onedesign' ) ) && 'plugins-network' !== $current_screen->id ) {
-			// Enqueue the onboarding modal.
-			$this->enqueue_onboarding_scripts();
-		}
-
-		if ( strpos( $hook, 'onedesign-settings' ) !== false ) {
+		if ( strpos( $hook, self::SCREEN_ID ) !== false ) {
 			$this->enqueue_settings_scripts();
 		}
 
-		// @todo Move other scripts from Assets to here.
+		// Enqueue the onboarding modal.
+		$this->enqueue_onboarding_scripts();
 	}
 
 	/**
 	 * Inject site selection modal into the admin footer.
 	 */
 	public function inject_site_selection_modal(): void {
-		$current_screen = get_current_screen();
-		if ( ! $current_screen || 'plugins' !== $current_screen->base ) {
-			return;
-		}
-
-		// Bail if the site type is already set.
-		if ( ! empty( Settings::get_site_type() ) ) {
+		if ( ! $this->should_display_site_selection_modal() ) {
 			return;
 		}
 
@@ -184,8 +167,8 @@ class Admin implements Registrable {
 		}
 
 		// Cast to string in case it's null.
-		$classes = $this->add_body_class_for_modal( (string) $classes, $current_screen );
-		$classes = $this->add_body_class_for_missing_sites( (string) $classes, $current_screen );
+		$classes = $this->add_body_class_for_modal( (string) $classes );
+		$classes = $this->add_body_class_for_missing_sites( (string) $classes );
 
 		return $classes;
 	}
@@ -220,11 +203,10 @@ class Admin implements Registrable {
 	}
 
 	/**
-	 * Enqueue scripts and styles for the onboarding modal.
+	 * Enqueue scripts and styles for the onboarding screen.
 	 */
 	private function enqueue_onboarding_scripts(): void {
-		// Bail if the site type is already set.
-		if ( ! empty( Settings::get_site_type() ) ) {
+		if ( ! $this->should_display_site_selection_modal() ) {
 			return;
 		}
 
@@ -245,16 +227,10 @@ class Admin implements Registrable {
 	/**
 	 * Add body class if the modal is going to be shown.
 	 *
-	 * @param string     $classes        Existing body classes.
-	 * @param \WP_Screen $current_screen Current screen object.
+	 * @param string $classes        Existing body classes.
 	 */
-	private function add_body_class_for_modal( string $classes, \WP_Screen $current_screen ): string {
-		if ( 'plugins' !== $current_screen->base ) {
-			return $classes;
-		}
-
-		// Bail if the site type is already set.
-		if ( ! empty( Settings::get_site_type() ) ) {
+	private function add_body_class_for_modal( string $classes ): string {
+		if ( ! $this->should_display_site_selection_modal() ) {
 			return $classes;
 		}
 
@@ -266,10 +242,9 @@ class Admin implements Registrable {
 	/**
 	 * Add body class for missing sites.
 	 *
-	 * @param string     $classes Existing body classes.
-	 * @param \WP_Screen $current_screen Current screen object.
+	 * @param string $classes Existing body classes.
 	 */
-	private function add_body_class_for_missing_sites( string $classes, \WP_Screen $current_screen ): string {
+	private function add_body_class_for_missing_sites( string $classes ): string {
 		// Bail if the shared sites are already set.
 		$shared_sites = Settings::get_shared_sites();
 		if ( ! empty( $shared_sites ) ) {
@@ -278,5 +253,18 @@ class Admin implements Registrable {
 
 		$classes .= ' onedesign-missing-brand-sites ';
 		return $classes;
+	}
+
+	/**
+	 * Whether to display the site selection modal.
+	 */
+	private function should_display_site_selection_modal(): bool {
+		$current_screen = get_current_screen();
+		if ( ! $current_screen || ( 'plugins' !== $current_screen->base && ! str_contains( $current_screen->id, self::MENU_SLUG ) ) ) {
+			return false;
+		}
+
+		// Bail if the site type is already set.
+		return empty( Settings::get_site_type() );
 	}
 }

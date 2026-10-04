@@ -6,7 +6,7 @@
  */
 
 // Node's `require` is provided by the Jest CommonJS environment.
-declare const require: ( id: string ) => typeof import('@/js/constants');
+declare const require: ( id: string ) => typeof import( '@/js/constants' );
 
 const WINDOW_KEYS = [
 	'OneDesignSettings',
@@ -26,13 +26,13 @@ function clearWindowSettings(): void {
 
 function loadConstants(
 	windowState: Record< string, unknown > = {}
-): typeof import('@/js/constants') {
+): typeof import( '@/js/constants' ) {
 	clearWindowSettings();
 	Object.entries( windowState ).forEach( ( [ key, value ] ) => {
 		( window as unknown as Record< string, unknown > )[ key ] = value;
 	} );
 
-	let constants!: typeof import('@/js/constants');
+	let constants!: typeof import( '@/js/constants' );
 	// isolateModules gives the re-require a fresh CommonJS registry so the
 	// module's import-time `window.*` resolution runs again for each case.
 	jest.isolateModules( () => {

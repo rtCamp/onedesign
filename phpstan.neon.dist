@@ -1,36 +1,39 @@
-parameters:
-		# Rules
-		treatPhpDocTypesAsCertain: false
-		inferPrivatePropertyTypeFromConstructor: true
-		checkExplicitMixedMissingReturn: true
-		checkFunctionNameCase: true
-		checkInternalClassCaseSensitivity: true
-		checkTooWideReturnTypesInProtectedAndPublicMethods: true
-		polluteScopeWithAlwaysIterableForeach: false
-		polluteScopeWithLoopInitialAssignments: false
-		reportAlwaysTrueInLastCondition: true
-		reportStaticMethodSignatures: true
-		reportWrongPhpDocTypeInVarTag: true
+# https://phpstan.org/config-reference
 
-		# Configuration
-		level: 8
-		phpVersion:
-			min: 80000
-			max: 80400
-		bootstrapFiles:
-				- onedesign.php
-		paths:
-				- onedesign.php
-				- uninstall.php
-				- inc/
-		excludePaths:
-			analyse:
-				- tests/
-				- vendor/
-			analyseAndScan:
-				- node_modules (?)
-		ignoreErrors:
-				- # Too noisy for now.
-					identifier: missingType.generics
-				- # Too noisy for now.
-					identifier: missingType.iterableValue
+parameters:
+	# Rules
+	treatPhpDocTypesAsCertain: false
+	inferPrivatePropertyTypeFromConstructor: true
+	checkExplicitMixedMissingReturn: true
+	checkFunctionNameCase: true
+	checkInternalClassCaseSensitivity: true
+	checkTooWideReturnTypesInProtectedAndPublicMethods: true
+	polluteScopeWithAlwaysIterableForeach: false
+	polluteScopeWithLoopInitialAssignments: false
+	reportAlwaysTrueInLastCondition: true
+	reportStaticMethodSignatures: true
+	reportWrongPhpDocTypeInVarTag: true
+
+	# Configuration
+	level: 8
+	phpVersion:
+		min: 80200
+		max: 80500
+	bootstrapFiles:
+		- onedesign.php
+	paths:
+		- onedesign.php
+		- uninstall.php
+		- inc/
+	excludePaths:
+		analyse:
+			- tests/
+			- vendor/
+		analyseAndScan:
+			- node_modules (?)
+
+	ignoreErrors:
+		- # Too noisy for now.
+			identifier: missingType.generics
+		- # Too noisy for now.
+			identifier: missingType.iterableValue

@@ -288,7 +288,6 @@ const SiteSettings = (): JSX.Element => {
 						label={ __( 'Governing Site URL', 'onedesign' ) }
 						value={ governingSite }
 						disabled
-						onChange={ () => {} }
 						help={ __(
 							'This is the URL of the Governing site this Brand site is connected to.',
 							'onedesign'

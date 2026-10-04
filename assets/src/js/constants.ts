@@ -53,7 +53,7 @@ const IS_MULTISITE = settings.isMultisite || false;
 const IS_GOVERNING_SITE_SELECTED = settings.isGoverningSiteSelected || false;
 const CURRENT_SITE_ID =
 	settings.currentSiteId !== undefined && settings.currentSiteId !== null
-		? String(settings.currentSiteId)
+		? String( settings.currentSiteId )
 		: '';
 
 export {

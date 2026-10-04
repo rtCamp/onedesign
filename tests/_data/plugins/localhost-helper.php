@@ -16,7 +16,6 @@ namespace OneDesign\Localhost_Helper;
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
-
 // Bypass URL validation for onedesign endpoints.
 add_filter( // phpcs:ignore WordPressVIPMinimum.Hooks.RestrictedHooks.http_request_args
 	'http_request_args',

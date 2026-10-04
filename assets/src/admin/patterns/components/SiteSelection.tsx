@@ -292,7 +292,7 @@ const SiteSelection = ( {
 									__( '%1$d of %2$d selected', 'onedesign' ),
 									selectedCount,
 									selectableSiteCount
-							  )
+								)
 							: sprintf(
 									/* translators: %1$d: Number of available sites, %2$d: Total number of sites. */
 									__(
@@ -301,7 +301,7 @@ const SiteSelection = ( {
 									),
 									selectableSiteCount,
 									totalCount
-							  ) }
+								) }
 					</span>
 				</div>
 
@@ -346,11 +346,11 @@ const SiteSelection = ( {
 									),
 									totalCount - selectableSiteCount,
 									totalCount
-							  )
+								)
 							: __(
 									'Sites that already have all selected patterns are disabled.',
 									'onedesign'
-							  ) }
+								) }
 					</p>
 				</div>
 			) }

@@ -9,7 +9,7 @@ import DOMPurify from 'dompurify';
  * @param name - The name to extract initials from.
  * @return The extracted initials (up to 2 characters).
  */
-const getInitials = ( name: string ): string => {
+export const getInitials = ( name: string ): string => {
 	// Handle empty or invalid names
 	if ( ! name || typeof name !== 'string' ) {
 		return '?';
@@ -46,39 +46,17 @@ const getInitials = ( name: string ): string => {
 		first.charAt( 0 ) + ( second ? second.charAt( 0 ) : '' )
 	).toUpperCase();
 };
-
-/**
- * Helper function to validate if a string is a well-formed URL.
- *
- * @param str - The string to validate as a URL.
- *
- * @return True if the string is a valid URL, false otherwise.
- */
-const isURL = ( str: string ): boolean => {
-	const pattern = new RegExp(
-		'^https?:\\/\\/' +
-			'(?:[a-z\\d](?:[a-z\\d-]*[a-z\\d])?\\.)?' +
-			'[a-z\\d](?:[a-z\\d-]*[a-z\\d])?\\.' +
-			'[a-z]{2,}' +
-			'(?::\\d+)?' +
-			'(?:\\/[^\\s]*)?' +
-			'$',
-		'i'
-	);
-	return pattern.test( str );
-};
-
 /**
  * Validates if a given string is a valid URL.
  *
- * @param url - The URL string to validate.
+ * @param {string} url - The URL string to validate.
  *
- * @return True if the URL is valid, false otherwise.
+ * @return {boolean} True if the URL is valid, false otherwise.
  */
-const isValidUrl = ( url: string ): boolean => {
+export const isValidUrl = ( url: string ): boolean => {
 	try {
-		const parsedUrl = new URL( url );
-		return isURL( parsedUrl.href );
+		new URL( url );
+		return true;
 	} catch {
 		return false;
 	}
@@ -91,8 +69,6 @@ const isValidUrl = ( url: string ): boolean => {
  *
  * @return The sanitized string with all HTML tags removed.
  */
-const PurifyElement = ( item: string ): string => {
+export const PurifyElement = ( item: string ): string => {
 	return DOMPurify.sanitize( item, { ALLOWED_TAGS: [] } );
 };
-
-export { getInitials, isURL, isValidUrl, PurifyElement };

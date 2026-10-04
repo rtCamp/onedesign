@@ -12,18 +12,18 @@ If you discover any security vulnerability in **`OneDesign`**, please follow the
 2. **Details to Include:**
    To help us assess and address the issue quickly, please include as much of the following information as possible:
 
-    - Type of vulnerability (e.g., SQL injection, cross-site scripting, buffer overflow)
-    - Affected source files (include full paths or URLs if possible)
-    - The version or commit where the issue was found
-    - Steps to reproduce the vulnerability, including any special configurations
-    - Proof-of-concept code (if available)
-    - Description of the impact and how an attacker could exploit the vulnerability
+   - Type of vulnerability (e.g., SQL injection, cross-site scripting, buffer overflow)
+   - Affected source files (include full paths or URLs if possible)
+   - The version or commit where the issue was found
+   - Steps to reproduce the vulnerability, including any special configurations
+   - Proof-of-concept code (if available)
+   - Description of the impact and how an attacker could exploit the vulnerability
 
 3. **Response Time:**
 
-    - We will acknowledge your report within **3 working days**.
-    - A detailed assessment will follow within **5 business days**.
-    - If the issue is confirmed, we will work on a fix and notify you once resolved.
+   - We will acknowledge your report within **3 working days**.
+   - A detailed assessment will follow within **5 business days**.
+   - If the issue is confirmed, we will work on a fix and notify you once resolved.
 
 4. **Resolution and Disclosure:**
    We will work to either resolve the vulnerability or provide mitigation steps. Once a fix is published or the issue is otherwise addressed, we will inform you. You may then publicly disclose the vulnerability after receiving our confirmation.

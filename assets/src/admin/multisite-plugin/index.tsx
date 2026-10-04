@@ -107,12 +107,12 @@ const OneDesignMultisiteGoverningSiteSelection = (): JSX.Element => {
 			}
 
 			// The REST controller returns `governing_site` as an integer.
-			const data = (await response.json()) as {
+			const data = ( await response.json() ) as {
 				governing_site?: SiteId;
 			};
 			if ( data?.governing_site ) {
-				const siteId = String(data.governing_site);
-				setGoverningSite(siteId);
+				const siteId = String( data.governing_site );
+				setGoverningSite( siteId );
 				currentGoverningSiteID.current = siteId;
 			}
 		} catch {
@@ -131,7 +131,7 @@ const OneDesignMultisiteGoverningSiteSelection = (): JSX.Element => {
 	}, [] ); // eslint-disable-line react-hooks/exhaustive-deps
 
 	const handleGoverningSiteChange = useCallback( async ( value: string ) => {
-		setGoverningSite(value);
+		setGoverningSite( value );
 		setIsSaving( true );
 
 		try {

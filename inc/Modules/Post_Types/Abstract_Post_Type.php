@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types = 1);
+
 /**
  * Abstract class to register post type.
  *
@@ -13,7 +16,6 @@ use OneDesign\Contracts\Interfaces\Registrable;
  * Base class to register post types.
  */
 abstract class Abstract_Post_Type implements Registrable {
-
 	/**
 	 * Get slug of post type.
 	 *

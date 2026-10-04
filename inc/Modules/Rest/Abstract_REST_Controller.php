@@ -14,12 +14,12 @@ namespace OneDesign\Modules\Rest;
 use OneDesign\Contracts\Interfaces\Registrable;
 use OneDesign\Modules\Multisite\Settings as MU_Settings;
 use OneDesign\Modules\Settings\Settings;
-
+use WP_REST_Controller;
 
 /**
  * Class - Abstract_REST_Controller
  */
-abstract class Abstract_REST_Controller extends \WP_REST_Controller implements Registrable {
+abstract class Abstract_REST_Controller extends WP_REST_Controller implements Registrable {
 	/**
 	 * The namespace for the REST API.
 	 */
@@ -60,9 +60,8 @@ abstract class Abstract_REST_Controller extends \WP_REST_Controller implements R
 	 * @todo this should be on a hook.
 	 *
 	 * @param \WP_REST_Request<array{}> $request Request.
-	 * @return bool
 	 */
-	public function check_api_permissions( $request ) {
+	public function check_api_permissions( $request ): bool {
 		// check if the request is from same site.
 		if ( Settings::is_governing_site() ) {
 			return current_user_can( 'manage_options' );

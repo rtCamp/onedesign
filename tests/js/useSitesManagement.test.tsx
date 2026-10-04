@@ -34,7 +34,7 @@ function routeFetch( healthResponse: unknown, healthRejects = false ): void {
 				? Promise.reject( new Error( 'unreachable' ) )
 				: Promise.resolve( {
 						json: () => Promise.resolve( healthResponse ),
-				  } );
+					} );
 		}
 		return Promise.reject( new Error( `unexpected url: ${ url }` ) );
 	} );

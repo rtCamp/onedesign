@@ -1,23 +1,24 @@
 <?php
 /**
- * This will be executed when the plugin is uninstalled.
+ * This will be executed when the plugin is uninstalled via the WordPress admin.
  *
  * @package OneDesign
  */
 
-declare( strict_types=1 );
+declare( strict_types = 1 );
 
 namespace OneDesign;
 
-// If uninstall not called from WordPress, exit.
-if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
-	exit;
-}
+// Only uninstall if called by WordPress.
+defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
+
+// We use local constants so this plugin can be uninstalled even if the autoloader is corrupted or missing.
+const PLUGIN_PREFIX = PLUGIN_PREFIX . '';
 
 /**
- * Multisite loop for uninstalling from all sites.
+ * Uninstalls the plugin. If multisite, uninstalls from all sites.
  */
-function multisite_uninstall(): void {
+function run_uninstaller(): void {
 	if ( ! is_multisite() ) {
 		uninstall();
 		return;
@@ -33,7 +34,7 @@ function multisite_uninstall(): void {
 	) ?: [];
 
 	foreach ( $site_ids as $site_id ) {
-		// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.switch_to_blog_switch_to_blog
+		// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.switch_to_blog_switch_to_blog -- The state doesn't matter during uninstall.
 		if ( ! switch_to_blog( (int) $site_id ) ) {
 			continue;
 		}
@@ -47,7 +48,9 @@ function multisite_uninstall(): void {
  * The (site-specific) uninstall function.
  */
 function uninstall(): void {
-	delete_plugin_data();
+	delete_posts();
+
+	delete_options();
 }
 
 /**
@@ -55,7 +58,7 @@ function uninstall(): void {
  */
 function delete_network_plugin_data(): void {
 	$options = [
-		'onedesign_multisite_governing_site',
+		PLUGIN_PREFIX . 'multisite_governing_site',
 	];
 
 	foreach ( $options as $option ) {
@@ -64,29 +67,33 @@ function delete_network_plugin_data(): void {
 }
 
 /**
- * Deletes meta, options, transients, etc.
+ * Delete posts from brand sites.
  */
-function delete_plugin_data(): void {
-	// First delete posts from brand sites.
-	$brand_site_post_ids = (array) get_option( 'onedesign_brand_site_post_ids', [] );
+function delete_posts(): void {
+	$brand_site_post_ids = (array) get_option( PLUGIN_PREFIX . 'brand_site_post_ids', [] );
 	foreach ( $brand_site_post_ids as $post_id ) {
 		wp_delete_post( (int) $post_id, true );
 	}
+}
 
+/**
+ * Deletes options.
+ */
+function delete_options(): void {
 	$options = [
-		'onedesign_site_type',
-		'onedesign_consumer_api_key',
-		'onedesign_parent_site_url',
-		'onedesign_shared_sites',
+		PLUGIN_PREFIX . 'site_type',
+		PLUGIN_PREFIX . 'consumer_api_key',
+		PLUGIN_PREFIX . 'parent_site_url',
+		PLUGIN_PREFIX . 'shared_sites',
 
-		'onedesign_brand_site_patterns',
-		'onedesign_child_site_public_key',
-		'onedesign_shared_templates',
-		'onedesign_brand_site_post_ids',
-		'onedesign_shared_patterns',
-		'onedesign_shared_template_parts',
-		'onedesign_shared_synced_patterns',
-		'onedesign_multisite_governing_site',
+		PLUGIN_PREFIX . 'brand_site_patterns',
+		PLUGIN_PREFIX . 'child_site_public_key',
+		PLUGIN_PREFIX . 'shared_templates',
+		PLUGIN_PREFIX . 'brand_site_post_ids',
+		PLUGIN_PREFIX . 'shared_patterns',
+		PLUGIN_PREFIX . 'shared_template_parts',
+		PLUGIN_PREFIX . 'shared_synced_patterns',
+		PLUGIN_PREFIX . 'multisite_governing_site',
 	];
 
 	foreach ( $options as $option ) {
@@ -95,4 +102,4 @@ function delete_plugin_data(): void {
 }
 
 // Run the uninstaller.
-multisite_uninstall();
+run_uninstaller();

@@ -1,0 +1,20 @@
+name: WordPress Playground PR Preview
+
+# `workflow_run` workflows always run from the default branch, so changes here only take effect once merged.
+on:
+  workflow_run:
+    workflows: ['CI']
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  playground-preview:
+    name: Playground Preview
+    if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success'
+    uses: rtCamp/plugin-skeleton-d/.github/workflows/reusable-wp-playground-pr-preview-public.yml@72dd3643b710bd84eed7c6143312c9434a95d352 # v0.2.0
+    permissions:
+      contents: write
+      pull-requests: write
+    with:
+      plugin-slug: onedesign

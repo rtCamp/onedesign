@@ -104,7 +104,7 @@ const SiteSelection = ( {
 	const isSiteUnreachable = ( siteId: SiteId ): boolean => {
 		return Boolean(
 			sitesHealthCheckResult?.[ siteId ] &&
-				! sitesHealthCheckResult[ siteId ]?.success
+			! sitesHealthCheckResult[ siteId ]?.success
 		);
 	};
 
@@ -201,7 +201,7 @@ const SiteSelection = ( {
 												),
 												selectedCount,
 												selectableSiteCount
-										  )
+											)
 										: sprintf(
 												/* translators: %1$d: Number of available sites, %2$d: Total number of sites. */
 												__(
@@ -210,7 +210,7 @@ const SiteSelection = ( {
 												),
 												selectableSiteCount,
 												totalCount
-										  ) }
+											) }
 								</span>
 							</div>
 
@@ -322,11 +322,11 @@ const SiteSelection = ( {
 															? __(
 																	'This site is unreachable',
 																	'onedesign'
-															  )
+																)
 															: __(
 																	'This site already has all selected templates',
 																	'onedesign'
-															  )
+																)
 													}
 												>
 													{ renderIcon( {

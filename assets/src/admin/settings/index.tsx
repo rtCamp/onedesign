@@ -102,7 +102,7 @@ const OneDesignSettingsPage = (): JSX.Element => {
 			editingIndex !== null
 				? sites.map( ( item, i ) =>
 						i === editingIndex ? formData : item
-				  )
+					)
 				: [ ...sites, formData ];
 
 		const token = NONCE;

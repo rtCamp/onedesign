@@ -15,6 +15,33 @@
 					"type": "generic",
 					"path": "readme.txt"
 				}
+			],
+			"changelog-sections": [
+				{ "type": "feat", "section": "Added" },
+				{ "type": "feature", "section": "Added" },
+				{ "type": "fix", "section": "Fixed" },
+				{ "type": "build", "section": "Changed" },
+				{ "type": "perf", "section": "Changed" },
+				{ "type": "security", "section": "Security" },
+				{ "type": "revert", "section": "Changed" },
+				{ "type": "docs", "section": "Documentation", "hidden": true },
+				{ "type": "style", "section": "Styles", "hidden": true },
+				{
+					"type": "chore",
+					"section": "Miscellaneous Chores",
+					"hidden": true
+				},
+				{
+					"type": "refactor",
+					"section": "Code Refactoring",
+					"hidden": true
+				},
+				{ "type": "test", "section": "Tests", "hidden": true },
+				{
+					"type": "ci",
+					"section": "Continuous Integration",
+					"hidden": true
+				}
 			]
 		}
 	}

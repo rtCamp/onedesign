@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types = 1);
+
 /**
  * This class will have REST endpoints for templates sharing.
  *
@@ -14,7 +17,6 @@ use OneDesign\Modules\Settings\Settings;
  * Class Templates_Controller
  */
 class Templates_Controller extends Abstract_REST_Controller {
-
 	/**
 	 * The namespace for the REST API.
 	 */
@@ -216,7 +218,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 
 		// Merge new synced patterns with existing ones, avoiding duplicates based on 'id'.
 		foreach ( $synced_patterns as $pattern ) {
-			if ( ! isset( $pattern['id'] ) || array_filter( $existing_synced_patterns, static fn( $t ) => $t['id'] === $pattern['id'] ) ) {
+			if ( ! isset( $pattern['id'] ) || array_filter( $existing_synced_patterns, static fn ( $t ) => $t['id'] === $pattern['id'] ) ) {
 				continue;
 			}
 
@@ -393,7 +395,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 			update_option( Constants::ONEDESIGN_SHARED_TEMPLATE_PARTS, [], false );
 			update_option( Constants::ONEDESIGN_SHARED_SYNCED_PATTERNS, [], false );
 		} else {
-			$updated_templates = array_filter( $existing_templates, static fn( $t ) => ! in_array( $t['id'], $template_ids, true ) );
+			$updated_templates = array_filter( $existing_templates, static fn ( $t ) => ! in_array( $t['id'], $template_ids, true ) );
 		}
 
 		update_option( Constants::ONEDESIGN_SHARED_TEMPLATES, array_values( $updated_templates ), false );
@@ -515,7 +517,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 
 		// Merge new templates with existing ones, avoiding duplicates based on 'id'.
 		foreach ( $templates as $template ) {
-			if ( ! isset( $template['id'] ) || array_filter( $existing_templates, static fn( $t ) => $t['id'] === $template['id'] ) ) {
+			if ( ! isset( $template['id'] ) || array_filter( $existing_templates, static fn ( $t ) => $t['id'] === $template['id'] ) ) {
 				continue;
 			}
 
@@ -533,7 +535,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 		// Merge new patterns with existing ones, avoiding duplicates based on 'id'.
 		if ( is_array( $patterns ) ) {
 			foreach ( $patterns as $pattern ) {
-				if ( ! isset( $pattern['name'] ) || array_filter( $existing_patterns, static fn( $t ) => $t['name'] === $pattern['name'] ) ) {
+				if ( ! isset( $pattern['name'] ) || array_filter( $existing_patterns, static fn ( $t ) => $t['name'] === $pattern['name'] ) ) {
 					continue;
 				}
 
@@ -552,7 +554,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 		// Merge new template parts with existing ones, avoiding duplicates based on 'id'.
 		if ( is_array( $template_parts ) ) {
 			foreach ( $template_parts as $template_part ) {
-				if ( ! isset( $template_part['id'] ) || array_filter( $existing_template_parts, static fn( $t ) => $t['id'] === $template_part['id'] ) ) {
+				if ( ! isset( $template_part['id'] ) || array_filter( $existing_template_parts, static fn ( $t ) => $t['id'] === $template_part['id'] ) ) {
 					continue;
 				}
 
@@ -613,9 +615,9 @@ class Templates_Controller extends Abstract_REST_Controller {
 			$parsed_templates = array_merge( $parsed_templates, $this->parse_block_template( $template['content'], $already_tracked ) );
 		}
 
-		$template_parts  = array_filter( $parsed_templates, static fn( $t ) => 'template-part' === $t['type'] );
-		$patterns        = array_filter( $parsed_templates, static fn( $t ) => 'pattern' === $t['type'] );
-		$synced_patterns = array_filter( $parsed_templates, static fn( $t ) => 'block' === $t['type'] );
+		$template_parts  = array_filter( $parsed_templates, static fn ( $t ) => 'template-part' === $t['type'] );
+		$patterns        = array_filter( $parsed_templates, static fn ( $t ) => 'pattern' === $t['type'] );
+		$synced_patterns = array_filter( $parsed_templates, static fn ( $t ) => 'block' === $t['type'] );
 
 		// get site info from child sites option.
 		$brand_sites = Settings::get_shared_sites();
@@ -713,8 +715,6 @@ class Templates_Controller extends Abstract_REST_Controller {
 
 	/**
 	 * Get all block templates.
-	 *
-	 * @return \WP_REST_Response
 	 */
 	public function get_all_templates(): \WP_REST_Response {
 		$templates = get_block_templates();
@@ -729,8 +729,6 @@ class Templates_Controller extends Abstract_REST_Controller {
 
 	/**
 	 * Get templates from all connected sites.
-	 *
-	 * @return \WP_REST_Response
 	 */
 	public function get_templates_from_connected_sites(): \WP_REST_Response {
 		$connected_sites = Settings::get_shared_sites();
@@ -776,8 +774,6 @@ class Templates_Controller extends Abstract_REST_Controller {
 
 	/**
 	 * Get shared templates.
-	 *
-	 * @return \WP_REST_Response
 	 */
 	public function get_shared_templates(): \WP_REST_Response {
 		$shared_templates = get_option( Constants::ONEDESIGN_SHARED_TEMPLATES, [] );
@@ -1101,7 +1097,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 		if ( preg_match_all( $pattern, $content, $matches, PREG_SET_ORDER ) ) {
 			foreach ( $matches as $match ) {
 				$block_type      = $match[1];
-				$attributes_json = isset( $match[2] ) ? $match[2] : '{}';
+				$attributes_json = $match[2] ?? '{}';
 
 				// Decode JSON attributes.
 				$attributes = json_decode( $attributes_json, true );

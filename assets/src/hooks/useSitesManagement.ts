@@ -109,7 +109,7 @@ const useSitesManagement = ( {
 												'Health check failed.',
 												'onedesign'
 											),
-								  },
+									},
 						} ) );
 					} catch {
 						setSitesHealthCheckResult( ( prevResults ) => ( {
@@ -152,14 +152,14 @@ const useSitesManagement = ( {
 				SiteInfo
 			>;
 			const sites = data || {};
-			setSiteInfo(sites);
+			setSiteInfo( sites );
 
-			if (Object.keys(sites).length === 0) {
-				setIsLoading(false);
+			if ( Object.keys( sites ).length === 0 ) {
+				setIsLoading( false );
 			}
 		} catch ( err ) {
 			setError( err instanceof Error ? err.message : String( err ) );
-			setIsLoading(false);
+			setIsLoading( false );
 		}
 	}, [ API_NAMESPACE, NONCE ] );
 

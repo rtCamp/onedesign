@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types = 1);
+
 /**
  * Register Pattern post type.
  *
@@ -11,7 +14,6 @@ namespace OneDesign\Modules\Post_Types;
  * Class Pattern
  */
 class Pattern extends Abstract_Post_Type {
-
 	/**
 	 * {@inheritDoc}
 	 */

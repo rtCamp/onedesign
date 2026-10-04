@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types = 1);
+
 /**
  * Restrict CPTs creation for more than 1 site.
  *
@@ -14,7 +17,6 @@ use OneDesign\Modules\Settings\Settings;
  * Class CPT_Restriction
  */
 class CPT_Restriction implements Registrable {
-
 	/**
 	 * {@inheritDoc}
 	 */
@@ -110,8 +112,6 @@ class CPT_Restriction implements Registrable {
 
 	/**
 	 * Callback function to limit pattern library posts.
-	 *
-	 * @return void
 	 */
 	public function limit_pattern_library_posts(): void {
 		// Check if we're trying to create a new pattern library post.
@@ -148,8 +148,6 @@ class CPT_Restriction implements Registrable {
 
 	/**
 	 * Callback function to limit template posts.
-	 *
-	 * @return void
 	 */
 	public function limit_template_posts(): void {
 		$screen = get_current_screen();

@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types = 1);
+
 /**
  * This file is to handle OneDesign Multisite related functionality.
  *
@@ -15,7 +18,6 @@ use OneDesign\Modules\Multisite\Settings as MU_Settings;
  * Class Admin
  */
 class Admin implements Registrable {
-
 	/**
 	 * {@inheritDoc}
 	 */
@@ -64,8 +66,6 @@ class Admin implements Registrable {
 
 	/**
 	 * Render governing site selection modal.
-	 *
-	 * @return void
 	 */
 	public function render_governing_site_modal(): void {
 

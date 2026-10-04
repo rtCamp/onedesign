@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types = 1);
+
 /**
  * This file will contain routes for OneDesign Multisite handling.
  *
@@ -16,7 +19,6 @@ use WP_REST_Server;
  * Class Multisite_Controller
  */
 class Multisite_Controller extends Abstract_REST_Controller {
-
 	/**
 	 * The namespace for the REST API.
 	 */
@@ -112,8 +114,6 @@ class Multisite_Controller extends Abstract_REST_Controller {
 
 	/**
 	 * Get the governing site for multisite setup.
-	 *
-	 * @return \WP_REST_Response
 	 */
 	public function get_multisite_governing_site(): WP_REST_Response {
 
@@ -279,8 +279,6 @@ class Multisite_Controller extends Abstract_REST_Controller {
 
 	/**
 	 * Get all sites from current multisite setup.
-	 *
-	 * @return \WP_REST_Response
 	 */
 	public function get_all_multisite_sites(): WP_REST_Response {
 

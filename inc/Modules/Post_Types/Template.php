@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types = 1);
+
 /**
  * Register template post type.
  *
@@ -11,7 +14,6 @@ namespace OneDesign\Modules\Post_Types;
  * Class Template
  */
 class Template extends Abstract_Post_Type {
-
 	/**
 	 * {@inheritDoc}
 	 */

@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types = 1);
+
 /**
  * Patterns class to handle all the REST API related to patterns sharing.
  *
@@ -17,7 +20,6 @@ use WP_REST_Server;
  * Class Patterns_Controller
  */
 class Patterns_Controller extends Abstract_REST_Controller {
-
 	/**
 	 * {@inheritDoc}
 	 */
@@ -276,7 +278,7 @@ class Patterns_Controller extends Abstract_REST_Controller {
 			);
 		}
 
-		$error_message = isset( $decoded_body['message'] ) ? $decoded_body['message'] : __( 'Unknown error from remote site.', 'onedesign' );
+		$error_message = $decoded_body['message'] ?? __( 'Unknown error from remote site.', 'onedesign' );
 		return new \WP_Error(
 			'remote_error',
 			// translators: %1$s is the error message, %2$d is the HTTP status code.
@@ -426,8 +428,6 @@ class Patterns_Controller extends Abstract_REST_Controller {
 
 	/**
 	 * Get brand site patterns.
-	 *
-	 * @return \WP_REST_Response
 	 */
 	public function get_brand_site_patterns(): WP_REST_Response {
 		// Use the option name from your settings class.
@@ -454,8 +454,6 @@ class Patterns_Controller extends Abstract_REST_Controller {
 
 	/**
 	 * Get all local patterns (both registered and user-created).
-	 *
-	 * @return \WP_REST_Response
 	 */
 	public function get_local_patterns(): WP_REST_Response {
 		$patterns = $this->get_all_local_patterns_map();
@@ -468,8 +466,6 @@ class Patterns_Controller extends Abstract_REST_Controller {
 
 	/**
 	 * Get pattern categories.
-	 *
-	 * @return \WP_REST_Response
 	 */
 	public function get_pattern_categories(): WP_REST_Response {
 
@@ -527,8 +523,6 @@ class Patterns_Controller extends Abstract_REST_Controller {
 
 	/**
 	 * Get configured child sites (for a parent site type).
-	 *
-	 * @return \WP_REST_Response
 	 */
 	public function get_configured_child_sites(): WP_REST_Response {
 
@@ -677,8 +671,6 @@ class Patterns_Controller extends Abstract_REST_Controller {
 
 	/**
 	 * Get all local patterns as a map (both registered and user-created).
-	 *
-	 * @return array
 	 */
 	private function get_all_local_patterns_map(): array {
 		$patterns_map = [];

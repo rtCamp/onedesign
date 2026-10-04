@@ -1,37 +1,56 @@
-# Vendor + dependency files
-node_modules/
-vendor/
+### WordPress ###
 
-# Enviroment
-.env
-
-# Local configs
-phpcs.xml
-phpunit.xml
-phpstan.neon
+# macOS/IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
 
 # Log files
 *.log
 /tests/logs
 
+# Dependencies
+/vendor/
+/node_modules/
+
+# Build output
+build/
+
+# Generated language files
+/languages/*
+!/languages/.gitkeep
+
+# Environment
+.env
+
+# AI files
+.gemini/
+.claude/
+AGENTS.md
+GEMINI.md
+CLAUDE.md
+
 # Test output
 /tests/_output/*
 !/tests/_output/.gitkeep
+/tests/e2e/artifacts
 
-# OS files
-[Tt]humbs.db
-[Dd]esktop.ini
-*.DS_store
-.DS_store?
+# Configs
+/phpcs.xml
+/phpunit.xml
+/phpstan.neon
 
-# IDE files
-.vscode/
-.idea/
-*.iml
-*.sublime-project
-*.sublime-workspace
-*.code-workspace
+# WP ENV
+/.wp-env.override.json
+
+# Tests & Coverage
+/coverage/
+
+# TypeScript
+*.tsbuildinfo
 
 # Build
-build/
 onedesign.zip

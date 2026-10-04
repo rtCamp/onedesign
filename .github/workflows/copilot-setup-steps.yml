@@ -6,50 +6,50 @@
 name: Copilot Setup Steps
 
 on:
-    workflow_dispatch:
-    push:
-        paths:
-            - '.github/workflows/copilot-setup-steps.yml'
-    pull_request:
-        paths:
-            - .github/workflows/copilot-setup-steps.yml
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/copilot-setup-steps.yml'
+  pull_request:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
 
 permissions:
-    contents: read
+  contents: read
 
 jobs:
-    # The job MUST be called `copilot-setup-steps` or it will not be picked up by Copilot.
-    copilot-setup-steps:
-        name: Setup Copilot Environment
-        runs-on: ubuntu-24.04
-        timeout-minutes: 20
+  # The job MUST be called `copilot-setup-steps` or it will not be picked up by Copilot.
+  copilot-setup-steps:
+    name: Setup Copilot Environment
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
 
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-              with:
-                  show-progress: ${{ runner.debug == '1' && 'true' || 'false' }}
-                  persist-credentials: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          show-progress: ${{ runner.debug == '1' && 'true' || 'false' }}
+          persist-credentials: false
 
-            - name: Set up PHP
-              uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
-              with:
-                  php-version: '8.3'
-                  coverage: none
+      - name: Set up PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
+        with:
+          php-version: '8.3'
+          coverage: none
 
-            - name: Install Composer dependencies
-              uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # v4.0.0
+      - name: Install Composer dependencies
+        uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # v4.0.0
 
-            - name: Setup Node.js
-              uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
-              with:
-                  node-version-file: '.nvmrc'
-                  cache: 'npm'
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f3 # v6.1.0
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
 
-            - name: Install npm dependencies
-              run: npm ci
-              env:
-                  CI: true
+      - name: Install npm dependencies
+        run: npm ci
+        env:
+          CI: true
 
-            - name: Build development assets
-              run: npm run build:dev
+      - name: Build development assets
+        run: npm run build:dev
