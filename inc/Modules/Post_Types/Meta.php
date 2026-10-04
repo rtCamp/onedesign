@@ -5,6 +5,8 @@
  * @package OneDesign
  */
 
+declare(strict_types = 1);
+
 namespace OneDesign\Modules\Post_Types;
 
 use OneDesign\Contracts\Interfaces\Registrable;
@@ -13,7 +15,6 @@ use OneDesign\Contracts\Interfaces\Registrable;
  * Class Meta
  */
 class Meta implements Registrable {
-
 	/**
 	 * {@inheritDoc}
 	 */
@@ -24,8 +25,6 @@ class Meta implements Registrable {
 
 	/**
 	 * Callback function to register the custom meta for all post types.
-	 *
-	 * @return void
 	 */
 	public function register_custom_meta(): void {
 
@@ -62,7 +61,13 @@ class Meta implements Registrable {
 	 * Function to register the meta array with
 	 * required information to posttype, metakey, type and default values.
 	 *
-	 * @return array
+	 * @return array{
+	 *   post_type: string[],
+	 *   meta: string,
+	 *   type: string,
+	 *   show_in_rest: bool|array<string,mixed>,
+	 *   single: bool
+	 * }[]
 	 */
 	private function get_post_meta_array(): array {
 		return [

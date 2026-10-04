@@ -381,7 +381,7 @@ const BasePatternsTab = memo(
 										: __(
 												'patterns selected',
 												'onedesign'
-										  ) }
+											) }
 								</span>
 							</div>
 						) }

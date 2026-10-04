@@ -1,0 +1,20 @@
+name: PR Cleanup
+
+# `pull_request_target` gives fork PRs a token that can delete artifacts. Never check out or run PR code here.
+on:
+  pull_request_target:
+    types: [closed]
+
+permissions: {}
+
+jobs:
+  cleanup:
+    name: PR Cleanup
+    uses: rtCamp/plugin-skeleton-d/.github/workflows/reusable-pr-cleanup-public.yml@72dd3643b710bd84eed7c6143312c9434a95d352 # v0.2.0
+    permissions:
+      actions: write
+      contents: write
+    with:
+      pr-number: ${{ github.event.pull_request.number }}
+      head-ref: ${{ github.event.pull_request.head.ref }}
+      head-repo-id: ${{ github.event.pull_request.head.repo.id }}

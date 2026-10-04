@@ -5,13 +5,14 @@
  * @package OneDesign
  */
 
+declare(strict_types = 1);
+
 namespace OneDesign\Modules\Post_Types;
 
 /**
  * Class Constants
  */
 class Constants {
-
 	/**
 	 * Shared templates.
 	 *
@@ -27,6 +28,7 @@ class Constants {
 	 * @var string
 	 */
 	public const ONEDESIGN_BRAND_SITE_PATTERNS = 'onedesign_brand_site_patterns';
+
 	/**
 	 * Brand site post id's.
 	 *

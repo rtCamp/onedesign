@@ -1,9 +1,11 @@
 <?php
 /**
- * Enqueue assets for OneDesign.
+ * Registers plugin assets.
  *
- * @package OneDesign
+ * @package OneDesign\Modules\Core
  */
+
+declare( strict_types = 1 );
 
 namespace OneDesign\Modules\Core;
 
@@ -15,7 +17,7 @@ use OneDesign\Modules\Settings\Settings;
 /**
  * Class Assets
  */
-class Assets implements Registrable {
+final class Assets implements Registrable {
 	/**
 	 * The relative path to the built assets directory.
 	 * No preceding or trailing slashes.
@@ -32,10 +34,10 @@ class Assets implements Registrable {
 	 */
 	public const ADMIN_STYLES_HANDLE            = self::PREFIX . 'admin';
 	public const EDITOR_STYLES_HANDLE           = self::PREFIX . 'editor';
-	public const SETTINGS_SCRIPT_HANDLE         = self::PREFIX . 'settings';
-	public const ONBOARDING_SCRIPT_HANDLE       = self::PREFIX . 'setup';
 	public const MULTISITE_SETUP_SCRIPT_HANDLE  = self::PREFIX . 'multisite-setup';
+	public const ONBOARDING_SCRIPT_HANDLE       = self::PREFIX . 'setup';
 	public const PATTERN_LIBRARY_SCRIPT_HANDLE  = self::PREFIX . 'patterns-library';
+	public const SETTINGS_SCRIPT_HANDLE         = self::PREFIX . 'settings';
 	public const TEMPLATE_LIBRARY_SCRIPT_HANDLE = self::PREFIX . 'templates-library';
 
 	/**
@@ -60,7 +62,9 @@ class Assets implements Registrable {
 	private string $plugin_url;
 
 	/**
-	 * Prepare localized data.
+	 * Get localized data for scripts.
+	 *
+	 * @return array<string,mixed>
 	 */
 	public static function get_localized_data(): array {
 		if ( empty( self::$localized_data ) ) {
@@ -87,8 +91,8 @@ class Assets implements Registrable {
 	 * {@inheritDoc}
 	 */
 	public function register_hooks(): void {
-		add_action( 'enqueue_block_editor_assets', [ $this, 'enqueue_scripts' ], 20, 1 );
-		add_action( 'admin_enqueue_scripts', [ $this, 'register_assets' ], 20, 1 );
+		add_action( 'enqueue_block_editor_assets', [ $this, 'enqueue_scripts' ] );
+		add_action( 'admin_enqueue_scripts', [ $this, 'register_assets' ] );
 
 		// Add defer attribute to certain plugin bundles to improve admin load performance.
 		add_filter( 'script_loader_tag', [ $this, 'defer_scripts' ], 10, 2 );
@@ -120,8 +124,6 @@ class Assets implements Registrable {
 
 	/**
 	 * Add scripts and styles to the page.
-	 *
-	 * @return void -- register styles and scripts
 	 */
 	public function enqueue_scripts(): void {
 
@@ -176,6 +178,7 @@ class Assets implements Registrable {
 	public function defer_scripts( string $tag, string $handle ): string {
 		$defer_handles = [
 			self::SETTINGS_SCRIPT_HANDLE,
+			self::ONBOARDING_SCRIPT_HANDLE,
 		];
 
 		// Bail if we don't need to defer.
@@ -189,12 +192,12 @@ class Assets implements Registrable {
 	/**
 	 * Register a script.
 	 *
-	 * @param string   $handle    Name of the script. Should be unique.
-	 * @param string   $filename  Path of the script relative to js directory.
-	 *                            excluding the .js extension.
-	 * @param string[] $deps      Optional. An array of registered script handles this script depends on. If not set, the dependencies will be inherited from the asset file.
-	 * @param ?string  $ver       Optional. String specifying script version number, if not set, the version will be inherited from the asset file.
-	 * @param bool     $in_footer Optional. Whether to enqueue the script before </body> instead of in the <head>.
+	 * @param non-empty-string $handle    Name of the script. Should be unique.
+	 * @param string           $filename  Path of the script relative to js directory.
+	 *                                      excluding the .js extension.
+	 * @param string[]         $deps      Optional. An array of registered script handles this script depends on. If not set, the dependencies will be inherited from the asset file.
+	 * @param ?string          $ver       Optional. String specifying script version number, if not set, the version will be inherited from the asset file.
+	 * @param bool             $in_footer Optional. Whether to enqueue the script before </body> instead of in the <head>.
 	 */
 	private function register_script( string $handle, string $filename, array $deps = [], $ver = null, bool $in_footer = true ): bool {
 		$asset_file = sprintf( '%s/%s.asset.php', $this->plugin_dir . untrailingslashit( self::ASSETS_DIR ), $filename );

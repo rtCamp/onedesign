@@ -5,6 +5,8 @@
  * @package OneDesign
  */
 
+declare(strict_types = 1);
+
 namespace OneDesign\Modules\Post_Types;
 
 use OneDesign\Contracts\Interfaces\Registrable;
@@ -13,7 +15,6 @@ use OneDesign\Contracts\Interfaces\Registrable;
  * Base class to register post types.
  */
 abstract class Abstract_Post_Type implements Registrable {
-
 	/**
 	 * Get slug of post type.
 	 *

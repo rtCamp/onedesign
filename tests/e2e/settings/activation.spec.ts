@@ -38,15 +38,12 @@ test.describe( 'plugin activation', () => {
 		// Dismiss modal before interacting with plugin row.
 		await dismissOnboardingModal();
 
-		// `hasText` does a substring match, so filtering by "Activate" would
-		// also match a "Deactivate" link — key off the action in the href instead.
 		const activateLink = pluginRow.locator( 'a[href*="action=activate"]' );
 		const deactivateLink = pluginRow.locator(
 			'a[href*="action=deactivate"]'
 		);
 
-		// wp-env activates mapped plugins on start, so the plugin may already
-		// be active — normalize to a known "inactive" starting state first.
+		// wp-env activates mapped plugins on start, so the plugin may already be active — normalize to a known "inactive" starting state first.
 		if ( await deactivateLink.isVisible() ) {
 			await Promise.all( [
 				page.waitForURL( /plugins.php/ ),

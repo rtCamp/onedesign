@@ -5,13 +5,14 @@
  * @package OneDesign
  */
 
+declare(strict_types = 1);
+
 namespace OneDesign\Modules\Post_Types;
 
 /**
  * Class Template
  */
 class Template extends Abstract_Post_Type {
-
 	/**
 	 * {@inheritDoc}
 	 */

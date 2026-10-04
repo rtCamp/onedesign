@@ -1,6 +1,6 @@
-# Contributing to the OneDesign
+# Contributing to OneDesign
 
-Thank you for considering contributing to OneDesign! We appreciate your help in improving this open-source project.
+Thank you for your interest in contributing to OneDesign! We welcome contributions from the community to help improve the project. This document outlines how you can contribute, including reporting issues, submitting code, and our code of conduct.
 
 ## Code of Conduct
 
@@ -22,7 +22,7 @@ If you find a bug or have a feature request, please open an issue in the [GitHub
 2. Steps to reproduce the issue.
 3. Any relevant screenshots or logs.
 
-In general, we recommend you adhere to the GitHub issue templates included in this repository whenever possible.
+In general, we recommend you **adhere to the GitHub issue templates** included in this repository whenever possible.
 
 > [!TIP]
 >
@@ -32,34 +32,32 @@ In general, we recommend you adhere to the GitHub issue templates included in th
 
 ### Submitting Code
 
+> [!TIP]
+> For detailed information on the project's directory structure, local development setup, and testing processes, refer to the [DEVELOPMENT.md](./DEVELOPMENT.md) document.
+
 1. **Fork the repository**: Click the "`Fork`" button in the top right corner of the repository page to create your own copy of the project.
 
 2. **Make your changes**: Implement the changes you'd like to contribute. Ensure that your code adheres to the project's [coding standards and guidelines](./DEVELOPMENT.md#code-quality--code-standards).
 
-> [!TIP]
-> For detailed information on the project's directory structure, local development setup, and testing processes, refer to the [DEVELOPMENT.md](./DEVELOPMENT.md) document.
-
-3. **Write tests**: If possible, add/update the necessary Integration/Functional/etc. tests for your changes to ensure that everything works correctly.
+3. **Write tests**: If possible, add or update the necessary Integration/Functional/etc. tests for your changes to ensure that everything works correctly.
 
 4. **Commit and push your changes**: Once you're satisfied with your changes, commit them to your forked repository and push them to your branch.
 
-5. **Create a pull request**: Submit a `Pull Request` to the `develop` branch of this repository. Select your branch and provide a detailed description of your changes.
-   Pull Request titles should be concise, descriptive, and follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format. E.g., `feat: Add new feature`.
+5. **Create a pull request**: Submit a `Pull Request` to the `main` branch of this repository. Select your branch and provide a detailed description of your changes.
 
-#### Review Process
+   Pull Request titles should be concise and descriptive. They must follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format. E.g., `feat: Add new feature`.
+
+### Review Process
 
 1. Your pull request will be reviewed by a maintainer. We'll review all PRs, and make suggestions or changes as needed.
-2. Once approved, your PR will be squashed and merged into the `develop` branch.
+2. Once approved, your PR will be **squash-merged** into the `main` branch.
 
-## Thank You!
+### Contributing Documentation
+
+We aim to maintain thorough documentation for all aspects of the project. Please contribute by documenting any new features, endpoints, or functionalities you implement.
+
+You can refer to existing documentation in the [`docs`](../docs) directory for examples of how to structure and format your documentation.
+
+## Thank You
 
 We appreciate your time and contributions to the `OneDesign` project. Your efforts help make this project better for everyone!
-To contribute:
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/your-feature-name`
-3. Commit your changes: `git commit -m 'Add some feature'`
-4. Push to the branch: `git push origin feature/your-feature-name`
-5. Open a Pull Request
-
-Please make sure to follow our coding standards and best practices.

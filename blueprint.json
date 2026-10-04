@@ -4,12 +4,7 @@
 		"title": "OneDesign Demo",
 		"description": "Synchronize block patterns across multiple WordPress sites. Create once, deploy anywhere with centralized pattern management for enterprise teams.",
 		"author": "rtCamp",
-		"categories": [
-			"plugin",
-			"multisite",
-			"patterns",
-			"enterprise"
-		]
+		"categories": [ "plugin", "multisite", "patterns", "enterprise" ]
 	},
 	"landingPage": "/wp-admin/plugins.php",
 	"preferredVersions": {

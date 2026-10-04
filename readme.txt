@@ -7,7 +7,7 @@ Tested up to: 6.9
 <!-- x-release-please-start-version -->
 Stable tag: 1.1.3
 <!-- x-release-please-end -->
-Requires PHP: 8.0
+Requires PHP: 8.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -111,7 +111,7 @@ All blocks used in the patterns must be available on all target sites. Ensure co
 
 == Changelog ==
 
-For the full changelog, please visit <a href="https://github.com/rtCamp/OneDesign/blob/main/CHANGELOG.md" target="_blank">GitHub repository</a>.
+For the full changelog, please visit <a href="https://github.com/rtCamp/onedesign/blob/main/CHANGELOG.md" target="_blank">GitHub repository</a>.
 
 == Upgrade Notice ==
 
@@ -124,10 +124,10 @@ For the full changelog, please visit <a href="https://github.com/rtCamp/OneDesig
 
 == Support ==
 
-For support, feature requests, and bug reports, please visit our [GitHub repository](https://github.com/rtCamp/OneDesign).
+For support, feature requests, and bug reports, please visit our [GitHub repository](https://github.com/rtCamp/onedesign).
 
 == Contributing ==
 
-OneDesign is open source and welcomes contributions. Visit our [GitHub repository](https://github.com/rtCamp/OneDesign) to contribute code, report issues, or suggest features.
+OneDesign is open source and welcomes contributions. Visit our [GitHub repository](https://github.com/rtCamp/onedesign) to contribute code, report issues, or suggest features.
 
 Development guidelines and contributing information can be found in our repository documentation.

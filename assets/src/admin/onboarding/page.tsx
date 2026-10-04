@@ -43,6 +43,8 @@ const SiteTypeSelector = ( {
 		onChange={ ( v ) => {
 			setSiteType( v );
 		} }
+		__nextHasNoMarginBottom
+		__next40pxDefaultSize
 		options={ [
 			{ label: __( 'Select…', 'onedesign' ), value: '' },
 			{ label: __( 'Brand Site', 'onedesign' ), value: BRAND_SITE },
@@ -66,7 +68,7 @@ const OnboardingScreen = () => {
 		initialSiteType || ''
 	);
 	const [ notice, setNotice ] = useState< NoticeState | null >( null );
-	const [ isSaving, setIsSaving ] = useState< boolean >( false );
+	const [ isSaving, setIsSaving ] = useState( false );
 
 	useEffect( () => {
 		apiFetch.use( apiFetch.createNonceMiddleware( nonce ) );
@@ -84,7 +86,7 @@ const OnboardingScreen = () => {
 					message: __( 'Error fetching site type.', 'onedesign' ),
 				} );
 			} );
-	} );
+	}, [ nonce ] ); // for initial component mount (the nonce never changes)
 
 	const handleSiteTypeChange = async ( value: SiteType | '' ) => {
 		// Optimistically set site type.

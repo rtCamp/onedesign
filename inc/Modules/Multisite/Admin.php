@@ -5,6 +5,8 @@
  * @package OneDesign
  */
 
+declare(strict_types = 1);
+
 namespace OneDesign\Modules\Multisite;
 
 use OneDesign\Contracts\Interfaces\Registrable;
@@ -15,7 +17,6 @@ use OneDesign\Modules\Multisite\Settings as MU_Settings;
  * Class Admin
  */
 class Admin implements Registrable {
-
 	/**
 	 * {@inheritDoc}
 	 */
@@ -36,10 +37,8 @@ class Admin implements Registrable {
 
 	/**
 	 * Enqueue admin scripts.
-	 *
-	 * @param string $hook Current admin page hook.
 	 */
-	public function enqueue_scripts( string $hook ): void {
+	public function enqueue_scripts(): void {
 		$current_screen = get_current_screen();
 
 		if ( ! $current_screen instanceof \WP_Screen || 'plugins-network' !== $current_screen->id || MU_Settings::is_governing_site_selected() ) {
@@ -64,8 +63,6 @@ class Admin implements Registrable {
 
 	/**
 	 * Render governing site selection modal.
-	 *
-	 * @return void
 	 */
 	public function render_governing_site_modal(): void {
 

@@ -1,12 +1,11 @@
 # Automatically normalize line endings.
 * text=auto
 
-# Directories to exclude from `git archive` / `composer archive`.
+# Files and directories to exclude from `composer require`.
 /.github export-ignore
-/assets export-ignore
-/docs export-ignore
-/tests export-ignore
-/wp-assets export-ignore
+/.wordpress-org export-ignore
+/src export-ignore
+/tests/ export-ignore
 
 # Don't include the dotfiles for distribution.
 /.* export-ignore
@@ -17,9 +16,19 @@
 /composer.lock export-ignore
 /package-lock.json export-ignore
 /package.json export-ignore
-/phpcs.xml.dist export-ignore
 /phpstan.neon.dist export-ignore
 /phpunit.xml.dist export-ignore
+/playwright.config.ts export-ignore
 /release-please-config.json export-ignore
+/stylelint.config.js export-ignore
+/tsconfig.base.json export-ignore
 /tsconfig.json export-ignore
 /webpack.config.js export-ignore
+
+# Mark docs as documentation for GitHub Linguist.
+/docs/ linguist-documentation export-ignore
+/CHANGELOG.md export-ignore
+
+# Keep license and readme files.
+/LICENSE.md linguist-documentation
+/README.md linguist-documentation

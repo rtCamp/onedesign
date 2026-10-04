@@ -188,10 +188,9 @@ const PatternModal = (): JSX.Element => {
 		const categoryFiltered =
 			activeCategory === 'All'
 				? basePatterns
-				: basePatterns.filter(
-						( pattern ) =>
-							pattern.categories?.includes( activeCategory )
-				  );
+				: basePatterns.filter( ( pattern ) =>
+						pattern.categories?.includes( activeCategory )
+					);
 
 		if ( ! searchTerm.trim() ) {
 			return categoryFiltered;
@@ -315,10 +314,9 @@ const PatternModal = (): JSX.Element => {
 		const categoryFiltered =
 			activeCategory === 'All'
 				? currentTabAppliedPatterns
-				: currentTabAppliedPatterns.filter(
-						( pattern ) =>
-							pattern.categories?.includes( activeCategory )
-				  );
+				: currentTabAppliedPatterns.filter( ( pattern ) =>
+						pattern.categories?.includes( activeCategory )
+					);
 
 		if ( ! searchTerm.trim() ) {
 			return categoryFiltered;
@@ -506,7 +504,8 @@ const PatternModal = (): JSX.Element => {
 							basePatterns={
 								activeTab === 'basePatterns'
 									? basePatterns
-									: allBrandSitePatterns[ activeTab ] ?? []
+									: ( allBrandSitePatterns[ activeTab ] ??
+										[] )
 							}
 						/>
 

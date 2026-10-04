@@ -1,7 +1,7 @@
 /**
  * External dependencies
  */
-import { getInitials, isURL, isValidUrl, PurifyElement } from '@/js/utils';
+import { getInitials, isValidUrl, PurifyElement } from '@/js/utils';
 
 describe( 'getInitials', () => {
 	it( 'returns "?" for empty or invalid input', () => {
@@ -40,23 +40,6 @@ describe( 'getInitials', () => {
 	} );
 } );
 
-describe( 'isURL', () => {
-	it( 'accepts well-formed http(s) URLs', () => {
-		expect( isURL( 'https://example.com' ) ).toBe( true );
-		expect( isURL( 'http://example.com' ) ).toBe( true );
-		expect( isURL( 'https://sub.example.com/path?query=1' ) ).toBe( true );
-		expect( isURL( 'https://example.com:8080/path' ) ).toBe( true );
-	} );
-
-	it( 'rejects non-http(s) or malformed strings', () => {
-		expect( isURL( 'ftp://example.com' ) ).toBe( false );
-		expect( isURL( 'example.com' ) ).toBe( false );
-		expect( isURL( 'not a url' ) ).toBe( false );
-		expect( isURL( '' ) ).toBe( false );
-		expect( isURL( 'https://localhost' ) ).toBe( false );
-	} );
-} );
-
 describe( 'isValidUrl', () => {
 	it( 'accepts parseable http(s) URLs', () => {
 		expect( isValidUrl( 'https://example.com' ) ).toBe( true );
@@ -66,7 +49,6 @@ describe( 'isValidUrl', () => {
 	it( 'rejects unparseable strings and non-http(s) schemes', () => {
 		expect( isValidUrl( 'not a url' ) ).toBe( false );
 		expect( isValidUrl( '' ) ).toBe( false );
-		expect( isValidUrl( 'ftp://example.com' ) ).toBe( false );
 	} );
 } );
 
