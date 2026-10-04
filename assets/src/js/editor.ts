@@ -1,0 +1,5 @@
+/**
+ * Editor Script
+ */
+
+export {};

@@ -1,4 +1,10 @@
+/**
+ * External dependencies
+ */
 import { createRoot } from 'react-dom/client';
+/**
+ * Internal dependencies
+ */
 import OnboardingScreen, { type SiteType } from './page';
 
 interface OneDesignSettings {

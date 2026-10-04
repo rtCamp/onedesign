@@ -1,0 +1,47 @@
+{
+	"$schema": "https://json.schemastore.org/tsconfig.json",
+
+	"compilerOptions": {
+		"allowJs": true,
+		"checkJs": true,
+
+		// Type checking.
+		"strict": true,
+		"allowUnreachableCode": false,
+		"allowUnusedLabels": false,
+		"exactOptionalPropertyTypes": true,
+		"noErrorTruncation": true,
+		"noFallthroughCasesInSwitch": true,
+		"noImplicitOverride": true,
+		"noImplicitReturns": true,
+		"noPropertyAccessFromIndexSignature": true,
+		"noUncheckedIndexedAccess": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+
+		// Modules
+		"module": "preserve",
+		"moduleResolution": "bundler",
+		"resolveJsonModule": true,
+
+		// Interop Constraints
+		"esModuleInterop": true,
+		"isolatedModules": true,
+		// @todo: make true when we can use `type: "module"` in package.json
+		"verbatimModuleSyntax": false,
+
+		// Language and Environment
+		"jsx": "react-jsx",
+		"lib": [ "ES2022", "DOM.Iterable", "DOM" ],
+		"moduleDetection": "force",
+		"target": "ES2022",
+
+		// Projects
+		"composite": true,
+		"disableSourceOfProjectReferenceRedirect": true,
+		"incremental": true,
+
+		// Completeness
+		"skipLibCheck": true
+	}
+}

@@ -19,16 +19,15 @@ const sharedConfig = {
 		filename: '[name].js',
 		chunkFilename: '[name].js',
 	},
-	plugins: [
-		...defaultConfig.plugins,
-		new RemoveEmptyScriptsPlugin(),
-	],
+	plugins: [ ...defaultConfig.plugins, new RemoveEmptyScriptsPlugin() ],
 	optimization: {
 		...defaultConfig.optimization,
 		splitChunks: {
 			...defaultConfig.optimization.splitChunks,
 		},
-		minimizer: defaultConfig.optimization.minimizer.concat( [ new CssMinimizerPlugin() ] ),
+		minimizer: defaultConfig.optimization.minimizer.concat( [
+			new CssMinimizerPlugin(),
+		] ),
 	},
 };
 
@@ -59,7 +58,8 @@ const styles = {
 	},
 	plugins: [
 		...sharedConfig.plugins.filter(
-			( plugin ) => plugin.constructor.name !== 'DependencyExtractionWebpackPlugin',
+			( plugin ) =>
+				plugin.constructor.name !== 'DependencyExtractionWebpackPlugin'
 		),
 	],
 };
@@ -67,14 +67,55 @@ const styles = {
 const scripts = {
 	...sharedConfig,
 	entry: {
-		main: path.resolve( process.cwd(), 'assets', 'src', 'js', 'main.js' ),
-		editor: path.resolve( process.cwd(), 'assets', 'src', 'js', 'editor.js' ),
-		admin: path.resolve( process.cwd(), 'assets', 'src', 'js', 'admin.js' ),
-		'templates-library': path.resolve( process.cwd(), 'assets', 'src', 'admin', 'templates', 'index.js' ),
-		'patterns-library': path.resolve( process.cwd(), 'assets', 'src', 'admin', 'patterns', 'index.js' ),
-		settings: path.resolve( process.cwd(), 'assets', 'src', 'admin', 'settings', 'index.js' ),
-		onboarding: path.resolve( process.cwd(), 'assets', 'src', 'admin', 'onboarding', 'index.tsx' ),
-		'multisite-plugin': path.resolve( process.cwd(), 'assets', 'src', 'admin', 'multisite-plugin', 'index.js' ),
+		main: path.resolve( process.cwd(), 'assets', 'src', 'js', 'main.ts' ),
+		editor: path.resolve(
+			process.cwd(),
+			'assets',
+			'src',
+			'js',
+			'editor.ts'
+		),
+		admin: path.resolve( process.cwd(), 'assets', 'src', 'js', 'admin.ts' ),
+		'templates-library': path.resolve(
+			process.cwd(),
+			'assets',
+			'src',
+			'admin',
+			'templates',
+			'index.ts'
+		),
+		'patterns-library': path.resolve(
+			process.cwd(),
+			'assets',
+			'src',
+			'admin',
+			'patterns',
+			'index.ts'
+		),
+		settings: path.resolve(
+			process.cwd(),
+			'assets',
+			'src',
+			'admin',
+			'settings',
+			'index.tsx'
+		),
+		onboarding: path.resolve(
+			process.cwd(),
+			'assets',
+			'src',
+			'admin',
+			'onboarding',
+			'index.tsx'
+		),
+		'multisite-plugin': path.resolve(
+			process.cwd(),
+			'assets',
+			'src',
+			'admin',
+			'multisite-plugin',
+			'index.tsx'
+		),
 	},
 	module: {
 		rules:

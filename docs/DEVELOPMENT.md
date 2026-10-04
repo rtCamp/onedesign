@@ -9,14 +9,19 @@ Code contributions, bug reports, and feature requests are welcome! The following
   - [Directory Structure](#directory-structure)
   - [Local setup](#local-setup)
     - [Prerequisites](#prerequisites)
-    - [Building OneDesign Packages](#building-onedesign-packages)
+    - [Installation](#installation)
+    - [Useful Commands](#useful-commands)
+    - [Running Tests](#running-tests)
+    - [Building the plugin for distribution](#building-the-plugin-for-distribution)
   - [Code Contributions (Pull Requests)](#code-contributions-pull-requests)
     - [Workflow](#workflow)
     - [Code Quality / Code Standards](#code-quality--code-standards)
+      - [PHP_CodeSniffer](#php_codesniffer)
+      - [PHPStan](#phpstan)
       - [ESLint](#eslint)
-  - [Changesets](#changesets)
+      - [TypeScript](#typescript)
+      - [Stylelint](#stylelint)
   - [Releasing](#releasing)
-    - [Release Commands](#release-commands)
 
 ## Directory Structure
 
@@ -29,69 +34,69 @@ Code contributions, bug reports, and feature requests are welcome! The following
 │
 │   # Non-php plugin assets.
 ├── assets
-│   └── src
+│   └── src            # TypeScript (.ts/.tsx) sources.
 │       ├── admin
 │       │   ├── multisite-plugin
-│       │   │   └── index.js
+│       │   │   └── index.tsx
 │       │   ├── onboarding
 │       │   │   ├── index.tsx
 │       │   │   └── page.tsx
 │       │   ├── patterns
-│       │   │   ├── App.js
+│       │   │   ├── App.tsx
 │       │   │   ├── components
-│       │   │   │   ├── AppliedPatternsTab.js
-│       │   │   │   ├── BasePatternsTab.js
-│       │   │   │   ├── Category.js
-│       │   │   │   ├── MemoizedPatternPreview.js
-│       │   │   │   ├── PatternModal.js
-│       │   │   │   └── SiteSelection.js
-│       │   │   ├── index.js
-│       │   │   └── pattern-event.js
+│       │   │   │   ├── AppliedPatternsTab.tsx
+│       │   │   │   ├── BasePatternsTab.tsx
+│       │   │   │   ├── Category.tsx
+│       │   │   │   ├── MemoizedPatternPreview.tsx
+│       │   │   │   ├── PatternModal.tsx
+│       │   │   │   └── SiteSelection.tsx
+│       │   │   ├── index.ts
+│       │   │   └── pattern-event.ts
 │       │   ├── plugin
-│       │   │   └── index.js
+│       │   │   └── index.tsx
 │       │   ├── settings
-│       │   │   ├── components/
-│       │   │   └── index.js
+│       │   │   └── index.tsx
 │       │   └── templates
-│       │       ├── App.js
+│       │       ├── App.tsx
 │       │       ├── components
-│       │       │   ├── BaseSiteTemplates.js
-│       │       │   ├── BrandSiteTemplates.js
-│       │       │   ├── MemoizedTemplatePreview.js
-│       │       │   ├── SiteSelection.js
-│       │       │   └── TemplateModal.js
-│       │       ├── index.js
-│       │       └── template-event.js
+│       │       │   ├── BaseSiteTemplates.tsx
+│       │       │   ├── BrandSiteTemplates.tsx
+│       │       │   ├── MemoizedTemplatePreview.tsx
+│       │       │   ├── SiteSelection.tsx
+│       │       │   └── TemplateModal.tsx
+│       │       ├── index.ts
+│       │       └── template-event.ts
 │       ├── components
-│       │   ├── Dashicons.js
-│       │   ├── MultiSites.js
-│       │   ├── SiteModal.js
-│       │   ├── SiteSettings.js
-│       │   └── SiteTable.js
+│       │   ├── Dashicons.tsx
+│       │   ├── MultiSites.tsx
+│       │   ├── SiteModal.tsx
+│       │   ├── SiteSettings.tsx
+│       │   └── SiteTable.tsx
 │       ├── css
 │       │   ├── admin.scss
 │       │   ├── editor.scss
 │       │   ├── onboarding.scss
 │       │   └── template.scss
 │       ├── hooks
-│       │   └── useSitesManagement.js
+│       │   └── useSitesManagement.ts
 │       ├── images
 │       │   └── logo.svg
 │       ├── js
-│       │   ├── admin.js
-│       │   ├── constants.js
-│       │   ├── editor.js
-│       │   ├── main.js
-│       │   └── utils.js
+│       │   ├── admin.ts
+│       │   ├── constants.ts
+│       │   ├── editor.ts
+│       │   ├── main.ts
+│       │   └── utils.ts
 │       ├── store
-│       │   └── index.js
-│       └── types/
+│       │   └── index.ts
+│       └── types           # Ambient type declarations (*.d.ts).
+│           └── wordpress-block-editor.d.ts
 │
 │   # Project documentation.
 ├── docs/
 │   ├── CODE_OF_CONDUCT.md
-│   ├── CONTRIBUTING.md     # 👈 You are here.
-│   ├── DEVELOPMENT.md
+│   ├── CONTRIBUTING.md
+│   ├── DEVELOPMENT.md      # 👈 You are here.
 │   └── SECURITY.md
 │
 │   # PHP source files.
@@ -132,6 +137,7 @@ Code contributions, bug reports, and feature requests are welcome! The following
 │   # Tests
 ├── tests/
 │   ├── _output/ # Generated results and caches.
+│   ├── js/      # Jest unit tests (*.test.ts/*.test.tsx) + setup.ts and tsconfig.json.
 │   ├── phpunit/ # PHPUnit tests.
 │   │
 │   └── bootstrap.php # PHPUnit bootstrapper
@@ -151,17 +157,25 @@ Code contributions, bug reports, and feature requests are welcome! The following
 │
 │   # Important config files.
 │   # .dist suffixes mean there may be a user-customized version without the suffix.
+├── .browserslistrc
 ├── .editorconfig
-├── .eslintrc.json
 ├── .nvmrc
+├── .prettierignore
+├── .prettierrc.js
+├── .stylelintignore
 ├── .wp-env.json
 ├── babel.config.js
 ├── composer.json
+├── eslint.config.mjs   # ESLint flat config.
+├── jest.config.js
 ├── package.json
 ├── phpcs.xml.dist
 ├── phpstan.neon.dist
+├── phpunit.xml.dist
 ├── README.md
-├── tsconfig.json
+├── stylelint.config.js
+├── tsconfig.base.json  # Shared compiler options.
+├── tsconfig.json       # Type-checking config (extends tsconfig.base.json).
 └── webpack.config.js
 
 ```
@@ -219,16 +233,20 @@ The WordPress development site will be available at <http://localhost:8888> and 
 
 #### Accessing the Local Environment
 
-- `npm run wp-env start`: Start the local development environment.
+- `npm run wp-env start`: Start the governing site environment (port 8888).
+- `npm run wp-env:child start`: Start the brand/child site environment (port 8890).
+- `npm run wp-env:test start`: Start the isolated test environment (port 8889).
 - `npm run wp-env stop`: Stop the local development environment.
-- `npm run wp-env run tests-cli YOUR_CMD_HERE`: Run WP-CLI commands in the local environment.
+- `npm run wp-env run cli -- --env-cwd=wp-content/plugins/onedesign YOUR_CMD_HERE`: Run WP-CLI or PHP tooling in the local environment.
 
 For more information on using `wp-env`, see the [wp-env documentation](https://developer.wordpress.org/block-editor/packages/packages-env/).
 
 #### Linting and Formatting
 
-- `npm run lint:css`:      Runs stylelint on the CSS code.
-- `npm run lint:js`:       Runs ESLint on the JavaScript code.
+- `npm run lint`:          Runs all of the linters below in parallel.
+- `npm run lint:css`:      Runs Stylelint on the SCSS/CSS code.
+- `npm run lint:css:fix`:  Autofixes Stylelint issues.
+- `npm run lint:js`:       Runs ESLint on the TypeScript/JavaScript code.
 - `npm run lint:js:fix`:   Autofixes ESLint issues.
 - `npm run lint:js:types`: Runs TypeScript's `tsc` to check for type errors.
 - `npm run lint:php`:      Runs PHPCS linting on the PHP code.
@@ -236,6 +254,22 @@ For more information on using `wp-env`, see the [wp-env documentation](https://d
 - `npm run lint:php:stan`: Runs PHPStan static analysis on the PHP code.
 
 ### Running Tests
+
+#### JavaScript / TypeScript
+
+Jest unit tests live in `tests/js` and are configured in [`jest.config.js`](../jest.config.js):
+
+```bash
+npm run test:js
+
+# Watch mode:
+npm run test:js:watch
+
+# With a coverage report:
+npm run test:js:coverage
+```
+
+#### PHP
 
 PHPUnit tests can be run using the following command:
 
@@ -246,7 +280,7 @@ npm run test:php
 To generate a code coverage report, make sure to start the testing environment with coverage mode enabled:
 
 ```bash
-npm run wp-env start -- --xdebug=coverage
+npm run wp-env:test start -- --xdebug=coverage
 
 npm run test:php
 ```
@@ -316,32 +350,46 @@ npm run lint:php:stan
 
 #### ESLint
 
-This project uses [ESLint](https://eslint.org) through `@wordpress/scripts` and `@wordpress/eslint-plugin` for JavaScript linting, following WordPress coding standards and best practices.
+This project uses [ESLint](https://eslint.org) through `@wordpress/scripts`, `@wordpress/eslint-plugin` and `typescript-eslint` for TypeScript/JavaScript linting, following WordPress coding standards and best practices.
 
-Our specific ESLint configuration is defined in the [`.eslintrc.json`](../.eslintrc.json) file.
+Our specific ESLint configuration is defined in the [`eslint.config.mjs`](../eslint.config.mjs) file, using ESLint's [flat config](https://eslint.org/docs/latest/use/configure/configuration-files) format.
 
-You can run ESLint on JavaScript files using:
+You can run ESLint using:
 
 ```bash
 npm run lint:js
 ```
 
-To automatically fix JavaScript linting issues:
+To automatically fix linting issues:
 
 ```bash
 npm run lint:js:fix
 ```
 
+#### TypeScript
+
+All front-end source lives in `assets/src` and is written in TypeScript. Compiler options are shared through [`tsconfig.base.json`](../tsconfig.base.json) and extended by [`tsconfig.json`](../tsconfig.json) (type-checking only, `noEmit`) and [`tests/js/tsconfig.json`](../tests/js/tsconfig.json) (test files). Webpack handles the actual transpilation, so type-checking is a separate step:
+
+```bash
+npm run lint:js:types
+```
+
 #### Stylelint
 
-This project uses [Stylelint](https://stylelint.io/) through `@wordpress/scripts` for CSS linting, following WordPress coding standards and best practices.
+This project uses [Stylelint](https://stylelint.io/) through `@wordpress/scripts` for SCSS/CSS linting, following WordPress coding standards and best practices.
 
-Our specific Stylelint configuration is defined in the [`.stylelintrc.json`](../.stylelintrc.json) file.
+Our specific Stylelint configuration is defined in the [`stylelint.config.js`](../stylelint.config.js) file, with ignored paths in [`.stylelintignore`](../.stylelintignore).
 
-You can run Stylelint on CSS files using:
+You can run Stylelint on the stylesheets using:
 
 ```bash
 npm run lint:css
+```
+
+To automatically fix Stylelint issues:
+
+```bash
+npm run lint:css:fix
 ```
 
 ## Releasing

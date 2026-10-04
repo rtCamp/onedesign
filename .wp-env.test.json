@@ -1,0 +1,16 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/wp-env.json",
+
+	"core": null,
+	"port": 8889,
+	"testsEnvironment": false,
+	"plugins": [ ".", "./tests/_data/plugins/localhost-helper" ],
+	"config": {
+		"FS_METHOD": "direct",
+		"WP_DEBUG": true,
+		"WP_DEBUG_LOG": "/var/www/html/wp-content/plugins/onedesign/tests/_output/debug-test.log"
+	},
+	"mappings": {
+		"wp-content/plugins/onedesign": "."
+	}
+}
