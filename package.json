@@ -59,8 +59,8 @@
 		"build:js": "wp-scripts build --config ./webpack.config.js",
 		"build:prod": "npm run clean && cross-env NODE_ENV=production npm-run-all 'build:!(dev|prod)' && composer install --no-dev --optimize-autoloader",
 		"clean": "rimraf build",
-		"i18n:make-pot": "wp-env run cli wp i18n make-pot . ./languages/onedesign.pot --exclude=node_modules,vendor,tests --ignore-domain=default",
-		"i18n:make-json": "wp-env run cli wp i18n make-json languages/ --no-purge",
+		"i18n:make-pot": "wp-env run cli --env-cwd=wp-content/plugins/$(basename \"$(pwd)\")/ -- wp i18n make-pot . ./languages/onedesign.pot --exclude=node_modules,vendor,tests,build --ignore-domain=default",
+		"i18n:make-json": "wp-env run cli --env-cwd=wp-content/plugins/$(basename \"$(pwd)\")/ -- wp i18n make-json languages/ --no-purge",
 		"lint:css": "wp-scripts lint-style",
 		"lint:css:fix": "npm run lint:css -- --fix",
 		"lint:js:fix": "npm run lint:js -- --fix",
@@ -74,7 +74,8 @@
 		"start:js": "wp-scripts start --config ./webpack.config.js",
 		"start": "npm-run-all --parallel start:*",
 		"test:php": "wp-env run tests-cli --env-cwd=wp-content/plugins/$(basename \"$(pwd)\")/ composer run-script test",
-		"wp-env": "wp-env"
+		"wp-env": "wp-env",
+		"wp-env:child": "wp-env --config=.wp-env.child.json"
 	},
 	"overrides": {
 		"@babel/runtime": "^7.27.6",

@@ -1,0 +1,55 @@
+name: Run Jest Tests
+
+on:
+    workflow_call:
+        inputs:
+            coverage:
+                description: 'Enable code coverage'
+                required: false
+                type: boolean
+                default: true
+
+permissions: {}
+
+jobs:
+    jest:
+        name: Jest Unit Tests${{ inputs.coverage && ' with coverage' || '' }}
+        runs-on: ubuntu-24.04
+        timeout-minutes: 10
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+              with:
+                  show-progress: ${{ runner.debug == '1' && 'true' || 'false' }}
+                  persist-credentials: false
+
+            - name: Setup Node.js
+              uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+              with:
+                  node-version-file: '.nvmrc'
+                  cache: 'npm'
+
+            - name: Install npm dependencies
+              run: npm ci
+
+            - name: Run Jest tests${{ inputs.coverage && ' with coverage' || '' }}
+              run: npm run test:js${{ inputs.coverage && ':coverage' || '' }}
+
+            - name: Upload code coverage report to Codecov
+              if: ${{ inputs.coverage }}
+              uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+              with:
+                  token: ${{ secrets.CODECOV_TOKEN }}
+                  files: tests/_output/js-coverage/lcov.info
+                  flags: jest
+                  fail_ci_if_error: false
+
+            - name: Upload HTML coverage report as artifact
+              if: ${{ inputs.coverage }}
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+              with:
+                  name: jest-code-coverage
+                  path: tests/_output/js-coverage/lcov-report
+                  retention-days: 7
+                  if-no-files-found: ignore

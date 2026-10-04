@@ -1,0 +1,25 @@
+# Automatically normalize line endings.
+* text=auto
+
+# Directories to exclude from `git archive` / `composer archive`.
+/.github export-ignore
+/assets export-ignore
+/docs export-ignore
+/tests export-ignore
+/wp-assets export-ignore
+
+# Don't include the dotfiles for distribution.
+/.* export-ignore
+
+# Root files that are not needed for distribution.
+/babel.config.js export-ignore
+/blueprint.json export-ignore
+/composer.lock export-ignore
+/package-lock.json export-ignore
+/package.json export-ignore
+/phpcs.xml.dist export-ignore
+/phpstan.neon.dist export-ignore
+/phpunit.xml.dist export-ignore
+/release-please-config.json export-ignore
+/tsconfig.json export-ignore
+/webpack.config.js export-ignore

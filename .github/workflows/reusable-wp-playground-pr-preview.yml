@@ -1,0 +1,123 @@
+name: Run WordPress Playground PR Preview
+
+on:
+    workflow_call:
+        inputs:
+            run-id:
+                description: 'The workflow run ID to download artifacts from'
+                required: true
+                type: string
+            artifact-prefix:
+                description: 'Prefix for the artifact name (e.g., onedesign-pr)'
+                required: false
+                type: string
+                default: 'onedesign-pr'
+            artifact-filename:
+                description: 'Filename of the zip inside the artifact'
+                required: false
+                type: string
+                default: 'onedesign.zip'
+            artifacts-to-keep:
+                description: 'Number of artifacts to keep per PR'
+                required: false
+                type: string
+                default: '2'
+
+permissions: {}
+
+jobs:
+    playground-preview:
+        name: Post Playground Preview
+        runs-on: ubuntu-24.04
+        permissions:
+            actions: read
+            contents: write
+            pull-requests: write
+
+        steps:
+            - name: Extract PR metadata and artifact info
+              id: pr-metadata
+              uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+              with:
+                  script: |
+                      const prefix = '${{ inputs.artifact-prefix }}';
+
+                      const run = await github.rest.actions.getWorkflowRun({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        run_id: ${{ inputs.run-id }},
+                      });
+
+                      const pulls = run.data.pull_requests;
+                      if (!pulls || pulls.length === 0) {
+                        core.setFailed('No pull request found in workflow_run');
+                        return;
+                      }
+                      const prNumber = pulls[0].number;
+                      const commitSha = run.data.head_sha;
+
+                      const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        run_id: ${{ inputs.run-id }},
+                      });
+
+                      const artifact = artifacts.data.artifacts.find(a =>
+                        a.name.startsWith(prefix)
+                      );
+
+                      if (!artifact) {
+                        core.setFailed(`Could not find artifact with prefix: ${prefix}`);
+                        return;
+                      }
+
+                      core.setOutput('pr-number', prNumber.toString());
+                      core.setOutput('commit-sha', commitSha);
+                      core.setOutput('artifact-name', artifact.name);
+
+            - name: Expose built artifact on public URL
+              id: expose
+              uses: WordPress/action-wp-playground-pr-preview/.github/actions/expose-artifact-on-public-url@5e92f5e3c80d06126f22e83e4bb21221fbbd3e7f # v2
+              with:
+                  artifact-name: ${{ steps.pr-metadata.outputs.artifact-name }}
+                  artifact-filename: ${{ inputs.artifact-filename }}
+                  pr-number: ${{ steps.pr-metadata.outputs.pr-number }}
+                  commit-sha: ${{ steps.pr-metadata.outputs.commit-sha }}
+                  artifact-source-run-id: ${{ inputs.run-id }}
+                  artifacts-to-keep: ${{ inputs.artifacts-to-keep }}
+
+            - name: Checkout repository
+              uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+              with:
+                  sparse-checkout: blueprint.json
+                  sparse-checkout-cone-mode: false
+
+            - name: Generate Playground blueprint JSON
+              id: blueprint
+              run: |
+                  node - <<'NODE' >> "$GITHUB_OUTPUT"
+                  const fs = require('fs');
+                  const url = process.env.ARTIFACT_URL;
+                  if (!url) {
+                    throw new Error('ARTIFACT_URL is required');
+                  }
+
+                  // Load the base blueprint and update the plugin URL
+                  const blueprint = JSON.parse(fs.readFileSync('blueprint.json', 'utf8'));
+                  const installStep = blueprint.steps.find(s => s.step === 'installPlugin');
+                  if (installStep) {
+                    installStep.pluginData.url = url;
+                  }
+
+                  console.log(`blueprint=${JSON.stringify(blueprint)}`);
+                  NODE
+              env:
+                  ARTIFACT_URL: ${{ steps.expose.outputs.artifact-url }}
+
+            - name: Post Playground preview button
+              uses: WordPress/action-wp-playground-pr-preview@5e92f5e3c80d06126f22e83e4bb21221fbbd3e7f # v2
+              with:
+                  mode: append-to-description
+                  blueprint: ${{ steps.blueprint.outputs.blueprint }}
+                  pr-number: ${{ steps.pr-metadata.outputs.pr-number }}
+                  github-token: ${{ secrets.GITHUB_TOKEN }}

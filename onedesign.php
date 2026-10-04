@@ -10,7 +10,9 @@
  * License URI: https://www.gnu.org/licenses/gpl-2.0.txt
  * Text Domain: onedesign
  * Domain Path: /languages
+ * x-release-please-start-version
  * Version: 1.1.3
+ * x-release-please-end
  * Requires PHP: 8.0
  * Requires at least: 6.8
  * Tested up to: 6.9
@@ -30,7 +32,7 @@ function constants(): void {
 	/**
 	 * Version of the plugin.
 	 */
-	define( 'ONEDESIGN_VERSION', '1.1.3' );
+	define( 'ONEDESIGN_VERSION', '1.1.3' ); // x-release-please-version.
 
 	/**
 	 * Root path to the plugin directory.
