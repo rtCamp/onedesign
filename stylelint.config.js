@@ -10,5 +10,8 @@ module.exports = {
 		'**/*.php',
 		'**/*.svg',
 	],
-	rules: {},
+	rules: {
+		// Conflicts with Prettier, which strips the blank line before a first nested rule.
+		'rule-empty-line-before': null,
+	},
 };

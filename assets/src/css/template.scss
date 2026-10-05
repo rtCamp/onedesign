@@ -80,7 +80,6 @@
 	}
 
 	.onedesign-template-tabs {
-
 		.onedesign-base-templates-tab {
 			font-weight: 600;
 			padding: 0.5rem 1rem;
@@ -128,7 +127,7 @@
 }
 
 .onedesign-apply-templates-modal {
-
+	// stylelint-disable-next-line selector-class-pattern
 	.components-modal__content > div:nth-child(2) {
 		height: 100%;
 	}

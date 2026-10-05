@@ -126,6 +126,7 @@
 	}
 
 	.onedesign-tabs {
+		// stylelint-disable-next-line selector-class-pattern
 		.components-tab-panel__tabs {
 			overflow-x: auto;
 			scrollbar-width: thin; /* Firefox */
@@ -150,6 +151,7 @@
 			}
 		}
 
+		// stylelint-disable-next-line selector-class-pattern
 		.components-tab-panel__tabs-item {
 			margin-bottom: 0.5rem;
 			flex-shrink: 0;
@@ -236,6 +238,7 @@
 }
 
 .post-type-pattern-library {
+	// stylelint-disable-next-line selector-class-pattern
 	.editor-document-tools__left {
 		display: none;
 	}
@@ -480,10 +483,12 @@
 
 /* Pattern Removal Modal Styles */
 .onedesign-pattern-removal-modal {
+	// stylelint-disable-next-line selector-class-pattern
 	.components-modal__content {
 		padding: 24px;
 	}
 
+	// stylelint-disable-next-line selector-class-pattern
 	.components-modal__header {
 		margin-bottom: 16px;
 	}
@@ -517,6 +522,7 @@
 	max-width: 600px;
 	width: 90vw;
 
+	// stylelint-disable-next-line selector-class-pattern
 	.components-modal__content > div:nth-child(2) {
 		height: 100%;
 	}
