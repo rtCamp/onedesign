@@ -1,4 +1,10 @@
+/**
+ * External dependencies
+ */
 import { useState, useEffect } from 'react';
+/**
+ * WordPress dependencies
+ */
 import apiFetch from '@wordpress/api-fetch';
 import { __ } from '@wordpress/i18n';
 import {
@@ -20,7 +26,10 @@ interface NoticeState {
 	message: string;
 }
 
-const SiteTypeSelector = ( { value, setSiteType }: {
+const SiteTypeSelector = ( {
+	value,
+	setSiteType,
+}: {
 	value: SiteType | '';
 	setSiteType: ( v: SiteType | '' ) => void;
 } ) => (
@@ -29,31 +38,43 @@ const SiteTypeSelector = ( { value, setSiteType }: {
 		value={ value }
 		help={ __(
 			"Choose your site's primary purpose. This setting cannot be changed later and affects available features and configurations.",
-			'onedesign',
+			'onedesign'
 		) }
 		onChange={ ( v ) => {
 			setSiteType( v );
 		} }
+		__nextHasNoMarginBottom
+		__next40pxDefaultSize
 		options={ [
 			{ label: __( 'Select…', 'onedesign' ), value: '' },
 			{ label: __( 'Brand Site', 'onedesign' ), value: BRAND_SITE },
-			{ label: __( 'Governing site', 'onedesign' ), value: GOVERNING_SITE },
+			{
+				label: __( 'Governing site', 'onedesign' ),
+				value: GOVERNING_SITE,
+			},
 		] }
 	/>
 );
 
 const OnboardingScreen = () => {
-	// WordPress provides snake_case keys here. Using them intentionally.
-	// eslint-disable-next-line camelcase
-	const { nonce, setup_url, site_type } = window.OneDesignSettings;
+	// WordPress provides snake_case keys here; alias them to camelCase locals.
+	const {
+		nonce,
+		setup_url: setupUrl,
+		site_type: initialSiteType,
+	} = window.OneDesignSettings;
 
-	const [ siteType, setSiteType ] = useState<SiteType | ''>( site_type || '' );
-	const [ notice, setNotice ] = useState<NoticeState | null>( null );
-	const [ isSaving, setIsSaving ] = useState<boolean>( false );
+	const [ siteType, setSiteType ] = useState< SiteType | '' >(
+		initialSiteType || ''
+	);
+	const [ notice, setNotice ] = useState< NoticeState | null >( null );
+	const [ isSaving, setIsSaving ] = useState( false );
 
 	useEffect( () => {
 		apiFetch.use( apiFetch.createNonceMiddleware( nonce ) );
-		apiFetch<{ onedesign_site_type?: SiteType }>( { path: '/wp/v2/settings' } )
+		apiFetch< { onedesign_site_type?: SiteType } >( {
+			path: '/wp/v2/settings',
+		} )
 			.then( ( settings ) => {
 				if ( settings?.onedesign_site_type ) {
 					setSiteType( settings.onedesign_site_type );
@@ -65,7 +86,7 @@ const OnboardingScreen = () => {
 					message: __( 'Error fetching site type.', 'onedesign' ),
 				} );
 			} );
-	} );
+	}, [ nonce ] ); // for initial component mount (the nonce never changes)
 
 	const handleSiteTypeChange = async ( value: SiteType | '' ) => {
 		// Optimistically set site type.
@@ -73,20 +94,22 @@ const OnboardingScreen = () => {
 		setIsSaving( true );
 
 		try {
-			await apiFetch<{ onedesign_site_type?: SiteType }>( {
+			await apiFetch< { onedesign_site_type?: SiteType } >( {
 				path: '/wp/v2/settings',
 				method: 'POST',
 				data: { onedesign_site_type: value },
 			} ).then( ( settings ) => {
 				if ( ! settings?.onedesign_site_type ) {
-					throw new Error( __( 'No site type in response', 'onedesign' ) );
+					throw new Error(
+						__( 'No site type in response', 'onedesign' )
+					);
 				}
 
 				setSiteType( settings.onedesign_site_type );
 
 				// Redirect user to setup page.
-				if ( setup_url ) {
-					window.location.href = setup_url;
+				if ( setupUrl ) {
+					window.location.href = setupUrl;
 				}
 			} );
 		} catch {
@@ -104,7 +127,7 @@ const OnboardingScreen = () => {
 			{ !! notice?.message && (
 				<Notice
 					status={ notice?.type ?? 'success' }
-					isDismissible={ true }
+					isDismissible
 					onRemove={ () => setNotice( null ) }
 				>
 					{ notice?.message }

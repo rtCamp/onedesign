@@ -1,4 +1,4 @@
 pre-commit:
-    commands:
-        lint-staged:
-            run: npx --no-install lint-staged
+  commands:
+    lint-staged:
+      run: npx --no-install lint-staged

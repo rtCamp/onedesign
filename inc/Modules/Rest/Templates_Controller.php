@@ -5,6 +5,8 @@
  * @package OneDesign
  */
 
+declare(strict_types = 1);
+
 namespace OneDesign\Modules\Rest;
 
 use OneDesign\Modules\Post_Types\Constants;
@@ -14,7 +16,6 @@ use OneDesign\Modules\Settings\Settings;
  * Class Templates_Controller
  */
 class Templates_Controller extends Abstract_REST_Controller {
-
 	/**
 	 * The namespace for the REST API.
 	 */
@@ -216,7 +217,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 
 		// Merge new synced patterns with existing ones, avoiding duplicates based on 'id'.
 		foreach ( $synced_patterns as $pattern ) {
-			if ( ! isset( $pattern['id'] ) || array_filter( $existing_synced_patterns, static fn( $t ) => $t['id'] === $pattern['id'] ) ) {
+			if ( ! isset( $pattern['id'] ) || array_filter( $existing_synced_patterns, static fn ( $t ) => $t['id'] === $pattern['id'] ) ) {
 				continue;
 			}
 
@@ -393,7 +394,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 			update_option( Constants::ONEDESIGN_SHARED_TEMPLATE_PARTS, [], false );
 			update_option( Constants::ONEDESIGN_SHARED_SYNCED_PATTERNS, [], false );
 		} else {
-			$updated_templates = array_filter( $existing_templates, static fn( $t ) => ! in_array( $t['id'], $template_ids, true ) );
+			$updated_templates = array_filter( $existing_templates, static fn ( $t ) => ! in_array( $t['id'], $template_ids, true ) );
 		}
 
 		update_option( Constants::ONEDESIGN_SHARED_TEMPLATES, array_values( $updated_templates ), false );
@@ -457,7 +458,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 					'Content-Type'      => 'application/json',
 				],
 				'method'  => 'DELETE',
-				'body'    => wp_json_encode(
+				'body'    => (string) wp_json_encode(
 					[
 						'template_ids'  => $template_ids,
 						'is_remove_all' => $is_remove_all,
@@ -515,7 +516,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 
 		// Merge new templates with existing ones, avoiding duplicates based on 'id'.
 		foreach ( $templates as $template ) {
-			if ( ! isset( $template['id'] ) || array_filter( $existing_templates, static fn( $t ) => $t['id'] === $template['id'] ) ) {
+			if ( ! isset( $template['id'] ) || array_filter( $existing_templates, static fn ( $t ) => $t['id'] === $template['id'] ) ) {
 				continue;
 			}
 
@@ -533,7 +534,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 		// Merge new patterns with existing ones, avoiding duplicates based on 'id'.
 		if ( is_array( $patterns ) ) {
 			foreach ( $patterns as $pattern ) {
-				if ( ! isset( $pattern['name'] ) || array_filter( $existing_patterns, static fn( $t ) => $t['name'] === $pattern['name'] ) ) {
+				if ( ! isset( $pattern['name'] ) || array_filter( $existing_patterns, static fn ( $t ) => $t['name'] === $pattern['name'] ) ) {
 					continue;
 				}
 
@@ -552,7 +553,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 		// Merge new template parts with existing ones, avoiding duplicates based on 'id'.
 		if ( is_array( $template_parts ) ) {
 			foreach ( $template_parts as $template_part ) {
-				if ( ! isset( $template_part['id'] ) || array_filter( $existing_template_parts, static fn( $t ) => $t['id'] === $template_part['id'] ) ) {
+				if ( ! isset( $template_part['id'] ) || array_filter( $existing_template_parts, static fn ( $t ) => $t['id'] === $template_part['id'] ) ) {
 					continue;
 				}
 
@@ -613,9 +614,9 @@ class Templates_Controller extends Abstract_REST_Controller {
 			$parsed_templates = array_merge( $parsed_templates, $this->parse_block_template( $template['content'], $already_tracked ) );
 		}
 
-		$template_parts  = array_filter( $parsed_templates, static fn( $t ) => 'template-part' === $t['type'] );
-		$patterns        = array_filter( $parsed_templates, static fn( $t ) => 'pattern' === $t['type'] );
-		$synced_patterns = array_filter( $parsed_templates, static fn( $t ) => 'block' === $t['type'] );
+		$template_parts  = array_filter( $parsed_templates, static fn ( $t ) => 'template-part' === $t['type'] );
+		$patterns        = array_filter( $parsed_templates, static fn ( $t ) => 'pattern' === $t['type'] );
+		$synced_patterns = array_filter( $parsed_templates, static fn ( $t ) => 'block' === $t['type'] );
 
 		// get site info from child sites option.
 		$brand_sites = Settings::get_shared_sites();
@@ -646,7 +647,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 						'X-OneDesign-Token' => $site_api_key,
 						'Content-Type'      => 'application/json',
 					],
-					'body'    => wp_json_encode(
+					'body'    => (string) wp_json_encode(
 						[
 							'synced_patterns' => $new_synced_patterns,
 						]
@@ -676,7 +677,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 						'X-OneDesign-Token' => $site_api_key,
 						'Content-Type'      => 'application/json',
 					],
-					'body'    => wp_json_encode(
+					'body'    => (string) wp_json_encode(
 						[
 							'templates'      => $new_templates,
 							'patterns'       => $new_patterns,
@@ -713,8 +714,6 @@ class Templates_Controller extends Abstract_REST_Controller {
 
 	/**
 	 * Get all block templates.
-	 *
-	 * @return \WP_REST_Response
 	 */
 	public function get_all_templates(): \WP_REST_Response {
 		$templates = get_block_templates();
@@ -729,8 +728,6 @@ class Templates_Controller extends Abstract_REST_Controller {
 
 	/**
 	 * Get templates from all connected sites.
-	 *
-	 * @return \WP_REST_Response
 	 */
 	public function get_templates_from_connected_sites(): \WP_REST_Response {
 		$connected_sites = Settings::get_shared_sites();
@@ -746,7 +743,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 						'X-OneDesign-Token' => $api_key,
 						'Content-Type'      => 'application/json',
 					],
-					'timeout' => 15,
+					'timeout' => 15, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout -- Admin-only request to a brand site that may be slow.
 				]
 			);
 			$handled_response = $this->handle_remote_response( $response );
@@ -776,8 +773,6 @@ class Templates_Controller extends Abstract_REST_Controller {
 
 	/**
 	 * Get shared templates.
-	 *
-	 * @return \WP_REST_Response
 	 */
 	public function get_shared_templates(): \WP_REST_Response {
 		$shared_templates = get_option( Constants::ONEDESIGN_SHARED_TEMPLATES, [] );
@@ -793,9 +788,15 @@ class Templates_Controller extends Abstract_REST_Controller {
 	/**
 	 * Handle remote response.
 	 *
-	 * @param array|\WP_Error $response The response from wp_remote_get or wp_remote_post.
+	 * @param array<string,mixed>|\WP_Error $response The response from wp_remote_get or wp_remote_post.
 	 *
-	 * @return array The processed response data.
+	 * @return array{
+	 *   success: true,
+	 *   data: mixed
+	 * }|array{
+	 *   success: false,
+	 *   error: string
+	 * }
 	 */
 	private function handle_remote_response( array|\WP_Error $response ): array {
 		if ( is_wp_error( $response ) ) {
@@ -842,7 +843,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 	 *
 	 * @param string $site_id Site ID.
 	 *
-	 * @return array|null Site info array or null if not found.
+	 * @return ?array<string,mixed> Site info array or null if not found.
 	 */
 	private function get_site_by_id( string $site_id ): array|null {
 		$sites    = Settings::get_shared_sites();
@@ -1086,11 +1087,11 @@ class Templates_Controller extends Abstract_REST_Controller {
 	 * This function identifies and extracts blocks, template parts, and patterns from the provided content.
 	 * It handles nested structures and ensures that each unique content is processed only once to avoid duplication.
 	 *
-	 * @param string $content The block template content to parse.
-	 * @param array  $already_tracked An array to keep track of already processed content to avoid duplication.
-	 *                                This should be passed by reference to maintain state across recursive calls.
+	 * @param string   $content         The block template content to parse.
+	 * @param string[] $already_tracked An array to keep track of already processed content to avoid duplication.
+	 *                                  This should be passed by reference to maintain state across recursive calls.
 	 *
-	 * @return array An array of parsed elements, each containing type, attributes, and content.
+	 * @return array<array<string,mixed>> An array of parsed elements, each containing type, attributes, and content.
 	 */
 	private function parse_block_template( string $content, array &$already_tracked ): array {
 		$results = [];
@@ -1101,7 +1102,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 		if ( preg_match_all( $pattern, $content, $matches, PREG_SET_ORDER ) ) {
 			foreach ( $matches as $match ) {
 				$block_type      = $match[1];
-				$attributes_json = isset( $match[2] ) ? $match[2] : '{}';
+				$attributes_json = $match[2] ?? '{}';
 
 				// Decode JSON attributes.
 				$attributes = json_decode( $attributes_json, true );

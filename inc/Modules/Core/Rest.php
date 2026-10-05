@@ -15,7 +15,6 @@ use OneDesign\Contracts\Interfaces\Registrable;
  * Class REST
  */
 final class Rest implements Registrable {
-
 	/**
 	 * {@inheritDoc}
 	 */
@@ -31,7 +30,6 @@ final class Rest implements Registrable {
 	 * @return array<int, string> Modified headers.
 	 */
 	public function allowed_cors_headers( $headers ): array {
-
 		$headers_to_add = [
 			'X-OneDesign-Token',
 			'X-OneDesign-Source',

@@ -5,6 +5,8 @@
  * @package OneDesin\Modules\Post_Types;
  */
 
+declare(strict_types = 1);
+
 namespace OneDesign\Modules\Post_Types;
 
 use OneDesign\Contracts\Interfaces\Registrable;
@@ -49,8 +51,6 @@ class Admin implements Registrable {
 
 	/**
 	 * Add a settings page.
-	 *
-	 * @return void
 	 */
 	public function add_settings_page(): void {
 		// Only add plugin-specific submenu pages if sites have been connecting.
@@ -81,8 +81,6 @@ class Admin implements Registrable {
 
 	/**
 	 * Create templates, patterns and template parts from saved options.
-	 *
-	 * @return void
 	 */
 	public function create_template(): void {
 
@@ -223,10 +221,10 @@ class Admin implements Registrable {
 	/**
 	 * Allow only specific block types.
 	 *
-	 * @param bool|array               $allowed_block_types Array of allowed block types or boolean to allow all or disallow all.
-	 * @param \WP_Block_Editor_Context $editor_context               The post being edited, provided by the 'allowed_block_types_all' filter.
+	 * @param bool|string[]            $allowed_block_types Array of allowed block types or boolean to allow all or disallow all.
+	 * @param \WP_Block_Editor_Context $editor_context      The post being edited, provided by the 'allowed_block_types_all' filter.
 	 *
-	 * @return array|bool
+	 * @return bool|string[]
 	 */
 	public function allowed_block_types( bool|array $allowed_block_types, \WP_Block_Editor_Context $editor_context ): array|bool {
 		// Allow all block types in the Pattern Library post type.
@@ -238,8 +236,6 @@ class Admin implements Registrable {
 
 	/**
 	 * Remove core block patterns.
-	 *
-	 * @return void
 	 */
 	public function remove_core_block_patterns(): void {
 		remove_theme_support( 'core-block-patterns' );
@@ -247,8 +243,6 @@ class Admin implements Registrable {
 
 	/**
 	 * Prints the Pattern Library Button Template.
-	 *
-	 * @return void
 	 */
 	public function print_pattern_library_button_in_editor_js_template(): void {
 		$current_screen = get_current_screen();
@@ -269,8 +263,6 @@ class Admin implements Registrable {
 
 	/**
 	 * Add templates button to editor.
-	 *
-	 * @return void
 	 */
 	public function add_templates_button_to_editor(): void {
 		$current_screen = get_current_screen();
@@ -291,8 +283,6 @@ class Admin implements Registrable {
 
 	/**
 	 * Register block patterns via ajax.
-	 *
-	 * @return void
 	 */
 	public function ajax_register_block_patterns(): void {
 		// Verify nonce for security.
@@ -309,8 +299,6 @@ class Admin implements Registrable {
 
 	/**
 	 * Register block patterns if not exist.
-	 *
-	 * @return void
 	 */
 	public function register_block_patterns_if_not_exist(): void {
 		$site_patterns = get_option( Constants::ONEDESIGN_BRAND_SITE_PATTERNS );
@@ -379,8 +367,6 @@ class Admin implements Registrable {
 	 *
 	 * This function checks if the Templates post exists and redirects to it,
 	 * or creates a new one if it doesn't exist.
-	 *
-	 * @return void
 	 */
 	public function templates_page_redirection(): void {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -389,6 +375,7 @@ class Admin implements Registrable {
 		}
 
 		// Check if a Pattern Library post already exists.
+		// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.get_posts_get_posts -- `suppress_filters` is false.
 		$existing_posts = get_posts(
 			[
 				'post_type'        => Template::get_slug(),
@@ -428,8 +415,6 @@ class Admin implements Registrable {
 	 *
 	 * This function checks if the Pattern Library post exists and redirects to it,
 	 * or creates a new one if it doesn't exist.
-	 *
-	 * @return void
 	 */
 	public function handle_pattern_library_redirect(): void {
 		$pages = [ self::PATTERN_REDIRECT_SCREEN, self::MENU_SLUG ];
@@ -447,6 +432,7 @@ class Admin implements Registrable {
 	 */
 	private function create_and_open_pattern_library_post(): void {
 		// Check if a Pattern Library post already exists.
+		// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.get_posts_get_posts -- `suppress_filters` is false.
 		$existing_posts = get_posts(
 			[
 				'post_type'        => Pattern::get_slug(),

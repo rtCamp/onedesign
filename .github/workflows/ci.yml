@@ -1,0 +1,200 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+      - release/**
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  detect:
+    name: Detect Changes
+    runs-on: ubuntu-24.04
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      actionlint: ${{ steps.filter.outputs.actionlint }}
+      php: ${{ steps.filter.outputs.php }}
+      phpcs: ${{ steps.filter.outputs.phpcs }}
+      phpstan: ${{ steps.filter.outputs.phpstan }}
+      phpunit: ${{ steps.filter.outputs.phpunit }}
+      js: ${{ steps.filter.outputs.js }}
+      css: ${{ steps.filter.outputs.css }}
+      e2e: ${{ steps.filter.outputs.e2e }}
+      jest: ${{ steps.filter.outputs.jest }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Detect file changes
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        with:
+          filters: |
+            actionlint:
+              - '.github/workflows/**'
+              - '.github/actionlint.yaml'
+            php:
+              - '**.php'
+              - 'composer.*'
+            phpcs:
+              - '.github/workflows/ci.yml'
+              - '.phpcs.xml.dist'
+            phpstan:
+              - '.github/workflows/ci.yml'
+              - 'phpstan.neon.dist'
+            phpunit:
+              - 'tests/**/*.php'
+              - '.github/workflows/ci.yml'
+              - 'phpunit.xml.dist'
+              - '.wp-env.test.json'
+              - 'package*.json'
+            js:
+              - '.github/workflows/ci.yml'
+              - '.nvmrc'
+              - '**.cjs'
+              - '**.js'
+              - '**.jsx'
+              - '**.mjs'
+              - '**.cts'
+              - '**.mts'
+              - '**.ts'
+              - '**.tsx'
+              - 'package*.json'
+              - 'tsconfig*.json'
+            css:
+              - '.github/workflows/ci.yml'
+              - '**.css'
+              - '**.scss'
+              - '.editorconfig'
+              - '.browserslistrc'
+              - '.stylelintignore'
+              - 'stylelint.config.js'
+            e2e:
+              - '.github/workflows/ci.yml'
+              - 'tests/e2e/**/*'
+              - 'playwright.config.ts'
+              - '.wp-env.test.json'
+            jest:
+              - '.github/workflows/ci.yml'
+              - 'assets/src/**/__tests__/**/*'
+              - 'assets/src/**/*.test.ts'
+              - 'assets/src/**/*.test.tsx'
+              - 'assets/src/**/*.spec.ts'
+              - 'assets/src/**/*.spec.tsx'
+              - 'tests/js/**/*'
+              - 'jest.config.js'
+              - 'package*.json'
+
+  actionlint:
+    name: actionlint
+    needs: detect
+    if: needs.detect.outputs.actionlint == 'true'
+    uses: rtCamp/plugin-skeleton-d/.github/workflows/reusable-actionlint.yml@72dd3643b710bd84eed7c6143312c9434a95d352 # v0.2.0
+    permissions:
+      contents: read
+
+  phpcs:
+    name: PHPCS
+    needs: detect
+    if: needs.detect.outputs.php == 'true' || needs.detect.outputs.phpcs == 'true'
+    uses: rtCamp/plugin-skeleton-d/.github/workflows/reusable-phpcs-public.yml@72dd3643b710bd84eed7c6143312c9434a95d352 # v0.2.0
+    permissions:
+      contents: read
+    with:
+      php-version: '8.3'
+
+  phpstan:
+    name: PHPStan
+    needs: detect
+    if: needs.detect.outputs.php == 'true' || needs.detect.outputs.phpstan == 'true'
+    uses: rtCamp/plugin-skeleton-d/.github/workflows/reusable-phpstan-public.yml@72dd3643b710bd84eed7c6143312c9434a95d352 # v0.2.0
+    permissions:
+      contents: read
+    with:
+      php-version: '8.3'
+
+  lint-css-js:
+    name: CSS/JS Lint
+    needs: detect
+    if: needs.detect.outputs.css == 'true' || needs.detect.outputs.js == 'true'
+    uses: rtCamp/plugin-skeleton-d/.github/workflows/reusable-lint-css-js-public.yml@72dd3643b710bd84eed7c6143312c9434a95d352 # v0.2.0
+    permissions:
+      contents: read
+
+  jest:
+    name: Jest Unit Tests
+    needs: detect
+    if: needs.detect.outputs.js == 'true' || needs.detect.outputs.jest == 'true'
+    uses: rtCamp/plugin-skeleton-d/.github/workflows/reusable-jest-public.yml@72dd3643b710bd84eed7c6143312c9434a95d352 # v0.2.0
+    permissions:
+      contents: read
+    with:
+      coverage: true
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  phpunit:
+    name: PHPUnit (PHP ${{ matrix.php }}, WP ${{ matrix.wp }})
+    needs: detect
+    if: needs.detect.outputs.php == 'true' || needs.detect.outputs.phpunit == 'true'
+    uses: rtCamp/plugin-skeleton-d/.github/workflows/reusable-phpunit-public.yml@72dd3643b710bd84eed7c6143312c9434a95d352 # v0.2.0
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.5', '8.4', '8.3', '8.2']
+        wp: ['latest']
+        include:
+          - php: '8.5'
+            wp: 'latest'
+            coverage: true
+    with:
+      php-version: ${{ matrix.php }}
+      wp-version: ${{ matrix.wp }}
+      plugin-slug: onedesign
+      coverage: ${{ matrix.coverage == true }}
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  e2e:
+    name: E2E Tests
+    needs: detect
+    if: needs.detect.outputs.php == 'true' || needs.detect.outputs.e2e == 'true' || needs.detect.outputs.js == 'true' || needs.detect.outputs.css == 'true'
+    uses: rtCamp/plugin-skeleton-d/.github/workflows/reusable-e2e-public.yml@72dd3643b710bd84eed7c6143312c9434a95d352 # v0.2.0
+    permissions:
+      contents: read
+    with:
+      php-version: '8.3'
+      plugin-slug: onedesign
+
+  build-plugin-zip:
+    name: Build Plugin Zip
+    permissions:
+      contents: read
+    uses: rtCamp/plugin-skeleton-d/.github/workflows/reusable-build-public.yml@72dd3643b710bd84eed7c6143312c9434a95d352 # v0.2.0
+    with:
+      php-version: '8.3'
+      plugin-slug: onedesign
+      artifact-name: onedesign-pr${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+      # Published by wp-playground-pr-preview.yml once CI succeeds.
+      playground-preview: true

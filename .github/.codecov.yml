@@ -3,32 +3,32 @@
 
 # Fix path prefixes from Docker container paths to repo-relative paths
 fixes:
-    - '/var/www/html/wp-content/plugins/onedesign/::'
+  - '/var/www/html/wp-content/plugins/onedesign/::'
 
 coverage:
-    status:
-        project:
-            default:
-                target: 70%
-                threshold: 5%
-                informational: true
-        patch:
-            default:
-                target: 60%
-                informational: true
+  status:
+    project:
+      default:
+        target: 70%
+        threshold: 5%
+        informational: true
+    patch:
+      default:
+        target: 60%
+        informational: true
 
 ignore:
-    - 'tests/**'
-    - '**/*.test.ts'
-    - '**/*.test.tsx'
-    - '**/*.spec.ts'
-    - '**/*.spec.tsx'
-    - '**/types.d.ts'
-    - 'playwright.config.ts'
+  - 'tests/**'
+  - '**/*.test.ts'
+  - '**/*.test.tsx'
+  - '**/*.spec.ts'
+  - '**/*.spec.tsx'
+  - '**/types.d.ts'
+  - 'playwright.config.ts'
 
 comment:
-    layout: 'reach,diff,flags,files'
-    behavior: default
-    require_base: false
-    require_head: true
-    require_changes: true
+  layout: 'reach,diff,flags,files'
+  behavior: default
+  require_base: false
+  require_head: true
+  require_changes: true

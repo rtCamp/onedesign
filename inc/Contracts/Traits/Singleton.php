@@ -5,7 +5,7 @@
  * @package OneDesign\Contracts\Traits
  */
 
-declare( strict_types = 1 );
+declare(strict_types = 1);
 
 namespace OneDesign\Contracts\Traits;
 

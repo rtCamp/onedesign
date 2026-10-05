@@ -3,7 +3,7 @@
  */
 export default {
 	'**/*.{js,jsx,ts,tsx}': [ 'wp-scripts lint-js --fix' ],
-	'**/*.{css,scss}': [ 'wp-scripts lint-style --allow-empty-input --fix' ],
+	// '**/*.{css,scss}': [ 'wp-scripts lint-style --allow-empty-input --fix' ],
 	/**
 	 * @param filenames
 	 * @todo Simplify when we can use PHPCS 4.x's improved exit codes.
@@ -16,7 +16,6 @@ export default {
 			.join( ' ' );
 
 		// Only fail if phpcbf itself failed (exit code 3).
-		// Run under a shell so the `||` operator works reliably.
 		return [
 			`sh -c "./vendor/bin/phpcbf ${ relativeFilenames } || [ \$? -eq 3 ]"`,
 		];

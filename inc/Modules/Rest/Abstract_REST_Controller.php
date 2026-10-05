@@ -14,12 +14,12 @@ namespace OneDesign\Modules\Rest;
 use OneDesign\Contracts\Interfaces\Registrable;
 use OneDesign\Modules\Multisite\Settings as MU_Settings;
 use OneDesign\Modules\Settings\Settings;
-
+use WP_REST_Controller;
 
 /**
  * Class - Abstract_REST_Controller
  */
-abstract class Abstract_REST_Controller extends \WP_REST_Controller implements Registrable {
+abstract class Abstract_REST_Controller extends WP_REST_Controller implements Registrable {
 	/**
 	 * The namespace for the REST API.
 	 */
@@ -60,9 +60,8 @@ abstract class Abstract_REST_Controller extends \WP_REST_Controller implements R
 	 * @todo this should be on a hook.
 	 *
 	 * @param \WP_REST_Request<array{}> $request Request.
-	 * @return bool
 	 */
-	public function check_api_permissions( $request ) {
+	public function check_api_permissions( $request ): bool {
 		// check if the request is from same site.
 		if ( Settings::is_governing_site() ) {
 			return current_user_can( 'manage_options' );
@@ -145,6 +144,8 @@ abstract class Abstract_REST_Controller extends \WP_REST_Controller implements R
 	/**
 	 * Check if two URLs belong to the same domain.
 	 *
+	 * Ports are compared too, so sites sharing a host (e.g. `localhost:8888` and `localhost:8890`) aren't treated as the same site.
+	 *
 	 * @param string $url1 First URL.
 	 * @param string $url2 Second URL.
 	 *
@@ -157,13 +158,28 @@ abstract class Abstract_REST_Controller extends \WP_REST_Controller implements R
 		if ( ! isset( $parsed_url1['host'] ) || ! isset( $parsed_url2['host'] ) ) {
 			return false;
 		}
-		return hash_equals( $parsed_url1['host'], $parsed_url2['host'] );
+
+		return hash_equals( $parsed_url1['host'], $parsed_url2['host'] )
+			&& self::get_url_port( $parsed_url1 ) === self::get_url_port( $parsed_url2 );
+	}
+
+	/**
+	 * Gets the port of a parsed URL, falling back to the scheme's default port.
+	 *
+	 * @param array<string,int|string> $parsed_url The result of wp_parse_url().
+	 */
+	private static function get_url_port( array $parsed_url ): int {
+		if ( isset( $parsed_url['port'] ) ) {
+			return (int) $parsed_url['port'];
+		}
+
+		return 'https' === ( $parsed_url['scheme'] ?? '' ) ? 443 : 80;
 	}
 
 	/**
 	 * Get URLs of all multisites in the network.
 	 *
-	 * @return array Array of multisite URLs.
+	 * @return string[] Array of multisite URLs.
 	 */
 	private function get_all_multisite_urls(): array {
 		$sites_info = MU_Settings::get_all_multisites_info();

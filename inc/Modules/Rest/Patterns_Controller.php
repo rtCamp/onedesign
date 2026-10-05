@@ -5,6 +5,8 @@
  * @package OneDesign
  */
 
+declare(strict_types = 1);
+
 namespace OneDesign\Modules\Rest;
 
 use OneDesign\Modules\Post_Types\Constants;
@@ -17,7 +19,6 @@ use WP_REST_Server;
  * Class Patterns_Controller
  */
 class Patterns_Controller extends Abstract_REST_Controller {
-
 	/**
 	 * {@inheritDoc}
 	 */
@@ -162,7 +163,8 @@ class Patterns_Controller extends Abstract_REST_Controller {
 						'required'          => true,
 						'type'              => 'array',
 						'items'             => [
-							'oneOf' => [
+							// Numeric strings (multisite blog IDs) match both, so `oneOf` would reject them.
+							'anyOf' => [
 								[ 'type' => 'string' ],
 								[ 'type' => 'integer' ],
 							],
@@ -248,12 +250,12 @@ class Patterns_Controller extends Abstract_REST_Controller {
 					'X-OneDesign-Token' => $remote_api_key,
 					'Content-Type'      => 'application/json',
 				],
-				'body'    => wp_json_encode(
+				'body'    => (string) wp_json_encode(
 					[
 						'pattern_names' => $pattern_name,
 					]
 				),
-				'timeout' => 45,
+				'timeout' => 45, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout -- The brand site deletes posts before responding.
 			]
 		);
 
@@ -276,7 +278,7 @@ class Patterns_Controller extends Abstract_REST_Controller {
 			);
 		}
 
-		$error_message = isset( $decoded_body['message'] ) ? $decoded_body['message'] : __( 'Unknown error from remote site.', 'onedesign' );
+		$error_message = $decoded_body['message'] ?? __( 'Unknown error from remote site.', 'onedesign' );
 		return new \WP_Error(
 			'remote_error',
 			// translators: %1$s is the error message, %2$d is the HTTP status code.
@@ -364,7 +366,7 @@ class Patterns_Controller extends Abstract_REST_Controller {
 						'X-OneDesign-Token' => $remote_api_key,
 						'Content-Type'      => 'application/json',
 					],
-					'timeout' => 45,
+					'timeout' => 45, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout -- Admin-only request to a brand site that may be slow.
 				]
 			);
 			if ( is_wp_error( $response ) ) {
@@ -426,8 +428,6 @@ class Patterns_Controller extends Abstract_REST_Controller {
 
 	/**
 	 * Get brand site patterns.
-	 *
-	 * @return \WP_REST_Response
 	 */
 	public function get_brand_site_patterns(): WP_REST_Response {
 		// Use the option name from your settings class.
@@ -454,8 +454,6 @@ class Patterns_Controller extends Abstract_REST_Controller {
 
 	/**
 	 * Get all local patterns (both registered and user-created).
-	 *
-	 * @return \WP_REST_Response
 	 */
 	public function get_local_patterns(): WP_REST_Response {
 		$patterns = $this->get_all_local_patterns_map();
@@ -468,8 +466,6 @@ class Patterns_Controller extends Abstract_REST_Controller {
 
 	/**
 	 * Get pattern categories.
-	 *
-	 * @return \WP_REST_Response
 	 */
 	public function get_pattern_categories(): WP_REST_Response {
 
@@ -527,8 +523,6 @@ class Patterns_Controller extends Abstract_REST_Controller {
 
 	/**
 	 * Get configured child sites (for a parent site type).
-	 *
-	 * @return \WP_REST_Response
 	 */
 	public function get_configured_child_sites(): WP_REST_Response {
 
@@ -634,13 +628,13 @@ class Patterns_Controller extends Abstract_REST_Controller {
 						'X-OneDesign-Token' => $remote_api_key,
 						'Content-Type'      => 'application/json',
 					],
-					'body'    => wp_json_encode(
+					'body'    => (string) wp_json_encode(
 						[
 							'patterns_data'    => $patterns_to_push,
 							'source_site_name' => $current_site_name,
 						]
 					),
-					'timeout' => 45,
+					'timeout' => 45, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout -- Pushing many patterns can take a while.
 				]
 			);
 
@@ -678,7 +672,7 @@ class Patterns_Controller extends Abstract_REST_Controller {
 	/**
 	 * Get all local patterns as a map (both registered and user-created).
 	 *
-	 * @return array
+	 * @return array<string,array<string,mixed>> Patterns keyed by name.
 	 */
 	private function get_all_local_patterns_map(): array {
 		$patterns_map = [];
@@ -749,11 +743,12 @@ class Patterns_Controller extends Abstract_REST_Controller {
 		}
 
 		// Get user-created patterns from wp_block posts.
+		// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.get_posts_get_posts -- `suppress_filters` is false.
 		$user_patterns = get_posts(
 			[
 				'post_type'        => 'wp_block',
 				'post_status'      => 'publish',
-				'posts_per_page'   => -1,
+				'posts_per_page'   => -1, // phpcs:ignore WordPressVIPMinimum.Performance.NoPaging.posts_per_page_posts_per_page -- The library needs every user pattern.
 				'orderby'          => 'title',
 				'order'            => 'ASC',
 				'suppress_filters' => false,

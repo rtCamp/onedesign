@@ -5,6 +5,8 @@
  * @package OneDesign
  */
 
+declare(strict_types = 1);
+
 namespace OneDesign\Modules\Multisite;
 
 use OneDesign\Contracts\Interfaces\Registrable;
@@ -80,7 +82,11 @@ class Settings implements Registrable {
 	/**
 	 * Get information of all multisites in the network.
 	 *
-	 * @return array Array of multisite information.
+	 * @return array{
+	 *   id: string,
+	 *   name: string,
+	 *   url: string
+	 * }[]
 	 */
 	public static function get_all_multisites_info(): array {
 		if ( ! is_multisite() ) {
@@ -111,7 +117,6 @@ class Settings implements Registrable {
 	 *
 	 * @param string $secret_key The generated secret key.
 	 * @param int    $blog_id The blog ID where the key is generated.
-	 * @return void
 	 */
 	public function sync_api_key_to_governing_site( string $secret_key, int $blog_id ): void {
 		// get the governing site id.
@@ -122,7 +127,7 @@ class Settings implements Registrable {
 			return;
 		}
 
-		if ( ! switch_to_blog( (int) $governing_site_id ) ) {
+		if ( ! switch_to_blog( (int) $governing_site_id ) ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.switch_to_blog_switch_to_blog -- Only site options are read/written while switched.
 			return;
 		}
 		$shared_sites = AdminSettings::get_shared_sites();
@@ -142,8 +147,6 @@ class Settings implements Registrable {
 	 * Assign brand-site on new site creation if governing site is set.
 	 *
 	 * @param \WP_Site $new_site The new site object.
-	 *
-	 * @return void
 	 */
 	public function assign_brand_site_on_new_site_creation( \WP_Site $new_site ): void {
 
@@ -153,7 +156,7 @@ class Settings implements Registrable {
 			return;
 		}
 
-		if ( ! switch_to_blog( (int) $new_site->blog_id ) ) {
+		if ( ! switch_to_blog( (int) $new_site->blog_id ) ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.switch_to_blog_switch_to_blog -- Only site options are read/written while switched.
 			return;
 		}
 
@@ -168,10 +171,8 @@ class Settings implements Registrable {
 	 * @param string $option_name The name of the updated option.
 	 * @param mixed  $old_value The old value of the option.
 	 * @param mixed  $new_value The new value of the option.
-	 *
-	 * @return void
 	 */
-	public function update_site_details_in_governing_site_table( string $option_name, $old_value, $new_value ): void {
+	public function update_site_details_in_governing_site_table( string $option_name, $old_value, $new_value ): void { // phpcs:ignore SlevomatCodingStandard.Functions.UnusedParameter.UnusedParameter
 
 		$governing_site_id = self::get_multisite_governing_site_id();
 
@@ -202,7 +203,7 @@ class Settings implements Registrable {
 		}
 
 		// Now switch to governing site.
-		if ( ! switch_to_blog( (int) $governing_site_id ) ) {
+		if ( ! switch_to_blog( (int) $governing_site_id ) ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.switch_to_blog_switch_to_blog -- Only site options are read/written while switched.
 			return;
 		}
 
@@ -218,7 +219,8 @@ class Settings implements Registrable {
 				$site['name'] = sanitize_text_field( $new_value );
 			} elseif ( in_array( $option_name, [ 'siteurl', 'home' ], true ) ) {
 				$site['url'] = esc_url_raw( $new_value );
-			} elseif ( 'site_icon' === $option_name ) {
+			} else {
+				// The only remaining relevant option is `site_icon`.
 				$site['logo']    = $logo_url ?: '';
 				$site['logo_id'] = $logo_id;
 			}
