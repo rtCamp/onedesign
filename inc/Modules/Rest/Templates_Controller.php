@@ -231,12 +231,13 @@ class Templates_Controller extends Abstract_REST_Controller {
 		$error_logs    = [];
 		foreach ( $existing_synced_patterns as $sync_pattern ) {
 			// check if same post_name don't exists.
-			$existing_post = get_posts(
+			$existing_post = get_posts( // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.get_posts_get_posts
 				[
-					'post_type'   => 'wp_block',
-					'post_name'   => sanitize_text_field( $sync_pattern['slug'] ),
-					'post_status' => 'publish',
-					'numberposts' => 1,
+					'post_type'        => 'wp_block',
+					'name'             => sanitize_text_field( $sync_pattern['slug'] ),
+					'post_status'      => 'publish',
+					'numberposts'      => 1,
+					'suppress_filters' => false,
 				],
 			);
 
@@ -861,10 +862,10 @@ class Templates_Controller extends Abstract_REST_Controller {
 	 * Modify the slug and id of templates, template parts, and patterns to ensure uniqueness across shared sites.
 	 * Also modifies references within the content.
 	 *
-	 * @param array  $templates Array of template objects.
-	 * @param string $shared_site_name The name of the site to which template is going to be shared.
+	 * @param array<int|string,array<string,mixed>> $templates Array of template objects.
+	 * @param string                                $shared_site_name The name of the site to which template is going to be shared.
 	 *
-	 * @return array The modified template array with unique slugs, ids, and updated content references.
+	 * @return array<int|string,array<string,mixed>> The modified template array with unique slugs, ids, and updated content references.
 	 */
 	private function modify_template_template_part_pattern_slug( array $templates, string $shared_site_name ): array {
 		foreach ( $templates as $index => $template ) {
@@ -903,12 +904,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 			 * into:
 			 * <!-- wp:template-part {"slug":"onedesign-onepress-2-ut","area":"uncategorized"} /-->
 			 */
-			$content = '';
-			if ( $template instanceof \WP_Block_Template && isset( $template->content ) ) {
-				$content = $template->content;
-			} elseif ( is_array( $template ) && isset( $template['content'] ) ) {
-				$content = $template['content'];
-			}
+			$content = $template['content'] ?? '';
 
 			if ( ! empty( $content ) && is_string( $content ) ) {
 				// Remove theme attribute from block comments.
@@ -938,20 +934,11 @@ class Templates_Controller extends Abstract_REST_Controller {
 				);
 
 				// Assign cleaned content back.
-				if ( $template instanceof \WP_Block_Template ) {
-					$templates[ $index ]->content = $content;
-				} else {
-					$templates[ $index ]['content'] = $content;
-				}
+				$templates[ $index ]['content'] = $content;
 			}
 
 			// Modify content references (uses the cleaned content from above).
-			$current_content = '';
-			if ( $template instanceof \WP_Block_Template && isset( $templates[ $index ]->content ) ) {
-				$current_content = $templates[ $index ]->content;
-			} elseif ( is_array( $template ) && isset( $templates[ $index ]['content'] ) ) {
-				$current_content = $templates[ $index ]['content'];
-			}
+			$current_content = $templates[ $index ]['content'] ?? '';
 
 			if ( empty( $current_content ) ) {
 				continue;
@@ -962,11 +949,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 				$shared_site_name
 			);
 
-			if ( $template instanceof \WP_Block_Template ) {
-				$templates[ $index ]->content = $modified_content;
-			} else {
-				$templates[ $index ]['content'] = $modified_content;
-			}
+			$templates[ $index ]['content'] = $modified_content;
 		}
 
 		return $templates;
@@ -975,10 +958,10 @@ class Templates_Controller extends Abstract_REST_Controller {
 	/**
 	 * Modify template part and pattern references within block content.
 	 *
-	 * @param string|array|\WP_Block_Template $content The block content containing WordPress block markup.
-	 * @param string                          $shared_site_name The name of the site to which template is going to be shared.
+	 * @param string|array<string,mixed>|\WP_Block_Template $content The block content containing WordPress block markup.
+	 * @param string                                        $shared_site_name The name of the site to which template is going to be shared.
 	 *
-	 * @return array|string|null Modified content with updated slugs and themes.
+	 * @return array<string,mixed>|string|null Modified content with updated slugs and themes.
 	 */
 	private function modify_content_references( string|array|\WP_Block_Template $content, string $shared_site_name ): array|string|null {
 
@@ -1189,10 +1172,10 @@ class Templates_Controller extends Abstract_REST_Controller {
 	/**
 	 * Replace wp:block ref IDs - handles multiple WordPress block comment formats.
 	 *
-	 * @param array  $items        Array of items to process. Passed by reference.
-	 * @param array  $id_map       Map of old_id => new_id.
-	 * @param string $content_key  Key for the content field (default: 'content').
-	 * @return array Modified items with updated block refs.
+	 * @param array<int|string,array<string,mixed>> $items       Array of items to process.
+	 * @param array<int|string,int|string>          $id_map      Map of old_id => new_id.
+	 * @param string                                $content_key Key for the content field (default: 'content').
+	 * @return array<int|string,array<string,mixed>> Modified items with updated block refs.
 	 */
 	private function replace_block_refs( array $items, array $id_map = [], string $content_key = 'content' ): array {
 		if ( empty( $id_map ) ) {
@@ -1207,7 +1190,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 			$content = $item[ $content_key ];
 
 			foreach ( $id_map as $old_id => $new_id ) {
-				$pattern1 = '/(<!--\s*wp:block\s*\{\s*"ref"\s*:\s*)' . preg_quote( $old_id, '/' ) . '(\s*\}\s*\/-->)/';
+				$pattern1 = '/(<!--\s*wp:block\s*\{\s*"ref"\s*:\s*)' . preg_quote( (string) $old_id, '/' ) . '(\s*\}\s*\/-->)/';
 				$content  = preg_replace( $pattern1, '${1}' . $new_id . '${2}', $content );
 			}
 

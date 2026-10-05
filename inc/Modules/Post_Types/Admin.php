@@ -145,13 +145,15 @@ class Admin implements Registrable {
 		$shared_template_parts = get_option( Constants::ONEDESIGN_SHARED_TEMPLATE_PARTS, [] );
 		foreach ( $shared_template_parts as $template_part ) {
 			// Check if template part already exists.
+			// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.get_posts_get_posts
 			$existing = get_posts(
 				[
-					'post_type'   => 'wp_template_part',
-					'name'        => sanitize_text_field( $template_part['slug'] ),
-					'post_status' => 'any',
-					'numberposts' => 1,
-					'fields'      => 'ids',
+					'post_type'        => 'wp_template_part',
+					'name'             => sanitize_text_field( $template_part['slug'] ),
+					'post_status'      => 'any',
+					'numberposts'      => 1,
+					'fields'           => 'ids',
+					'suppress_filters' => false,
 				]
 			);
 
