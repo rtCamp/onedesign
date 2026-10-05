@@ -5,7 +5,6 @@ export default {
 	'**/*.{js,jsx,ts,tsx}': [ 'wp-scripts lint-js --fix' ],
 	// '**/*.{css,scss}': [ 'wp-scripts lint-style --allow-empty-input --fix' ],
 	/**
-	 * @param filenames
 	 * @todo Simplify when we can use PHPCS 4.x's improved exit codes.
 	 * @see https://github.com/PHPCSStandards/PHP_CodeSniffer/issues/184
 	 */
@@ -15,9 +14,9 @@ export default {
 			.map( ( filename ) => `"${ filename.replace( cwd + '/', '' ) }"` )
 			.join( ' ' );
 
-		// Only fail if phpcbf itself failed (exit code 3).
+		// phpcbf 3.x exits 1 when it fixed everything;
 		return [
-			`sh -c "./vendor/bin/phpcbf ${ relativeFilenames } || [ \$? -eq 3 ]"`,
+			`sh -c "./vendor/bin/phpcbf ${ relativeFilenames } || [ \$? -eq 1 ]"`,
 		];
 	},
 	'**/*.{json,md,css,scss,js,jsx,ts,tsx}': [ 'wp-scripts format --' ],
