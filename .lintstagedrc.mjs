@@ -11,7 +11,12 @@ export default {
 	'**/*.php': ( filenames ) => {
 		const cwd = process.cwd();
 		const relativeFilenames = filenames
-			.map( ( filename ) => `"${ filename.replace( cwd + '/', '' ) }"` )
+			.map(
+				( filename ) =>
+					`'./${ filename
+						.replace( cwd + '/', '' )
+						.replaceAll( "'", "'\\''" ) }'`
+			)
 			.join( ' ' );
 
 		// phpcbf 3.x exits 1 when it fixed everything;
