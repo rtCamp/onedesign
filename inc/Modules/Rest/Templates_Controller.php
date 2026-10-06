@@ -622,8 +622,10 @@ class Templates_Controller extends Abstract_REST_Controller {
 		// get site info from child sites option.
 		$brand_sites = Settings::get_shared_sites();
 
-		$error_log     = [];
-		$response_data = [];
+		$error_log          = [];
+		$response_data      = [];
+		$new_template_parts = [];
+		$new_patterns       = [];
 
 		foreach ( $brand_sites as $site ) {
 			$site_url     = esc_url_raw( trailingslashit( $site['url'] ) );
@@ -912,7 +914,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 
 				$content = preg_replace_callback(
 					$pattern,
-					static function ( $matches ): string|null {
+					static function ( $matches ): string {
 						$block_type      = $matches[1];
 						$attributes_json = $matches[2];
 
@@ -969,27 +971,15 @@ class Templates_Controller extends Abstract_REST_Controller {
 
 		if ( is_string( $content ) ) {
 			$content_string = $content;
-		} elseif ( is_object( $content ) ) {
-			// Handle WP_Block_Template object.
-			if ( isset( $content->content ) ) {
-				$content_string = $content->content;
-			} elseif ( isset( $content->post_content ) ) {
-				// Handle WP_Post object (for patterns/blocks).
-				$content_string = $content->post_content;
-			} else {
-				// Return empty string if we can't find content.
-				return '';
-			}
-		} elseif ( is_array( $content ) ) {
+		} elseif ( $content instanceof \WP_Block_Template ) {
+			$content_string = $content->content;
+		} else {
 			// Handle array format.
 			if ( ! isset( $content['content'] ) ) {
 				return '';
 			}
 
 			$content_string = $content['content'];
-		} else {
-			// Unsupported content type.
-			return '';
 		}
 
 		// Pattern to match template-part and pattern blocks.
@@ -997,7 +987,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 
 		return preg_replace_callback(
 			$pattern,
-			static function ( $matches ) use ( $shared_site_name ): string|null {
+			static function ( $matches ) use ( $shared_site_name ): string {
 				$block_type      = $matches[1];
 				$attributes_json = $matches[2];
 
@@ -1121,7 +1111,6 @@ class Templates_Controller extends Abstract_REST_Controller {
 					$result['slug']        = $result['content']['slug'] ?? null;
 					$result['description'] = $result['content']['description'] ?? null;
 					$result['name']        = $result['content']['name'] ?? null;
-					$result['post_types']  = $result['content']->post_types ?? null;
 					$tracking_key          = 'pattern_' . $result['attributes']['slug'];
 				}
 
