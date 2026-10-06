@@ -1,3 +1,8 @@
+/*
+ * Core WordPress classes that don't match `selector-class-pattern` (disabled in stylelint.config.js):
+ * - .components-modal__content
+ */
+
 @use "./editor";
 
 .onedesign-template-modal {
@@ -127,7 +132,6 @@
 }
 
 .onedesign-apply-templates-modal {
-	// stylelint-disable-next-line selector-class-pattern
 	.components-modal__content > div:nth-child(2) {
 		height: 100%;
 	}

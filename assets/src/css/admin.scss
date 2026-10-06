@@ -1,5 +1,11 @@
 /* onedesign admin styles */
 
+/*
+ * Core WordPress classes that don't match `selector-class-pattern` (disabled in stylelint.config.js):
+ * - .components-notice__content
+ * - .toplevel_page_onedesign
+ */
+
 #onedesign-settings-page {
 	&:has(.components-snackbar-list) {
 		.components-snackbar-list {
@@ -24,7 +30,6 @@
 		}
 	}
 
-	// stylelint-disable-next-line selector-class-pattern
 	.components-notice__content {
 		white-space: pre-line !important;
 	}
@@ -55,7 +60,6 @@
 	}
 }
 
-// stylelint-disable-next-line selector-class-pattern
 .toplevel_page_onedesign {
 	.onedesign-site-checkbox {
 		pointer-events: none;
