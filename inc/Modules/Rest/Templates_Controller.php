@@ -1111,6 +1111,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 					$result['slug']        = $result['content']['slug'] ?? null;
 					$result['description'] = $result['content']['description'] ?? null;
 					$result['name']        = $result['content']['name'] ?? null;
+					$result['post_types']  = $result['content']['postTypes'] ?? null;
 					$tracking_key          = 'pattern_' . $result['attributes']['slug'];
 				}
 
