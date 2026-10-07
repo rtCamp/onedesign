@@ -1,9 +1,13 @@
 /* onedesign admin styles */
 
+/*
+ * Core WordPress classes that don't match `selector-class-pattern` (disabled in stylelint.config.js):
+ * - .components-notice__content
+ * - .toplevel_page_onedesign
+ */
+
 #onedesign-settings-page {
-
 	&:has(.components-snackbar-list) {
-
 		.components-snackbar-list {
 			position: fixed;
 			bottom: 20px;
@@ -17,7 +21,6 @@
 	}
 
 	&:not(:has(.components-snackbar-list)) {
-
 		.components-snackbar {
 			position: fixed;
 			bottom: 20px;
@@ -45,7 +48,7 @@
 		width: 36px;
 		height: 36px;
 		border-radius: 50%;
-		background: linear-gradient(135deg, #2196F3, #1976D2);
+		background: linear-gradient(135deg, #2196f3, #1976d2);
 		color: rgb(255, 255, 255);
 		font-weight: 600;
 		display: flex;
@@ -55,29 +58,23 @@
 		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 		text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 	}
-
 }
 
 .toplevel_page_onedesign {
-
 	.onedesign-site-checkbox {
 		pointer-events: none;
 	}
 }
 
-
 body {
-
 	&.onedesign-missing-brand-sites,
 	&.onedesign-brand-site {
-
 		.wp-first-item:has(.onedesign-plugin-manager-page) {
 			display: none;
 		}
 	}
 
 	&.onedesign-governing-site-site {
-
 		.wp-first-item:has(.onedesign-plugin-manager-page) {
 			display: inline-block;
 		}
@@ -96,7 +93,6 @@ body {
 
 body.onedesign-multisite-selection-modal,
 body.onedesign-site-selection-modal {
-
 	&::before {
 		content: "";
 		position: fixed;
@@ -109,9 +105,7 @@ body.onedesign-site-selection-modal {
 	}
 }
 
-
 [id="toplevel_page_onedesign"] {
-
 	.dashicons-admin-generic::before {
 		content: url(../images/logo.svg) !important;
 	}

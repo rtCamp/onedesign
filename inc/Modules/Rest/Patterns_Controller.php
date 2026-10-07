@@ -225,22 +225,25 @@ class Patterns_Controller extends Abstract_REST_Controller {
 		}
 
 		// Use the option name from your settings class.
-		$child_sites = Settings::get_shared_sites();
+		$child_sites    = Settings::get_shared_sites();
+		$target_site    = null;
+		$remote_api_key = '';
 		foreach ( $child_sites as $site ) {
 			if ( isset( $site['id'] ) && (string) $site['id'] === (string) $site_id ) {
 				$remote_api_key = $site['api_key'] ?? '';
 				if ( empty( $remote_api_key ) ) {
 					return new \WP_Error( 'no_api_key', __( 'API key for the target site is missing in configuration.', 'onedesign' ), [ 'status' => 400 ] );
 				}
+				$target_site = $site;
 				break;
 			}
 		}
 
-		if ( ! isset( $remote_api_key ) ) {
+		if ( null === $target_site ) {
 			return new \WP_Error( 'site_not_found', __( 'Target site not found in configuration.', 'onedesign' ), [ 'status' => 404 ] );
 		}
 
-		$remote_url = $this->build_api_endpoint( $site['url'], 'remove-brand-site-patterns' );
+		$remote_url = $this->build_api_endpoint( $target_site['url'], 'remove-brand-site-patterns' );
 
 		$response = wp_safe_remote_request(
 			$remote_url,
