@@ -54,7 +54,7 @@
 		"@wordpress/element": "^6.40.0",
 		"@wordpress/i18n": "^6.13.0",
 		"@wordpress/icons": "^11.7.0",
-		"@wordpress/plugins": "^7.40.0",
+		"@wordpress/plugins": "^7.56.0",
 		"dompurify": "^3.4.16",
 		"react": "^18.3.1",
 		"react-dom": "^18.3.1"
