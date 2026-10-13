@@ -1,3 +1,8 @@
+/*
+ * Core WordPress classes that don't match `selector-class-pattern` (disabled in stylelint.config.js):
+ * - .components-modal__content
+ */
+
 @use "./editor";
 
 .onedesign-template-modal {
@@ -80,7 +85,6 @@
 	}
 
 	.onedesign-template-tabs {
-
 		.onedesign-base-templates-tab {
 			font-weight: 600;
 			padding: 0.5rem 1rem;
@@ -128,7 +132,6 @@
 }
 
 .onedesign-apply-templates-modal {
-
 	.components-modal__content > div:nth-child(2) {
 		height: 100%;
 	}
