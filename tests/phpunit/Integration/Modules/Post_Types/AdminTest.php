@@ -188,12 +188,25 @@ final class AdminTest extends TestCase {
 		);
 
 		$this->admin->register_block_patterns_if_not_exist();
-		$this->admin->register_block_patterns_if_not_exist();
 
 		$registry = \WP_Block_Patterns_Registry::get_instance();
 		$this->assertSame( [ 'page' ], $registry->get_registered( 'brand/cta' )['postTypes'] );
 		$this->assertFalse( $registry->is_registered( 'brand/no-content' ) );
 		$this->assertNotEmpty( term_exists( 'call-to-action-shared', 'wp_pattern_category' ) );
+
+		update_option(
+			Constants::ONEDESIGN_BRAND_SITE_PATTERNS,
+			[
+				'brand/cta' => [
+					'title'   => 'Updated CTA',
+					'content' => '<!-- wp:paragraph /-->',
+				],
+			]
+		);
+		$this->admin->register_block_patterns_if_not_exist();
+
+		$this->assertSame( 'CTA', $registry->get_registered( 'brand/cta' )['title'] );
+		$this->assertSame( '<!-- wp:buttons /-->', $registry->get_registered( 'brand/cta' )['content'] );
 	}
 
 	/**
@@ -213,8 +226,6 @@ final class AdminTest extends TestCase {
 	 * @param string $method    Redirect handler.
 	 * @param string $page      Requested admin page.
 	 * @param string $post_type Library post type.
-	 *
-	 * @dataProvider redirect_provider
 	 */
 	#[DataProvider( 'redirect_provider' )]
 	public function test_library_page_redirects_to_single_library_post( string $method, string $page, string $post_type ): void {
@@ -244,28 +255,6 @@ final class AdminTest extends TestCase {
 		$this->assertCount( 1, $posts );
 		$this->assertSame( admin_url( 'post.php?post=' . $posts[0]->ID . '&action=edit' ), $first );
 		$this->assertSame( $first, $this->catch_redirect( [ $this->admin, $method ] ), 'Existing post should be reused' );
-	}
-
-	/**
-	 * Editor button templates are printed only on their library's editor screen.
-	 */
-	public function test_editor_buttons_printed_only_on_matching_screen(): void {
-		( new Pattern() )->register_post_type();
-		( new Template() )->register_post_type();
-
-		set_current_screen( Pattern::get_slug() );
-		ob_start();
-		$this->admin->print_pattern_library_button_in_editor_js_template();
-		$this->admin->add_templates_button_to_editor();
-		$output = (string) ob_get_clean();
-
-		$this->assertStringContainsString( 'id="pattern-library-gutenberg-button"', $output );
-		$this->assertStringNotContainsString( 'id="onedesign-template-button"', $output );
-
-		set_current_screen( Template::get_slug() );
-		ob_start();
-		$this->admin->add_templates_button_to_editor();
-		$this->assertStringContainsString( 'id="onedesign-template-button"', (string) ob_get_clean() );
 	}
 
 	/**

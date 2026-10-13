@@ -162,11 +162,11 @@ abstract class TestCase extends WP_UnitTestCase {
 	}
 
 	/**
-	 * {@inheritDoc}
+	 * Hides legacy WordPress docblock metadata from PHPUnit 11.
 	 *
 	 * @deprecated
 	 */
-	protected function checkRequirements(): void { // phpcs:ignore Generic.CodeAnalysis.UselessOverridingMethod.Found
+	protected function checkRequirements(): void { // phpcs:ignore Generic.CodeAnalysis.UselessOverridingMethod.Found -- Prevent PHPUnit from parsing the inherited docblock.
 		parent::checkRequirements();
 	}
 

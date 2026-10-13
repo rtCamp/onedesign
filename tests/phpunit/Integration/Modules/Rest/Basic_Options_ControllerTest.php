@@ -58,7 +58,17 @@ final class Basic_Options_ControllerTest extends TestCase {
 		$this->assertTrue( $response->get_data()['success'] );
 
 		$this->assertSame( Settings::SITE_TYPE_GOVERNING, $this->request( 'GET', 'site-type' )->get_data()['site_type'] );
+	}
+
+	/**
+	 * Saving the site type rejects a missing or unknown value and keeps the stored one.
+	 */
+	public function test_set_site_type_validates_input(): void {
+		update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_GOVERNING );
+
 		$this->assertSame( 400, $this->request( 'POST', 'site-type' )->get_status(), 'site_type is required' );
+		$this->assertSame( 400, $this->request( 'POST', 'site-type', [ 'site_type' => 'foo' ] )->get_status(), 'Unknown site types are rejected' );
+		$this->assertSame( Settings::SITE_TYPE_GOVERNING, Settings::get_site_type() );
 	}
 
 	/**

@@ -48,8 +48,6 @@ final class PostTypeRegistrationTest extends TestCase {
 	 *
 	 * @param class-string<\OneDesign\Modules\Post_Types\Pattern|\OneDesign\Modules\Post_Types\Template> $class_name    Post type class.
 	 * @param bool                                                                                       $has_revisions Whether revisions are supported.
-	 *
-	 * @dataProvider post_type_provider
 	 */
 	#[DataProvider( 'post_type_provider' )]
 	public function test_register_post_type_is_admin_only( string $class_name, bool $has_revisions ): void {

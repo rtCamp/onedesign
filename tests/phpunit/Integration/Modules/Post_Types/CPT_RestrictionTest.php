@@ -94,14 +94,13 @@ final class CPT_RestrictionTest extends TestCase {
 	 *
 	 * @param string $method    Restriction method to call.
 	 * @param string $post_type Library post type slug.
-	 *
-	 * @dataProvider limit_posts_provider
 	 */
 	#[DataProvider( 'limit_posts_provider' )]
 	public function test_add_new_screen_redirects_to_existing_post( string $method, string $post_type ): void {
 		update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_GOVERNING );
 		$this->register_post_types();
 		$this->set_add_new_screen( $post_type );
+		$this->intercept_redirects();
 
 		// No existing post: the add screen is allowed.
 		$this->restriction->$method();
@@ -112,7 +111,6 @@ final class CPT_RestrictionTest extends TestCase {
 				'post_status' => 'draft',
 			]
 		);
-		$this->intercept_redirects();
 		$this->expectExceptionMessage( admin_url( 'post.php?post=' . $post_id . '&action=edit' ) );
 
 		$this->restriction->$method();
