@@ -892,7 +892,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 
 			if ( isset( $template['id'] ) ) {
 				$templates[ $index ]['id'] = self::generate_unique_slug_for_template_patterns_template_parts(
-					$template['id'],
+					(string) $template['id'],
 					$shared_site_name,
 					false
 				);
