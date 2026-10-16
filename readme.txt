@@ -5,7 +5,7 @@ Tags: OnePress, Pattern distribution, Pattern sync, OneDesign, Design consistenc
 Requires at least: 6.8
 Tested up to: 6.9
 <!-- x-release-please-start-version -->
-Stable tag: 1.1.3
+Stable tag: 2.0.0
 <!-- x-release-please-end -->
 Requires PHP: 8.2
 License: GPLv2 or later
