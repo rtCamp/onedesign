@@ -6,7 +6,7 @@ Most jobs are implemented by [rtCamp/plugin-skeleton-d](https://github.com/rtCam
 
 ### [`ci.yml`](ci.yml)
 
-Runs on pull requests to `main` and `release/**`, pushes to `main`, and manual dispatch. `Detect Changes` decides which checks to run from the changed files. Draft PRs skip it, so they only build the zip.
+Runs on pull requests to `main` and `release-**`, pushes to `main`, and manual dispatch. `Detect Changes` decides which checks to run from the changed files. Draft PRs skip it, so they only build the zip.
 
 | Job                | Runs when                                     | What                                                                       |
 | ------------------ | --------------------------------------------- | -------------------------------------------------------------------------- |
