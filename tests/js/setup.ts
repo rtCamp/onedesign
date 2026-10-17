@@ -32,3 +32,9 @@ Object.defineProperty( window, 'OneDesignSettings', {
 	writable: true,
 	configurable: true,
 } );
+
+// `clearAllMocks` keeps implementations, so also reset `fetch` to stop a stubbed response leaking into the next test.
+beforeEach( () => {
+	jest.clearAllMocks();
+	fetchMock.mockReset();
+} );
