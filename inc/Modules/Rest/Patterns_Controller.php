@@ -351,8 +351,9 @@ class Patterns_Controller extends Abstract_REST_Controller {
 			return new \WP_Error( 'no_child_sites', __( 'No child sites configured to receive patterns.', 'onedesign' ), [ 'status' => 404 ] );
 		}
 
-		$all_patterns = [];
-		$error_logs   = [];
+		$all_patterns    = [];
+		$error_logs      = [];
+		$category_labels = $this->get_pattern_category_labels();
 		foreach ( $child_sites as $site ) {
 			$site_patterns  = [];
 			$remote_api_key = $site['api_key'] ?? '';
@@ -390,20 +391,29 @@ class Patterns_Controller extends Abstract_REST_Controller {
 							continue;
 						}
 
+						$categories = isset( $pattern['categories'] ) && is_array( $pattern['categories'] ) ? $pattern['categories'] : [];
+
+						// Brand sites store only category slugs, so labels come from this site's categories.
+						$pattern_category_labels = [];
+						foreach ( $categories as $category_name ) {
+							$pattern_category_labels[ $category_name ] = $category_labels[ $category_name ] ?? $category_name;
+						}
+
 						// Use name as a key to avoid duplicates.
 						$site_patterns[] = [
-							'name'          => $pattern['name'],
-							'title'         => $pattern['title'],
-							'content'       => $pattern['content'] ?? '',
-							'description'   => $pattern['description'] ?? '',
-							'categories'    => $pattern['categories'] ?? [],
-							'keywords'      => $pattern['keywords'] ?? [],
-							'viewportWidth' => $pattern['viewportWidth'] ?? null,
-							'blockTypes'    => $pattern['blockTypes'] ?? null,
-							'postTypes'     => $pattern['postTypes'] ?? null,
-							'templateTypes' => $pattern['templateTypes'] ?? null,
-							'inserter'      => $pattern['inserter'] ?? true,
-							'source_site'   => $site['name'] ?? 'Unknown Site', // Add the source site name for context.
+							'name'            => $pattern['name'],
+							'title'           => $pattern['title'],
+							'content'         => $pattern['content'] ?? '',
+							'description'     => $pattern['description'] ?? '',
+							'categories'      => $categories,
+							'category_labels' => $pattern_category_labels,
+							'keywords'        => $pattern['keywords'] ?? [],
+							'viewportWidth'   => $pattern['viewportWidth'] ?? null,
+							'blockTypes'      => $pattern['blockTypes'] ?? null,
+							'postTypes'       => $pattern['postTypes'] ?? null,
+							'templateTypes'   => $pattern['templateTypes'] ?? null,
+							'inserter'        => $pattern['inserter'] ?? true,
+							'providerSite'    => $site['name'] ?? 'Unknown Site',
 						];
 					}
 				}
@@ -673,13 +683,11 @@ class Patterns_Controller extends Abstract_REST_Controller {
 	}
 
 	/**
-	 * Get all local patterns as a map (both registered and user-created).
+	 * Get labels for registered and user-created pattern categories.
 	 *
-	 * @return array<string,array<string,mixed>> Patterns keyed by name.
+	 * @return array<string,string> Category labels keyed by category slug.
 	 */
-	private function get_all_local_patterns_map(): array {
-		$patterns_map = [];
-
+	private function get_pattern_category_labels(): array {
 		$pattern_categories = \WP_Block_Pattern_Categories_Registry::get_instance()->get_all_registered();
 
 		$user_created_categories = get_terms(
@@ -709,6 +717,19 @@ class Patterns_Controller extends Abstract_REST_Controller {
 				$pattern_category_name_to_label[ $category['name'] ] = $category['label'];
 			}
 		}
+
+		return $pattern_category_name_to_label;
+	}
+
+	/**
+	 * Get all local patterns as a map (both registered and user-created).
+	 *
+	 * @return array<string,array<string,mixed>> Patterns keyed by name.
+	 */
+	private function get_all_local_patterns_map(): array {
+		$patterns_map = [];
+
+		$pattern_category_name_to_label = $this->get_pattern_category_labels();
 
 		// Get all registered patterns.
 		$registered_patterns = \WP_Block_Patterns_Registry::get_instance()->get_all_registered();
