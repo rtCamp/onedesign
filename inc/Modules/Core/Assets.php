@@ -202,7 +202,7 @@ final class Assets implements Registrable {
 		}
 
 		// phpcs:ignore WordPressVIPMinimum.Files.IncludingFile.UsingVariable -- The file is checked for existence above.
-		$asset = require_once $asset_file;
+		$asset = require $asset_file;
 
 		$version   = $ver ?? ( $asset['version'] ?? filemtime( $asset_file ) );
 		$asset_src = sprintf( '%s/%s.js', $this->plugin_url . untrailingslashit( self::ASSETS_DIR ), $filename );
