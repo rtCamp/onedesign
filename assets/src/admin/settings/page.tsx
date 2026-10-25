@@ -1,17 +1,12 @@
-/**
- * WordPress dependencies
- */
 import { useState, useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { Snackbar } from '@wordpress/components';
-
-/**
- * External dependencies
- */
 import SiteTable from '@/components/SiteTable';
 import SiteModal from '@/components/SiteModal';
 import SiteSettings from '@/components/SiteSettings';
+import SiteTypeSettings from '@/components/SiteTypeSettings';
 import { API_NAMESPACE, NONCE } from '@/js/constants';
+import type { SiteType } from '@/types/global';
 
 export interface NoticeType {
 	type: 'success' | 'error' | 'warning' | 'info';
@@ -41,7 +36,7 @@ export type EditingIndex = number | null;
  * @return Rendered component.
  */
 const OneDesignSettingsPage = (): JSX.Element => {
-	const [ siteType, setSiteType ] = useState( '' );
+	const [ siteType, setSiteType ] = useState< SiteType | null >( null );
 	const [ showModal, setShowModal ] = useState( false );
 	const [ editingIndex, setEditingIndex ] = useState< EditingIndex >( null );
 	const [ sites, setSites ] = useState< BrandSite[] >( [] );
@@ -72,15 +67,13 @@ const OneDesignSettingsPage = (): JSX.Element => {
 				] );
 
 				const siteTypeData = ( await siteTypeRes.json() ) as {
-					site_type?: string;
+					site_type?: SiteType;
 				};
 				const sitesData = ( await sitesRes.json() ) as {
 					shared_sites?: BrandSite[];
 				};
 
-				if ( siteTypeData?.site_type ) {
-					setSiteType( siteTypeData?.site_type );
-				}
+				setSiteType( siteTypeData?.site_type ?? '' );
 				if ( Array.isArray( sitesData?.shared_sites ) ) {
 					setSites( sitesData?.shared_sites );
 				}
@@ -207,6 +200,8 @@ const OneDesignSettingsPage = (): JSX.Element => {
 					{ notice?.message }
 				</Snackbar>
 			) }
+
+			{ siteType === '' && <SiteTypeSettings /> }
 
 			{ siteType === 'brand-site' && <SiteSettings /> }
 
