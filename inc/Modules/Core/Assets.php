@@ -212,13 +212,19 @@ final class Assets implements Registrable {
 		$version   = $ver ?? ( $asset['version'] ?? filemtime( $asset_file ) );
 		$asset_src = sprintf( '%s/%s.js', $this->plugin_url . untrailingslashit( self::ASSETS_DIR ), $filename );
 
-		return wp_register_script(
+		$registered = wp_register_script(
 			$handle,
 			$asset_src,
 			$deps ?: $asset['dependencies'],
 			$version ?: false,
 			$in_footer
 		);
+
+		if ( $registered ) {
+			wp_set_script_translations( $handle, 'onedesign', $this->plugin_dir . 'languages' );
+		}
+
+		return $registered;
 	}
 
 	/**

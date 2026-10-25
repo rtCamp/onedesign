@@ -21,7 +21,7 @@
 		"build:prod": "npm run clean && cross-env NODE_ENV=production npm run build:js",
 		"clean": "rimraf build",
 		"format": "wp-scripts format",
-		"i18n:make-pot": "wp-env run cli --env-cwd=wp-content/plugins/$(basename \"$(pwd)\")/ -- wp i18n make-pot . ./languages/onedesign.pot --domain=onedesign --include='*.php,inc,src' --exclude='assets,build,node_modules,tests,vendor'",
+		"i18n:make-pot": "wp-env run cli --env-cwd=wp-content/plugins/$(basename \"$(pwd)\")/ -- wp i18n make-pot . ./languages/onedesign.pot --domain=onedesign --include='*.php,inc,build' --exclude='assets/src,node_modules,tests,vendor'",
 		"i18n:make-json": "wp-env run cli --env-cwd=wp-content/plugins/$(basename \"$(pwd)\")/ -- wp i18n make-json languages/ --no-purge",
 		"lint:css:fix": "wp-scripts lint-style --fix",
 		"lint:css": "wp-scripts lint-style",

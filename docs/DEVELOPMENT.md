@@ -508,7 +508,14 @@ You can test the workflows locally using [act](https://github.com/nektos/act), w
 To generate the translation files, you can use the following commands:
 
 ```bash
+# Build the production assets before generating the POT file.
+npm run build:prod
+
+# Generate the POT file.
 npm run i18n:make-pot
+
+# Generate the JSON translation files.
+npm run i18n:make-json
 ```
 
 ## Building the plugin for distribution
