@@ -21,6 +21,48 @@ use WP_REST_Server;
  */
 class Patterns_Controller extends Abstract_REST_Controller {
 	/**
+	 * The schema of a pattern the governing site sends, with the fields brand sites register it with.
+	 */
+	public const PATTERN_SCHEMA = [
+		'type'       => 'object',
+		'properties' => [
+			'name'          => [
+				'type'      => 'string',
+				'minLength' => 1,
+			],
+			'title'         => [
+				'type'      => 'string',
+				'minLength' => 1,
+			],
+			'content'       => [ 'type' => 'string' ],
+			'description'   => [ 'type' => 'string' ],
+			'categories'    => [
+				'type'  => 'array',
+				'items' => [ 'type' => 'string' ],
+			],
+			'keywords'      => [
+				'type'  => 'array',
+				'items' => [ 'type' => 'string' ],
+			],
+			'viewportWidth' => [ 'type' => 'integer' ],
+			'blockTypes'    => [
+				'type'  => 'array',
+				'items' => [ 'type' => 'string' ],
+			],
+			'postTypes'     => [
+				'type'  => 'array',
+				'items' => [ 'type' => 'string' ],
+			],
+			'templateTypes' => [
+				'type'  => 'array',
+				'items' => [ 'type' => 'string' ],
+			],
+			'inserter'      => [ 'type' => 'boolean' ],
+		],
+		'required'   => [ 'name', 'title', 'content' ],
+	];
+
+	/**
 	 * {@inheritDoc}
 	 */
 	public function register_routes(): void {
@@ -387,26 +429,13 @@ class Patterns_Controller extends Abstract_REST_Controller {
 
 				if ( isset( $decoded_body['patterns'] ) && is_array( $decoded_body['patterns'] ) ) {
 					foreach ( $decoded_body['patterns'] as $pattern ) {
-
-						// Ensure the pattern has a name and title.
-						if ( empty( $pattern['name'] ) || empty( $pattern['title'] ) ) {
+						// What a brand site sends back is checked like anything else it sends.
+						if ( is_wp_error( rest_validate_value_from_schema( $pattern, self::PATTERN_SCHEMA ) ) ) {
 							continue;
 						}
 
-						// Use name as a key to avoid duplicates.
-						$site_patterns[] = [
-							'name'          => $pattern['name'],
-							'title'         => $pattern['title'],
-							'content'       => $pattern['content'] ?? '',
-							'description'   => $pattern['description'] ?? '',
-							'categories'    => $pattern['categories'] ?? [],
-							'keywords'      => $pattern['keywords'] ?? [],
-							'viewportWidth' => $pattern['viewportWidth'] ?? null,
-							'blockTypes'    => $pattern['blockTypes'] ?? null,
-							'postTypes'     => $pattern['postTypes'] ?? null,
-							'templateTypes' => $pattern['templateTypes'] ?? null,
-							'inserter'      => $pattern['inserter'] ?? true,
-							'source_site'   => $site['name'] ?? 'Unknown Site', // Add the source site name for context.
+						$site_patterns[] = self::sanitize_pattern( $pattern ) + [
+							'source_site' => $site['name'] ?? 'Unknown Site', // Add the source site name for context.
 						];
 					}
 				}
@@ -838,30 +867,10 @@ class Patterns_Controller extends Abstract_REST_Controller {
 				continue;
 			}
 
-			$name = sanitize_key( $pattern['name'] );
-			// Prepare args, same as before.
-			$pattern_args = [
-				'name'          => $name,
-				'title'         => sanitize_text_field( $pattern['title'] ),
-				'content'       => $pattern['content'],
-				'description'   => isset( $pattern['description'] ) ? sanitize_text_field( $pattern['description'] ) : '',
-				'categories'    => isset( $pattern['categories'] ) && is_array( $pattern['categories'] ) ? array_map( 'sanitize_text_field', $pattern['categories'] ) : [],
-				'keywords'      => isset( $pattern['keywords'] ) && is_array( $pattern['keywords'] ) ? array_map( 'sanitize_text_field', $pattern['keywords'] ) : [],
-				'viewportWidth' => isset( $pattern['viewportWidth'] ) ? intval( $pattern['viewportWidth'] ) : null,
-				'blockTypes'    => isset( $pattern['blockTypes'] ) && is_array( $pattern['blockTypes'] ) ? array_map( 'sanitize_text_field', $pattern['blockTypes'] ) : null,
-				'postTypes'     => isset( $pattern['postTypes'] ) && is_array( $pattern['postTypes'] ) ? array_map( 'sanitize_text_field', $pattern['postTypes'] ) : null,
-				'templateTypes' => isset( $pattern['templateTypes'] ) && is_array( $pattern['templateTypes'] ) ? array_map( 'sanitize_text_field', $pattern['templateTypes'] ) : null,
-				'inserter'      => isset( $pattern['inserter'] ) ? (bool) $pattern['inserter'] : true,
-			];
-			$pattern_args = array_filter(
-				$pattern_args,
-				static function ( $value ) {
-					return ! is_null( $value );
-				}
-			);
+			$pattern = self::sanitize_pattern( $pattern );
 
 			// Merge/update pattern - this will add new patterns or update existing ones.
-			$existing_patterns[ $name ] = $pattern_args;
+			$existing_patterns[ $pattern['name'] ] = $pattern;
 		}
 
 		// Save merged patterns back to the option.
@@ -875,6 +884,34 @@ class Patterns_Controller extends Abstract_REST_Controller {
 				),
 			],
 			200
+		);
+	}
+
+	/**
+	 * Keeps the fields of a pattern brand sites register it with, each sanitized. The governing site runs it too on the patterns brand sites send back.
+	 *
+	 * @param array<string,mixed> $pattern A pattern that matches PATTERN_SCHEMA.
+	 *
+	 * @return array<string,mixed> The pattern.
+	 */
+	public static function sanitize_pattern( array $pattern ): array {
+		$strings = static fn ( string $field, callable $sanitize ): ?array => isset( $pattern[ $field ] ) ? array_map( $sanitize, (array) $pattern[ $field ] ) : null;
+
+		return array_filter(
+			[
+				'name'          => sanitize_text_field( (string) $pattern['name'] ),
+				'title'         => sanitize_text_field( (string) $pattern['title'] ),
+				'content'       => wp_kses_post( (string) $pattern['content'] ),
+				'description'   => sanitize_text_field( (string) ( $pattern['description'] ?? '' ) ),
+				'categories'    => $strings( 'categories', 'sanitize_text_field' ) ?? [],
+				'keywords'      => $strings( 'keywords', 'sanitize_text_field' ) ?? [],
+				'viewportWidth' => isset( $pattern['viewportWidth'] ) ? (int) $pattern['viewportWidth'] : null,
+				'blockTypes'    => $strings( 'blockTypes', 'sanitize_text_field' ),
+				'postTypes'     => $strings( 'postTypes', 'sanitize_key' ),
+				'templateTypes' => $strings( 'templateTypes', 'sanitize_key' ),
+				'inserter'      => isset( $pattern['inserter'] ) ? (bool) $pattern['inserter'] : null,
+			],
+			static fn ( $value ): bool => null !== $value
 		);
 	}
 }
