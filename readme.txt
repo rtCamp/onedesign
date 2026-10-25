@@ -1,17 +1,16 @@
 === OneDesign ===
 Contributors: rtcamp, parthnvaswani, up1512001, singhakanshu00, danish17, aviral-mittal, vaishaliagola27, rishavjeet, vishal4669, iamimmanuelraj, vishalkakadiya
-Donate link: https://rtcamp.com/
-Tags: OnePress, Pattern distribution, Pattern sync, OneDesign, Design consistency
+Tags: OnePress, block patterns, templates, pattern sync, multisite
 Requires at least: 6.9
-Tested up to: 6.9
-<!-- x-release-please-start-version -->
+Tested up to: 7.1
+<!-- x-release-please-start-version: -->
 Stable tag: 1.1.3
-<!-- x-release-please-end -->
+<!-- x-release-please-end: -->
 Requires PHP: 8.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Synchronize block patterns across multiple WordPress sites. Create once, deploy anywhere with centralized pattern management for enterprise teams.
+Sync patterns across multiple WordPress sites and manage them from a single dashboard.
 
 == Description ==
 
