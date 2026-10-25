@@ -180,10 +180,6 @@ const OneDesignSettingsPage = (): JSX.Element => {
 			setSites( updated );
 			if ( updated.length === 0 ) {
 				window.location.reload();
-			} else {
-				document.body?.classList.remove(
-					'onedesign-missing-brand-sites'
-				);
 			}
 		} catch {
 			setNotice( {

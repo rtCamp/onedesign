@@ -70,8 +70,6 @@ Code contributions, bug reports, and feature requests are welcome! The following
 │       │   │   │   └── SiteSelection.tsx
 │       │   │   ├── index.ts
 │       │   │   └── pattern-event.ts
-│       │   ├── plugin
-│       │   │   └── index.tsx
 │       │   ├── settings
 │       │   │   └── index.tsx
 │       │   └── templates
@@ -100,10 +98,7 @@ Code contributions, bug reports, and feature requests are welcome! The following
 │       ├── images
 │       │   └── logo.svg
 │       ├── js
-│       │   ├── admin.ts
 │       │   ├── constants.ts
-│       │   ├── editor.ts
-│       │   ├── main.ts
 │       │   └── utils.ts
 │       └── store
 │           └── index.ts

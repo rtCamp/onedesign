@@ -106,7 +106,6 @@ final class Assets implements Registrable {
 	public function register_assets(): void {
 
 		$this->register_script( self::SETTINGS_SCRIPT_HANDLE, 'settings' );
-		$this->register_style( self::SETTINGS_SCRIPT_HANDLE, 'settings' );
 
 		$this->register_script( self::ONBOARDING_SCRIPT_HANDLE, 'onboarding' );
 		$this->register_style( self::ONBOARDING_SCRIPT_HANDLE, 'onboarding', [ 'wp-components' ] );

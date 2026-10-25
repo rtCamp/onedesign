@@ -2,7 +2,7 @@
 	"$schema": "https://playground.wordpress.net/blueprint-schema.json",
 	"meta": {
 		"title": "OneDesign Demo",
-		"description": "Synchronize block patterns across multiple WordPress sites. Create once, deploy anywhere with centralized pattern management for enterprise teams.",
+		"description": "Sync patterns across multiple WordPress sites and manage them from a single dashboard.",
 		"author": "rtCamp",
 		"categories": [ "plugin", "multisite", "patterns", "enterprise" ]
 	},

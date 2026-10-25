@@ -1,9 +1,4 @@
 /**
- * External dependencies
- */
-import DOMPurify from 'dompurify';
-
-/**
  * Helper function to extract initials from a name.
  *
  * @param name - The name to extract initials from.
@@ -60,15 +55,4 @@ export const isValidUrl = ( url: string ): boolean => {
 	} catch {
 		return false;
 	}
-};
-
-/**
- * Sanitizes a given string by removing all HTML tags.
- *
- * @param item - The string to sanitize.
- *
- * @return The sanitized string with all HTML tags removed.
- */
-export const PurifyElement = ( item: string ): string => {
-	return DOMPurify.sanitize( item, { ALLOWED_TAGS: [] } );
 };
