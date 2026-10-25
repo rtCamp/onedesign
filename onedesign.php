@@ -20,7 +20,7 @@
  * Version:           1.1.3
  * x-release-please-end
  * Requires PHP:      8.2
- * Requires at least: 6.8
+ * Requires at least: 6.9
  * Tested up to:      6.9
  */
 

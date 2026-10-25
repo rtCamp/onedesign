@@ -2,7 +2,7 @@
 Contributors: rtcamp, parthnvaswani, up1512001, singhakanshu00, danish17, aviral-mittal, vaishaliagola27, rishavjeet, vishal4669, iamimmanuelraj, vishalkakadiya
 Donate link: https://rtcamp.com/
 Tags: OnePress, Pattern distribution, Pattern sync, OneDesign, Design consistency
-Requires at least: 6.8
+Requires at least: 6.9
 Tested up to: 6.9
 <!-- x-release-please-start-version -->
 Stable tag: 1.1.3

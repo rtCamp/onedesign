@@ -58,3 +58,18 @@ updates:
       npm-prod-minor-patch:
         dependency-type: 'production'
         update-types: [minor, patch]
+    # @wordpress/dependency-extraction-webpack-plugin externalizes certain WordPress packages, so they shouldn't be autoupdated without a min WordPress version bump too.
+    allow:
+      # Development dependencies should be updated freely.
+      - dependency-type: 'development'
+      # Locked to patch updates, so only fixes that don't break compatibility are allowed.
+      - dependency-name: '@wordpress/*'
+        dependency-type: 'production'
+        update-types: ['version-update:semver-patch']
+      - dependency-name: 'react'
+        update-types: ['version-update:semver-patch']
+      - dependency-name: 'react-dom'
+        update-types: ['version-update:semver-patch']
+      # Production dependencies that WordPress bundles.
+      # Keep in sync with https://github.com/WordPress/gutenberg/blob/%40wordpress/dependency-extraction-webpack-plugin%407.0.0/packages/dependency-extraction-webpack-plugin/lib/util.js#L2
+      - dependency-name: '@wordpress/icons'
