@@ -1,6 +1,3 @@
-/**
- * WordPress dependencies
- */
 import { useState, useMemo } from '@wordpress/element';
 import {
 	Modal,
@@ -12,24 +9,9 @@ import {
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useInstanceId } from '@wordpress/compose';
-
-/**
- * External dependencies
- */
 import type { SyntheticEvent } from 'react';
-
-/**
- * Internal dependencies
- */
-import { isValidUrl } from '../js/utils';
-
-interface SiteFormData {
-	name?: string;
-	url?: string;
-	api_key?: string;
-	logo?: string;
-	logo_id?: number | null;
-}
+import type { BrandSite, defaultBrandSite } from '@/admin/settings/page';
+import { isValidUrl } from '@/js/utils';
 
 interface FormErrors {
 	name: string;
@@ -126,12 +108,12 @@ const DeleteConfirmationModal = ( {
 );
 
 interface SiteModalProps {
-	formData: SiteFormData;
-	setFormData: ( data: SiteFormData ) => void;
+	formData: typeof defaultBrandSite;
+	setFormData: ( data: typeof defaultBrandSite ) => void;
 	onSubmit: () => Promise< SubmitResponse | void >;
 	onClose: () => void;
 	editing: boolean;
-	originalData?: Partial< SiteFormData >;
+	originalData?: Partial< BrandSite >;
 }
 
 /**

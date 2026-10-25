@@ -71,7 +71,8 @@ Code contributions, bug reports, and feature requests are welcome! The following
 │       │   │   ├── index.ts
 │       │   │   └── pattern-event.ts
 │       │   ├── settings
-│       │   │   └── index.tsx
+│       │   │   ├── index.tsx
+│       │   │   └── page.tsx
 │       │   └── templates
 │       │       ├── App.tsx
 │       │       ├── components
