@@ -4,6 +4,20 @@
 import { describe, expect, it } from 'vitest';
 import { getInitials, isValidUrl } from '@/js/utils';
 
+describe( 'utils', () => {
+	it( 'validates well-formed urls', () => {
+		expect( isValidUrl( 'https://example.com/path' ) ).toBe( true );
+		expect( isValidUrl( 'not-a-url' ) ).toBe( false );
+	} );
+
+	it( 'only accepts http and https urls', () => {
+		expect( isValidUrl( 'http://localhost:8890' ) ).toBe( true );
+		expect( isValidUrl( 'ftp://example.com' ) ).toBe( false );
+		expect( isValidUrl( 'javascript:alert(1)' ) ).toBe( false );
+		expect( isValidUrl( 'mailto:a@b.c' ) ).toBe( false );
+	} );
+} );
+
 describe( 'getInitials', () => {
 	it( 'returns "?" for empty or invalid input', () => {
 		expect( getInitials( '' ) ).toBe( '?' );
@@ -38,17 +52,5 @@ describe( 'getInitials', () => {
 
 	it( 'trims surrounding whitespace before extracting', () => {
 		expect( getInitials( '   spaced name   ' ) ).toBe( 'SN' );
-	} );
-} );
-
-describe( 'isValidUrl', () => {
-	it( 'accepts parseable http(s) URLs', () => {
-		expect( isValidUrl( 'https://example.com' ) ).toBe( true );
-		expect( isValidUrl( 'http://example.com/path' ) ).toBe( true );
-	} );
-
-	it( 'rejects unparseable strings and non-http(s) schemes', () => {
-		expect( isValidUrl( 'not a url' ) ).toBe( false );
-		expect( isValidUrl( '' ) ).toBe( false );
 	} );
 } );

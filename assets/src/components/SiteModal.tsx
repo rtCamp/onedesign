@@ -435,7 +435,7 @@ const SiteModal = ( {
 							setFormData( { ...formData, url: value } )
 						}
 						help={ __(
-							'It must start with http or https and end with /, like: https://rtcamp.com/',
+							'Starts with http:// or https://, like https://rtcamp.com.',
 							'onedesign'
 						) }
 						__next40pxDefaultSize
