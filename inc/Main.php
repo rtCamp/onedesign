@@ -87,7 +87,7 @@ final class Main {
 				static function () {
 					wp_admin_notice(
 						sprintf(
-						/* translators: 1: Plugin name */
+						/* translators: %s: URL of the Permalink Settings screen. */
 							__( 'OneDesign: The plugin requires pretty permalinks to be enabled. Please go to <a href="%s">Permalink Settings</a> and enable an option other than <code>Plain</code>.', 'onedesign' ),
 							admin_url( 'options-permalink.php' ),
 						),

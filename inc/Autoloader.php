@@ -76,10 +76,7 @@ final class Autoloader {
 
 					wp_admin_notice(
 						$error_message,
-						[
-							'type'    => 'error',
-							'dismiss' => false,
-						]
+						[ 'type' => 'error' ]
 					);
 				}
 			);
