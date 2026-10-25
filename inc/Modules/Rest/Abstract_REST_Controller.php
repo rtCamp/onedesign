@@ -14,6 +14,7 @@ namespace OneDesign\Modules\Rest;
 use OneDesign\Contracts\Interfaces\Registrable;
 use OneDesign\Modules\Multisite\Settings as MU_Settings;
 use OneDesign\Modules\Settings\Settings;
+use OneDesign\Utils;
 use WP_REST_Controller;
 
 /**
@@ -139,6 +140,50 @@ abstract class Abstract_REST_Controller extends WP_REST_Controller implements Re
 	 */
 	protected function build_api_endpoint( string $site_url, string $endpoint, string $rest_namespace = self::NAMESPACE ): string {
 		return esc_url_raw( trailingslashit( $site_url ) ) . '/wp-json/' . $rest_namespace . '/' . ltrim( $endpoint, '/' );
+	}
+
+	/**
+	 * Whether the request is from the governing site this brand site is connected to, signed with this site's API key.
+	 *
+	 * @param \WP_REST_Request<array<string,mixed>> $request Request.
+	 */
+	public function is_governing_request( $request ): bool {
+		if ( ! Settings::is_consumer_site() ) {
+			return false;
+		}
+
+		$governing_site_url = Settings::get_parent_site_url();
+		$governing_site_url = ! empty( $governing_site_url ) ? Utils::normalize_url( $governing_site_url ) : null;
+
+		return $governing_site_url === $this->get_requesting_site_url( $request )
+			&& $this->has_api_key( $request, Settings::get_api_key() );
+	}
+
+	/**
+	 * Gets the normalized URL of the site that sent the request, from its X-OneDesign-Site-URL header.
+	 *
+	 * @param \WP_REST_Request<array<string,mixed>>|\WP_REST_Request<array{}> $request Request.
+	 *
+	 * @return string The normalized URL, or an empty string if the header is missing or invalid.
+	 */
+	protected function get_requesting_site_url( $request ): string {
+		$header   = $request->get_header( 'X-OneDesign-Site-URL' );
+		$site_url = ! empty( $header ) ? esc_url_raw( wp_unslash( $header ) ) : '';
+		$parsed   = wp_parse_url( $site_url );
+
+		return ! empty( $parsed['scheme'] ) && ! empty( $parsed['host'] ) ? Utils::normalize_url( $site_url ) : '';
+	}
+
+	/**
+	 * Whether the request's X-OneDesign-Token is the given API key.
+	 *
+	 * @param \WP_REST_Request<array<string,mixed>> $request Request.
+	 * @param string                                $api_key The API key the sender should hold.
+	 */
+	protected function has_api_key( $request, string $api_key ): bool {
+		$token = (string) $request->get_header( 'X-OneDesign-Token' );
+
+		return '' !== $api_key && '' !== $token && hash_equals( $api_key, $token );
 	}
 
 	/**
