@@ -1,11 +1,4 @@
-/*
- * Core WordPress classes that don't match `selector-class-pattern` (disabled in stylelint.config.js):
- * - .components-modal__content
- * - .components-modal__header
- * - .components-tab-panel__tabs
- * - .components-tab-panel__tabs-item
- * - .editor-document-tools__left
- */
+/* stylelint-disable selector-class-pattern */
 
 .onedesign-loader {
 	position: fixed;

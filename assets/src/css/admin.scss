@@ -1,10 +1,4 @@
-/* onedesign admin styles */
-
-/*
- * Core WordPress classes that don't match `selector-class-pattern` (disabled in stylelint.config.js):
- * - .components-notice__content
- * - .toplevel_page_onedesign
- */
+/* stylelint-disable selector-class-pattern */
 
 #onedesign-settings-page {
 	&:has(.components-snackbar-list) {

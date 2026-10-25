@@ -195,7 +195,6 @@ Code contributions, bug reports, and feature requests are welcome! The following
 ├── .prettierignore               # Prettier ignore patterns.
 ├── .prettierrc.js                # Prettier configuration.
 ├── .release-please-manifest.json # Release Please manifest file.
-├── .stylelintignore              # Stylelint ignore patterns.
 ├── .wp-env.json                  # wp-env configuration (governing site).
 ├── .wp-env.child.json            # wp-env configuration (brand site).
 ├── .wp-env.test.json             # wp-env configuration (test site).
@@ -209,7 +208,7 @@ Code contributions, bug reports, and feature requests are welcome! The following
 ├── phpstan.neon.dist             # PHPStan configuration.
 ├── phpunit.xml.dist              # PHPUnit configuration.
 ├── release-please-config.json    # Release Please configuration.
-├── stylelint.config.js          # Stylelint configuration.
+├── stylelint.config.mjs          # Stylelint configuration.
 ├── tsconfig.base.json            # TypeScript base configuration.
 ├── tsconfig.json                 # TypeScript configuration.
 ├── vitest.config.mjs             # Vitest configuration.
@@ -414,7 +413,7 @@ npm run format
 
 This project uses [Stylelint](https://stylelint.io/) through `@wordpress/scripts` for CSS linting, following WordPress coding standards and best practices.
 
-Our specific Stylelint configuration is defined in the [`.stylelint.config.js`](../.stylelint.config.js) file.
+Our specific Stylelint configuration is defined in the [`stylelint.config.mjs`](../stylelint.config.mjs) file.
 
 You can run Stylelint on CSS files using:
 
