@@ -102,10 +102,12 @@ class Templates_Controller extends Abstract_REST_Controller {
 					'sites'     => [
 						'required' => true,
 						'type'     => 'array',
+						'items'    => [ 'type' => 'string' ],
 					],
 					'templates' => [
 						'required' => true,
 						'type'     => 'array',
+						'items'    => [ 'type' => 'string' ],
 					],
 				],
 			]
@@ -125,6 +127,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 					'template_ids' => [
 						'required' => true,
 						'type'     => 'array',
+						'items'    => [ 'type' => 'string' ],
 					],
 					'site'         => [
 						'required' => true,
@@ -148,6 +151,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 					'template_ids'  => [
 						'required' => true,
 						'type'     => 'array',
+						'items'    => [ 'type' => 'string' ],
 					],
 					'is_remove_all' => [
 						'required' => false,
@@ -171,10 +175,12 @@ class Templates_Controller extends Abstract_REST_Controller {
 					'sites'     => [
 						'required' => true,
 						'type'     => 'array',
+						'items'    => [ 'type' => 'string' ],
 					],
 					'templates' => [
 						'required' => true,
 						'type'     => 'array',
+						'items'    => [ 'type' => 'string' ],
 					],
 				],
 			]
@@ -892,7 +898,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 
 			if ( isset( $template['id'] ) ) {
 				$templates[ $index ]['id'] = self::generate_unique_slug_for_template_patterns_template_parts(
-					$template['id'],
+					(string) $template['id'],
 					$shared_site_name,
 					false
 				);

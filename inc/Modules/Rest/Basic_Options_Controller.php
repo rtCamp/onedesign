@@ -42,6 +42,8 @@ class Basic_Options_Controller extends Abstract_REST_Controller {
 						'site_type' => [
 							'required'          => true,
 							'type'              => 'string',
+							'enum'              => [ Settings::SITE_TYPE_CONSUMER, Settings::SITE_TYPE_GOVERNING ],
+							'validate_callback' => 'rest_validate_request_arg',
 							'sanitize_callback' => 'sanitize_text_field',
 						],
 					],

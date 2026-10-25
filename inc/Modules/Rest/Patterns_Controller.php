@@ -77,6 +77,7 @@ class Patterns_Controller extends Abstract_REST_Controller {
 					'pattern_names' => [
 						'required'          => true,
 						'type'              => 'array',
+						'items'             => [ 'type' => 'string' ],
 						'validate_callback' => static function ( $param ): bool {
 							return is_array( $param ) && ! empty( $param );
 						},
@@ -106,6 +107,7 @@ class Patterns_Controller extends Abstract_REST_Controller {
 					'pattern_names' => [
 						'required'          => true,
 						'type'              => 'array',
+						'items'             => [ 'type' => 'string' ],
 						'validate_callback' => static function ( $param ): bool {
 							return is_array( $param ) && ! empty( $param );
 						},
