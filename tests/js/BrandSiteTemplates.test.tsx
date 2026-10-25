@@ -1,6 +1,7 @@
 /**
  * External dependencies
  */
+import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
 /**
@@ -9,24 +10,20 @@ import { render, screen } from '@testing-library/react';
 import BrandSiteTemplates from '@/admin/templates/components/BrandSiteTemplates';
 
 // MemoizedTemplatePreview pulls in the block editor.
-jest.mock( '@wordpress/block-editor', () => ( {
-	BlockPreview: () => null,
-} ) );
-jest.mock( '@wordpress/blocks', () => ( {
-	parse: jest.fn( () => [] ),
-} ) );
+vi.mock( '@wordpress/block-editor' );
+vi.mock( '@wordpress/blocks' );
 
 const baseProps = {
 	currentPage: 1,
 	PER_PAGE: 9,
-	handleTemplateSelection: jest.fn(),
-	setCurrentPage: jest.fn(),
+	handleTemplateSelection: vi.fn(),
+	setCurrentPage: vi.fn(),
 	currentSiteId: 1,
-	fetchConnectedSitesTemplates: jest.fn(),
-	setSelectedTemplates: jest.fn(),
+	fetchConnectedSitesTemplates: vi.fn(),
+	setSelectedTemplates: vi.fn(),
 	allTemplates: [],
 	notice: null,
-	setNotice: jest.fn(),
+	setNotice: vi.fn(),
 };
 
 describe( 'BrandSiteTemplates', () => {

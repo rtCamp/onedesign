@@ -1,15 +1,9 @@
 /**
  * External dependencies
  */
+import { describe, expect, it, vi } from 'vitest';
 import { DEFAULT_STATE, actions, reducer, selectors } from '@/store';
 import type { PatternAction } from '@/store';
-
-// The store's async resolver calls apiFetch; mock it so the generator can be
-// driven manually without hitting the network.
-jest.mock( '@wordpress/api-fetch', () => ( {
-	__esModule: true,
-	default: jest.fn(),
-} ) );
 
 describe( 'store reducer', () => {
 	it( 'returns the default state for an unknown action', () => {
@@ -157,7 +151,7 @@ describe( 'fetchSitePatterns generator', () => {
 	} );
 
 	it( 'catches thrown errors and still resets the loading flag', () => {
-		const consoleError = jest
+		const consoleError = vi
 			.spyOn( console, 'error' )
 			.mockImplementation( () => {} );
 		const gen = actions.fetchSitePatterns();

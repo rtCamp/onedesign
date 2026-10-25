@@ -110,11 +110,6 @@ final class Main {
 		// Loop through all the classes, instantiate them, and register any hooks.
 		$instances = [];
 		foreach ( self::REGISTRABLE_CLASSES as $class_name ) {
-			/**
-			 * If it's a singleton, we can use the instance method. Otherwise we instantiate it directly.
-			 *
-			 * @todo reduce use of singletons where possible.
-			 */
 			$instances[ $class_name ] = new $class_name();
 			$instances[ $class_name ]->register_hooks();
 		}

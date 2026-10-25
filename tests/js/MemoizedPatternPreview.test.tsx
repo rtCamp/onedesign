@@ -1,6 +1,7 @@
 /**
  * External dependencies
  */
+import { describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 
 /**
@@ -8,12 +9,8 @@ import { render, screen, fireEvent } from '@testing-library/react';
  */
 import MemoizedPatternPreview from '@/admin/patterns/components/MemoizedPatternPreview';
 
-jest.mock( '@wordpress/block-editor', () => ( {
-	BlockPreview: () => <div data-testid="block-preview" />,
-} ) );
-jest.mock( '@wordpress/blocks', () => ( {
-	parse: jest.fn( () => [] ),
-} ) );
+vi.mock( '@wordpress/block-editor' );
+vi.mock( '@wordpress/blocks' );
 
 const PATTERN = {
 	name: 'p1',
@@ -28,7 +25,7 @@ describe( 'MemoizedPatternPreview', () => {
 			<MemoizedPatternPreview
 				pattern={ PATTERN }
 				isSelected={ false }
-				onSelect={ jest.fn() }
+				onSelect={ vi.fn() }
 			/>
 		);
 		expect( screen.getByText( 'My Pattern' ) ).toBeInTheDocument();
@@ -37,7 +34,7 @@ describe( 'MemoizedPatternPreview', () => {
 	} );
 
 	it( 'calls onSelect when the card is activated', () => {
-		const onSelect = jest.fn();
+		const onSelect = vi.fn();
 		render(
 			<MemoizedPatternPreview
 				pattern={ PATTERN }
@@ -54,7 +51,7 @@ describe( 'MemoizedPatternPreview', () => {
 			<MemoizedPatternPreview
 				pattern={ PATTERN }
 				isSelected={ false }
-				onSelect={ jest.fn() }
+				onSelect={ vi.fn() }
 				isCheckBoxRequired={ false }
 			/>
 		);
@@ -68,7 +65,7 @@ describe( 'MemoizedPatternPreview', () => {
 			<MemoizedPatternPreview
 				pattern={ PATTERN }
 				isSelected={ false }
-				onSelect={ jest.fn() }
+				onSelect={ vi.fn() }
 				providerSite="Brand A"
 			/>
 		);

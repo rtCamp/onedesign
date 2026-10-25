@@ -34,7 +34,7 @@ jobs:
       js: ${{ steps.filter.outputs.js }}
       css: ${{ steps.filter.outputs.css }}
       e2e: ${{ steps.filter.outputs.e2e }}
-      jest: ${{ steps.filter.outputs.jest }}
+      vitest: ${{ steps.filter.outputs.vitest }}
 
     steps:
       - name: Checkout repository
@@ -91,7 +91,7 @@ jobs:
               - 'tests/e2e/**/*'
               - 'playwright.config.ts'
               - '.wp-env.test.json'
-            jest:
+            vitest:
               - '.github/workflows/ci.yml'
               - 'assets/src/**/__tests__/**/*'
               - 'assets/src/**/*.test.ts'
@@ -99,7 +99,7 @@ jobs:
               - 'assets/src/**/*.spec.ts'
               - 'assets/src/**/*.spec.tsx'
               - 'tests/js/**/*'
-              - 'jest.config.js'
+              - 'vitest.config.mjs'
               - 'package*.json'
 
   actionlint:
@@ -138,17 +138,49 @@ jobs:
     permissions:
       contents: read
 
-  jest:
-    name: Jest Unit Tests
+  # The skeleton's reusable workflow only runs Jest, so Vitest runs here.
+  vitest:
+    name: Vitest Unit Tests
     needs: detect
-    if: needs.detect.outputs.js == 'true' || needs.detect.outputs.jest == 'true'
-    uses: rtCamp/plugin-skeleton-d/.github/workflows/reusable-jest-public.yml@72dd3643b710bd84eed7c6143312c9434a95d352 # v0.2.0
+    if: needs.detect.outputs.js == 'true' || needs.detect.outputs.vitest == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     permissions:
       contents: read
-    with:
-      coverage: true
-    secrets:
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Run Vitest tests with coverage
+        run: npm run test:js:coverage
+
+      - name: Upload code coverage report to Codecov
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: tests/_output/js-coverage/lcov.info
+          flags: vitest
+          fail_ci_if_error: false
+
+      - name: Upload HTML coverage report as artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: vitest-code-coverage
+          path: tests/_output/js-coverage/lcov-report
+          retention-days: 7
+          if-no-files-found: ignore
 
   phpunit:
     name: PHPUnit (PHP ${{ matrix.php }}, WP ${{ matrix.wp }})

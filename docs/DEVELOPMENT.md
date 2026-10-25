@@ -26,7 +26,7 @@ Code contributions, bug reports, and feature requests are welcome! The following
   - [WordPress Playground Previews](#wordpress-playground-previews)
 - [Running Tests](#running-tests)
   - [PHPUnit](#phpunit)
-  - [Jest (JavaScript Unit Tests)](#jest-javascript-unit-tests)
+  - [Vitest (JavaScript Unit Tests)](#vitest-javascript-unit-tests)
     - [Running Tests](#running-tests-1)
     - [Test Location](#test-location)
     - [Writing Tests](#writing-tests)
@@ -158,7 +158,7 @@ Code contributions, bug reports, and feature requests are welcome! The following
 │   │   # Generated results and caches.
 │   ├── _output/
 │   │   ├── debug.log        # WordPress debug log.
-│   │   ├── js-coverage/     # Jest code coverage reports.
+│   │   ├── js-coverage/     # Vitest code coverage reports.
 │   │   └── php-coverage.xml # PHPUnit code coverage report (XML).
 │   │   # Artifacts used for testing.
 │   ├── _data/
@@ -166,7 +166,7 @@ Code contributions, bug reports, and feature requests are welcome! The following
 │   │       └── localhost-helper.php # Plugin used to allow docker containers to connect to each other.
 │   │   # Playwright end-to-end tests.
 │   ├── e2e/
-│   │   # Jest unit tests.
+│   │   # Vitest unit tests.
 │   ├── js/
 │   │   └── tsconfig.json     # Test TypeScript config.
 │   │   # PHPUnit tests.
@@ -203,7 +203,6 @@ Code contributions, bug reports, and feature requests are welcome! The following
 ├── babel.config.js               # Babel configuration.
 ├── composer.json                 # PHP dependencies.
 ├── eslint.config.mjs   # ESLint flat config.
-├── jest.config.js                # Jest configuration.
 ├── LICENSE.md                    # License file.
 ├── package.json                  # Node.js dependencies.
 ├── playwright.config.ts          # Playwright configuration.
@@ -213,6 +212,7 @@ Code contributions, bug reports, and feature requests are welcome! The following
 ├── stylelint.config.js          # Stylelint configuration.
 ├── tsconfig.base.json            # TypeScript base configuration.
 ├── tsconfig.json                 # TypeScript configuration.
+├── vitest.config.mjs             # Vitest configuration.
 └── webpack.config.js             # Webpack configuration.
 ```
 
@@ -472,9 +472,9 @@ npm run test:php
 
 You should see the html coverage report in the `tests/_output/html` directory and the clover XML report in `tests/_output/php-coverage.xml`.
 
-### Jest (JavaScript Unit Tests)
+### Vitest (JavaScript Unit Tests)
 
-OneDesign uses [Jest](https://jestjs.io/) for JavaScript/TypeScript unit testing, configured via [`jest.config.js`](../jest.config.js) and extending `@wordpress/scripts` defaults.
+OneDesign uses [Vitest](https://vitest.dev/) for JavaScript/TypeScript unit testing, configured via [`vitest.config.mjs`](../vitest.config.mjs) and run through `wp-scripts test-unit-js`.
 
 #### Running Tests
 

@@ -1,6 +1,7 @@
 /**
  * External dependencies
  */
+import { describe, expect, it, type Mock } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 
 /**
@@ -8,7 +9,7 @@ import { renderHook, act, waitFor } from '@testing-library/react';
  */
 import useSitesManagement from '@/hooks/useSitesManagement';
 
-const fetchMock = global.fetch as unknown as jest.Mock;
+const fetchMock = global.fetch as Mock;
 
 const PROPS = {
 	NONCE: 'nonce',
@@ -39,10 +40,6 @@ function routeFetch( healthResponse: unknown, healthRejects = false ): void {
 		return Promise.reject( new Error( `unexpected url: ${ url }` ) );
 	} );
 }
-
-afterEach( () => {
-	fetchMock.mockReset();
-} );
 
 describe( 'useSitesManagement', () => {
 	it( 'fetches configured sites on mount and runs the health check', async () => {

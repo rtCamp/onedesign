@@ -1,62 +1,25 @@
 /**
  * External dependencies
  */
+import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import type { ReactNode } from 'react';
 
 /**
  * Internal dependencies
  */
 import TemplateModal from '@/admin/templates/components/TemplateModal';
 
-// Children + WP components are heavy; stub them for a focused smoke test.
-jest.mock( '@/admin/templates/components/BaseSiteTemplates', () => ( {
-	__esModule: true,
+// The real children load @wordpress/blocks, which Vitest can't import.
+vi.mock( '@/admin/templates/components/BaseSiteTemplates', () => ( {
 	default: () => <div>base-templates</div>,
 } ) );
-jest.mock( '@/admin/templates/components/BrandSiteTemplates', () => ( {
-	__esModule: true,
+vi.mock( '@/admin/templates/components/BrandSiteTemplates', () => ( {
 	default: () => <div>brand-templates</div>,
-} ) );
-jest.mock( '@/admin/templates/components/SiteSelection', () => ( {
-	__esModule: true,
-	default: () => <div>site-selection</div>,
-} ) );
-jest.mock( '@/hooks/useSitesManagement', () => {
-	// Return a STABLE reference; a fresh object each render churns the
-	// `[siteInfo]` effect identity and loops forever.
-	const value = {
-		siteInfo: {},
-		sitesHealthCheckResult: {},
-		isLoading: false,
-	};
-	return { __esModule: true, default: () => value };
-} );
-jest.mock( '@wordpress/icons', () => ( { cog: 'cog' } ) );
-jest.mock( '@wordpress/components', () => ( {
-	Modal: ( { title, children }: { title?: string; children: ReactNode } ) => (
-		<div>
-			{ title ? <h1>{ title }</h1> : null }
-			{ children }
-		</div>
-	),
-	SearchControl: () => <input aria-label="search" />,
-	TabPanel: ( {
-		tabs,
-		children,
-	}: {
-		tabs: Array< { name: string } >;
-		children: ( tab: { name: string } ) => ReactNode;
-	} ) => <div>{ tabs[ 0 ] ? children( tabs[ 0 ] ) : null }</div>,
-	Spinner: () => <div>spinner</div>,
-	Button: ( { children }: { children?: ReactNode } ) => (
-		<button>{ children }</button>
-	),
 } ) );
 
 describe( 'TemplateModal', () => {
 	beforeEach( () => {
-		( global.fetch as jest.Mock ).mockResolvedValue( {
+		( global.fetch as Mock ).mockResolvedValue( {
 			json: async () => ( { success: true, templates: [] } ),
 		} );
 	} );

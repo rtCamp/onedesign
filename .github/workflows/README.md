@@ -8,16 +8,16 @@ Most jobs are implemented by [rtCamp/plugin-skeleton-d](https://github.com/rtCam
 
 Runs on pull requests to `main` and `release-**`, pushes to `main`, and manual dispatch. `Detect Changes` decides which checks to run from the changed files. Draft PRs skip it, so they only build the zip.
 
-| Job                | Runs when                                     | What                                                                       |
-| ------------------ | --------------------------------------------- | -------------------------------------------------------------------------- |
-| `actionlint`       | Workflow or `.github/actionlint.yaml` changes | actionlint and shellcheck on the GitHub workflows                          |
-| `PHPCS`            | PHP, Composer or `.phpcs.xml.dist` changes    | PHPCS coding standards                                                     |
-| `PHPStan`          | PHP, Composer or `phpstan.neon.dist` changes  | PHPStan static analysis                                                    |
-| `CSS/JS Lint`      | JS, TS, CSS or their config changes           | ESLint, TypeScript, Stylelint, Prettier                                    |
-| `Jest Unit Tests`  | JS or Jest test changes                       | Jest, with coverage uploaded to Codecov                                    |
-| `PHPUnit`          | PHP or PHPUnit test changes                   | PHPUnit on PHP 8.2–8.5 with the latest WordPress, coverage on 8.5          |
-| `E2E Tests`        | PHP, JS, CSS or E2E test changes              | Playwright E2E tests against wp-env                                        |
-| `Build Plugin Zip` | Always                                        | Builds `onedesign.zip`. On PRs, also uploads it for the Playground preview |
+| Job                 | Runs when                                     | What                                                                       |
+| ------------------- | --------------------------------------------- | -------------------------------------------------------------------------- |
+| `actionlint`        | Workflow or `.github/actionlint.yaml` changes | actionlint and shellcheck on the GitHub workflows                          |
+| `PHPCS`             | PHP, Composer or `.phpcs.xml.dist` changes    | PHPCS coding standards                                                     |
+| `PHPStan`           | PHP, Composer or `phpstan.neon.dist` changes  | PHPStan static analysis                                                    |
+| `CSS/JS Lint`       | JS, TS, CSS or their config changes           | ESLint, TypeScript, Stylelint, Prettier                                    |
+| `Vitest Unit Tests` | JS or Vitest test changes                     | Vitest, with coverage uploaded to Codecov                                  |
+| `PHPUnit`           | PHP or PHPUnit test changes                   | PHPUnit on PHP 8.2–8.5 with the latest WordPress, coverage on 8.5          |
+| `E2E Tests`         | PHP, JS, CSS or E2E test changes              | Playwright E2E tests against wp-env                                        |
+| `Build Plugin Zip`  | Always                                        | Builds `onedesign.zip`. On PRs, also uploads it for the Playground preview |
 
 Changing `ci.yml` itself runs every check, so bumping the pinned workflows re-tests everything.
 
@@ -49,15 +49,15 @@ Set up the environment for the GitHub Copilot coding agent and Copilot code revi
 
 - **PHP version:** `php-version` on the `ci.yml` and `release.yml` jobs, plus the `phpunit` matrix in `ci.yml`.
 - **Plugin slug:** `plugin-slug: onedesign` is passed to the build, PHPUnit, E2E and Playground workflows.
-- **Shared workflows:** Dependabot bumps the pinned SHAs along with other GitHub Actions. Changes to what a job does belong in [rtCamp/plugin-skeleton-d](https://github.com/rtCamp/plugin-skeleton-d); its README lists each workflow's inputs.
+- **Shared workflows:** Dependabot bumps the pinned SHAs along with other GitHub Actions. Changes to what a shared job does belong in [rtCamp/plugin-skeleton-d](https://github.com/rtCamp/plugin-skeleton-d); its README lists each workflow's inputs. `Vitest Unit Tests` is defined in `ci.yml` itself, so changes to it go there.
 
 `wp-playground-pr-preview.yml`, `pr-cleanup.yml` and `pr-title.yml` always run from the default branch, so changes to them only take effect once merged. If the `ci.yml` workflow `name` changes, update `workflows:` in `wp-playground-pr-preview.yml` too.
 
 ### Secrets
 
-| Secret          | Used by                          | Notes                                                |
-| --------------- | -------------------------------- | ---------------------------------------------------- |
-| `CODECOV_TOKEN` | `ci.yml` (PHPUnit and Jest jobs) | Optional — coverage uploads fail silently without it |
+| Secret          | Used by                            | Notes                                                |
+| --------------- | ---------------------------------- | ---------------------------------------------------- |
+| `CODECOV_TOKEN` | `ci.yml` (PHPUnit and Vitest jobs) | Optional — coverage uploads fail silently without it |
 
 ## Testing Workflows Locally
 

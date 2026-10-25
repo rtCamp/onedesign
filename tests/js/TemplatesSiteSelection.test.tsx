@@ -1,6 +1,7 @@
 /**
  * External dependencies
  */
+import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
 /**
@@ -10,10 +11,10 @@ import SiteSelection from '@/admin/templates/components/SiteSelection';
 
 const baseProps = {
 	isApplying: false,
-	setIsApplying: jest.fn(),
-	onApply: jest.fn(),
-	setIsApplyModalOpen: jest.fn(),
-	setSelectedSites: jest.fn(),
+	setIsApplying: vi.fn(),
+	onApply: vi.fn(),
+	setIsApplyModalOpen: vi.fn(),
+	setSelectedSites: vi.fn(),
 	selectedSites: [],
 	notice: null,
 	brandSiteTemplates: {},
