@@ -10,6 +10,7 @@ declare(strict_types = 1);
 namespace OneDesign\Modules\Rest;
 
 use OneDesign\Modules\Library\Patterns;
+use OneDesign\Modules\Library\Templates;
 use OneDesign\Modules\Settings\Settings;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -75,11 +76,17 @@ class Patterns_Controller extends Abstract_REST_Controller {
 						'callback'            => [ $this, 'save_received_patterns' ],
 						'permission_callback' => [ $this, 'is_governing_request' ],
 						'args'                => [
-							'patterns' => [
+							'patterns'        => [
 								'required'          => true,
 								'type'              => 'array',
 								'minItems'          => 1,
 								'items'             => Patterns::PATTERN_SCHEMA,
+								'validate_callback' => 'rest_validate_request_arg',
+							],
+							'synced_patterns' => [
+								'type'              => 'array',
+								'items'             => Templates::SYNCED_PATTERN_SCHEMA,
+								'default'           => [],
 								'validate_callback' => 'rest_validate_request_arg',
 							],
 						],
@@ -136,7 +143,7 @@ class Patterns_Controller extends Abstract_REST_Controller {
 	}
 
 	/**
-	 * Sends this site's patterns to a brand site, which adds them or updates the ones it has.
+	 * Sends this site's patterns, with the synced patterns they use, to a brand site, which adds them or updates the ones it has.
 	 *
 	 * @param \WP_REST_Request $request The request object.
 	 * @phpstan-param \WP_REST_Request<array{site: string, names: string[]}> $request
@@ -152,7 +159,16 @@ class Patterns_Controller extends Abstract_REST_Controller {
 			return new \WP_Error( 'onedesign_patterns_not_found', __( 'None of these patterns exist on this site.', 'onedesign' ), [ 'status' => 400 ] );
 		}
 
-		$shared = Remote_Client::request_brand_site( $site, 'patterns', WP_REST_Server::CREATABLE, [ 'patterns' => $patterns ] );
+		$references = Templates::get_references( ...array_column( $patterns, 'content' ) );
+		$shared     = Remote_Client::request_brand_site(
+			$site,
+			'patterns',
+			WP_REST_Server::CREATABLE,
+			[
+				'patterns'        => $patterns,
+				'synced_patterns' => Templates::get_brand_synced_patterns( $references['synced_patterns'], $site['name'] ),
+			]
+		);
 		if ( is_wp_error( $shared ) ) {
 			return $shared;
 		}
@@ -198,27 +214,34 @@ class Patterns_Controller extends Abstract_REST_Controller {
 	}
 
 	/**
-	 * Adds the patterns the governing site sent, or updates the ones this site has.
+	 * Adds the patterns the governing site sent, with the synced patterns they use, or updates the ones this site has.
 	 *
 	 * @param \WP_REST_Request $request The request object.
-	 * @phpstan-param \WP_REST_Request<array{patterns: array<int,array<string,mixed>>}> $request
+	 * @phpstan-param \WP_REST_Request<array{patterns: array<int,array<string,mixed>>, synced_patterns: array<int,array{original_id: int, slug: string, title?: string, content: string}>}> $request
 	 */
-	public function save_received_patterns( WP_REST_Request $request ): WP_REST_Response {
+	public function save_received_patterns( WP_REST_Request $request ): WP_REST_Response|\WP_Error {
+		// The patterns point at this site's copies of the synced patterns, so those are saved first.
+		$saved = Templates::add_received_synced_patterns( (array) $request['synced_patterns'] );
+		if ( is_wp_error( $saved ) ) {
+			return $saved;
+		}
+
 		Patterns::add_received_patterns( (array) $request['patterns'] );
 
 		return rest_ensure_response( [ 'message' => __( 'Patterns saved.', 'onedesign' ) ] );
 	}
 
 	/**
-	 * Removes patterns this brand site received.
+	 * Removes patterns this brand site received, with the synced patterns that neither the other patterns nor the templates use.
 	 *
 	 * @param \WP_REST_Request $request The request object.
 	 * @phpstan-param \WP_REST_Request<array{names: string[]}> $request
 	 */
-	public function delete_received_patterns( WP_REST_Request $request ): WP_REST_Response {
-		Patterns::remove_received_patterns( (array) $request['names'] );
+	public function delete_received_patterns( WP_REST_Request $request ): WP_REST_Response|\WP_Error {
+		$message = __( 'Patterns removed.', 'onedesign' );
+		$removed = Patterns::remove_received_patterns( (array) $request['names'], $message );
 
-		return rest_ensure_response( [ 'message' => __( 'Patterns removed.', 'onedesign' ) ] );
+		return is_wp_error( $removed ) ? $removed : rest_ensure_response( [ 'message' => $message ] );
 	}
 
 	/**

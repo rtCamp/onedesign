@@ -10,6 +10,7 @@ declare( strict_types = 1 );
 namespace OneDesign\Tests\Integration\Modules\Rest;
 
 use OneDesign\Modules\Library\Patterns;
+use OneDesign\Modules\Library\Templates;
 use OneDesign\Modules\Rest\Patterns_Controller;
 use OneDesign\Modules\Rest\Remote_Client;
 use OneDesign\Modules\Settings\Settings;
@@ -24,6 +25,7 @@ use WP_REST_Request;
 #[CoversClass( Patterns::class )]
 #[CoversClass( Remote_Client::class )]
 #[CoversClass( Settings::class )]
+#[CoversClass( Templates::class )]
 class Patterns_Controller_GoverningSiteTest extends TestCase {
 	/**
 	 * REST server.
@@ -191,10 +193,23 @@ class Patterns_Controller_GoverningSiteTest extends TestCase {
 	}
 
 	/**
-	 * Sharing sends the patterns to the one brand site it names.
+	 * Sharing sends the patterns, with the synced patterns they use, to the one brand site it names in one request.
 	 */
 	public function test_share_patterns_sends_them_to_the_brand_site(): void {
-		$name = $this->create_user_pattern();
+		$ready = self::factory()->post->create(
+			[
+				'post_type'    => 'wp_block',
+				'post_title'   => 'Lab Ready',
+				'post_content' => '<!-- wp:paragraph --><p>Ready to talk?</p><!-- /wp:paragraph -->',
+			]
+		);
+		$hero  = self::factory()->post->create(
+			[
+				'post_type'    => 'wp_block',
+				'post_title'   => 'Lab Hero',
+				'post_content' => '<!-- wp:block {"ref":' . $ready . '} /-->',
+			]
+		);
 		$this->answer( static fn (): array => [ 200, [ 'message' => 'Patterns saved.' ] ] );
 
 		$response = $this->dispatch(
@@ -202,7 +217,7 @@ class Patterns_Controller_GoverningSiteTest extends TestCase {
 			'/patterns',
 			[
 				'site'  => 'brand-2',
-				'names' => [ $name ],
+				'names' => [ 'user-pattern-' . $hero ],
 			]
 		);
 
@@ -212,6 +227,64 @@ class Patterns_Controller_GoverningSiteTest extends TestCase {
 		$this->assertSame( 'POST', $this->sent[0][0] );
 		$this->assertSame( 'https://two.example.org/wp-json/onedesign/v1/patterns', $this->sent[0][1] );
 		$this->assertSame( 'Lab Hero', $this->sent[0][2]['patterns'][0]['title'] );
+		$this->assertSame( [ $ready ], array_column( $this->sent[0][2]['synced_patterns'], 'original_id' ) );
+	}
+
+	/**
+	 * A shared pattern that nests a synced pattern points at the brand site's own copy of it, never at this site's post.
+	 */
+	public function test_share_patterns_gives_the_brand_site_copies_of_the_synced_patterns_they_use(): void {
+		$this->connect_brand_one();
+		$nested = self::factory()->post->create(
+			[
+				'post_type'    => 'wp_block',
+				'post_name'    => 'lab-ready',
+				'post_title'   => 'Lab Ready',
+				'post_content' => '<!-- wp:paragraph --><p>Ready to talk?</p><!-- /wp:paragraph -->',
+			]
+		);
+		$hero   = self::factory()->post->create(
+			[
+				'post_type'    => 'wp_block',
+				'post_title'   => 'Lab Hero',
+				'post_content' => '<!-- wp:heading --><h2 class="wp-block-heading">Hero</h2><!-- /wp:heading --><!-- wp:block {"ref":' . $nested . '} /-->',
+			]
+		);
+
+		$response = $this->dispatch(
+			'POST',
+			'/patterns',
+			[
+				'site'  => 'brand-1',
+				'names' => [ 'user-pattern-' . $hero ],
+			]
+		);
+
+		$this->assertSame( 200, $response->get_status() );
+		$copy = get_post( get_option( Templates::POST_IDS_OPTION_KEY )[ $nested ] ?? 0 );
+		$this->assertInstanceOf( \WP_Post::class, $copy );
+		$this->assertNotSame( $nested, $copy->ID );
+		$this->assertSame( 'wp_block', $copy->post_type );
+		$this->assertStringContainsString( '<p>Ready to talk?</p>', $copy->post_content );
+		$pattern = get_option( Patterns::PATTERNS_OPTION_KEY )[ 'user-pattern-' . $hero ];
+		$this->assertStringContainsString( '<!-- wp:block {"ref":' . $copy->ID . '} /-->', $pattern['content'] );
+	}
+
+	/**
+	 * A password-protected synced pattern stays out of the library, since core doesn't render it and brand sites would get it without the password.
+	 */
+	public function test_leaves_out_password_protected_patterns(): void {
+		$post_id = self::factory()->post->create(
+			[
+				'post_type'     => 'wp_block',
+				'post_title'    => 'Lab Secret',
+				'post_password' => 'pass',
+			]
+		);
+
+		$patterns = $this->dispatch( 'GET', '/patterns' )->get_data();
+
+		$this->assertNotContains( 'user-pattern-' . $post_id, array_column( $patterns, 'name' ) );
 	}
 
 	/**

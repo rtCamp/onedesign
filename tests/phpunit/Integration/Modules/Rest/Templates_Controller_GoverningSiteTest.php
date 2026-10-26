@@ -239,7 +239,7 @@ class Templates_Controller_GoverningSiteTest extends TestCase {
 	}
 
 	/**
-	 * A brand site gets its own copy of each template part, pattern and synced pattern a template uses, at any depth and named for it, and the template points at those copies with its block attributes intact.
+	 * A brand site gets its own copy of each template part, pattern and synced pattern a template uses, at any depth and named for it, and the template points at those copies with its block attributes intact. Synced patterns that aren't published, or have a password, stay here.
 	 */
 	public function test_apply_templates_gives_the_brand_site_copies_of_what_they_use(): void {
 		$this->connect_brand_one();
@@ -254,6 +254,8 @@ class Templates_Controller_GoverningSiteTest extends TestCase {
 		);
 		$nested    = $this->add_synced_pattern( 'lab-ready', '<!-- wp:paragraph --><p>Ready to talk?</p><!-- /wp:paragraph -->' );
 		$hero      = $this->add_synced_pattern( 'lab-hero', '<!-- wp:heading {"metadata":{"name":"Title","bindings":{"__default":{"source":"core/pattern-overrides"}}}} --><h2 class="wp-block-heading">Hero</h2><!-- /wp:heading --><!-- wp:block {"ref":' . $nested . '} /-->' );
+		$draft     = $this->add_synced_pattern( 'lab-draft', '<!-- wp:paragraph --><p>Draft</p><!-- /wp:paragraph -->', [ 'post_status' => 'draft' ] );
+		$password  = $this->add_synced_pattern( 'lab-secret', '<!-- wp:paragraph --><p>Secret</p><!-- /wp:paragraph -->', [ 'post_password' => 'pass' ] );
 		$overrides = '"metadata":{"name":"Hero"},"content":{"Title":{"content":"\u003cb\u003eHi\u003c/b\u003e \u002d\u002d you"}}';
 		$this->set_template_content(
 			'<!-- wp:template-part {"slug":"lab-header","theme":"' . get_stylesheet() . '","tagName":"header","style":{"spacing":{"padding":{"top":"1rem"}}}} /-->'
@@ -261,6 +263,7 @@ class Templates_Controller_GoverningSiteTest extends TestCase {
 			. '<!-- wp:pattern {"slug":"lab/cta"} /-->'
 			. '<!-- wp:block {"ref":' . $hero . ',' . $overrides . '} /-->'
 			. '</div><!-- /wp:group -->'
+			. '<!-- wp:block {"ref":' . $draft . '} /--><!-- wp:block {"ref":' . $password . '} /-->'
 		);
 
 		$this->apply( [ $this->template_id ], 'brand-1' );
@@ -281,10 +284,23 @@ class Templates_Controller_GoverningSiteTest extends TestCase {
 		$this->assertStringContainsString( '<!-- wp:template-part {"slug":"' . $this->brand_slug( 'lab-header' ) . '","tagName":"header","style":{"spacing":{"padding":{"top":"1rem"}}}} /-->', $template['content'] );
 		$this->assertStringContainsString( '<!-- wp:pattern {"slug":"' . $this->brand_slug( 'lab-cta' ) . '"} /-->', $template['content'] );
 		$this->assertStringContainsString( '<!-- wp:block {"ref":' . $brand_hero->ID . ',' . $overrides . '} /-->', $template['content'] );
+		$this->assertSame( 2, substr_count( $template['content'], '<!-- wp:block /-->' ), 'The unpublished and password-protected synced patterns are dropped.' );
 
 		$pattern = get_option( Templates::TEMPLATE_PATTERNS_OPTION_KEY )['lab/cta'];
 		$this->assertSame( $this->brand_slug( 'lab-cta' ), $pattern['name'] );
 		$this->assertStringContainsString( '<!-- wp:template-part {"slug":"' . $this->brand_slug( 'lab-footer' ) . '"} /-->', $pattern['content'] );
+
+		// Only this site's own unpublished and password-protected synced patterns have their content.
+		// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.get_posts_get_posts -- `suppress_filters` is false.
+		$synced_patterns = get_posts(
+			[
+				'post_type'        => 'wp_block',
+				'post_status'      => 'any',
+				'numberposts'      => 100,
+				'suppress_filters' => false,
+			]
+		);
+		$this->assertEqualsCanonicalizing( [ $draft, $password ], array_keys( preg_grep( '/<p>(Draft|Secret)<\/p>/', wp_list_pluck( $synced_patterns, 'post_content', 'ID' ) ) ) );
 	}
 
 	/**
@@ -525,19 +541,20 @@ class Templates_Controller_GoverningSiteTest extends TestCase {
 	/**
 	 * Adds a synced pattern to this site.
 	 *
-	 * @param string $slug    The slug.
-	 * @param string $content The content.
+	 * @param string              $slug    The slug.
+	 * @param string              $content The content.
+	 * @param array<string,mixed> $fields  Other post fields.
 	 *
 	 * @return int The synced pattern's id.
 	 */
-	private function add_synced_pattern( string $slug, string $content ): int {
+	private function add_synced_pattern( string $slug, string $content, array $fields = [] ): int {
 		return self::factory()->post->create(
 			[
 				'post_type'    => 'wp_block',
 				'post_name'    => $slug,
 				'post_title'   => ucfirst( $slug ),
 				'post_content' => wp_slash( $content ),
-			]
+			] + $fields
 		);
 	}
 

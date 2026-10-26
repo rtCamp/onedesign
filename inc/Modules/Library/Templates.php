@@ -362,6 +362,8 @@ final class Templates implements Registrable {
 	/**
 	 * Gets the template parts, patterns and synced patterns blocks use, at any depth.
 	 *
+	 * A synced pattern only counts when it's published without a password, since that's the only time core renders it.
+	 *
 	 * @param string ...$contents Block markup.
 	 *
 	 * @phpstan-return References
@@ -538,7 +540,7 @@ final class Templates implements Registrable {
 
 			if ( 'core/block' === $block['blockName'] && ! empty( $attrs['ref'] ) ) {
 				$post = isset( $found['synced_patterns'][ (int) $attrs['ref'] ] ) ? null : get_post( (int) $attrs['ref'] );
-				if ( $post && 'wp_block' === $post->post_type ) {
+				if ( $post && 'wp_block' === $post->post_type && 'publish' === $post->post_status && '' === $post->post_password ) {
 					$found['synced_patterns'][ $post->ID ] = $post;
 					$found                                 = self::find_references( parse_blocks( $post->post_content ), $found );
 				}

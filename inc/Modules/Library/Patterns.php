@@ -122,6 +122,7 @@ final class Patterns implements Registrable {
 			[
 				'post_type'        => 'wp_block',
 				'post_status'      => 'publish',
+				'has_password'     => false,
 				'posts_per_page'   => -1, // phpcs:ignore WordPressVIPMinimum.Performance.NoPaging.posts_per_page_posts_per_page -- The library needs every user pattern.
 				'orderby'          => 'title',
 				'order'            => 'ASC',
@@ -202,12 +203,22 @@ final class Patterns implements Registrable {
 	}
 
 	/**
-	 * Removes patterns this brand site received. Patterns it no longer has count as removed.
+	 * Removes patterns this brand site received.
 	 *
-	 * @param string[] $names The pattern names.
+	 * Patterns it no longer has count as removed.
+	 *
+	 * @param string[] $names   The pattern names.
+	 * @param string   $message What the governing site is told was removed.
+	 *
+	 * @return true|\WP_Error True if every copy only they used was deleted.
 	 */
-	public static function remove_received_patterns( array $names ): void {
-		update_option( self::PATTERNS_OPTION_KEY, array_diff_key( self::get_received_patterns(), array_flip( $names ) ), false );
+	public static function remove_received_patterns( array $names, string $message ): true|\WP_Error {
+		$patterns = self::get_received_patterns();
+		$removed  = array_intersect_key( $patterns, array_flip( $names ) );
+
+		update_option( self::PATTERNS_OPTION_KEY, array_diff_key( $patterns, $removed ), false );
+
+		return Templates::delete_unused_posts( $removed, Templates::get_used_references(), $message );
 	}
 
 	/**

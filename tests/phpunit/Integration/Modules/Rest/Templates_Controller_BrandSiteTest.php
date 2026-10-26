@@ -244,20 +244,21 @@ class Templates_Controller_BrandSiteTest extends TestCase {
 	 * Removing a template keeps the copy of a synced pattern it used when a pattern from the Pattern Library still uses it.
 	 */
 	public function test_delete_templates_keeps_the_synced_patterns_that_shared_patterns_use(): void {
-		$this->send_templates( [ $this->template( 'landing', '<!-- wp:block {"ref":12} /-->' ) ], [], [], [ $this->synced_pattern( 12, 'ready', '<!-- wp:paragraph --><p>Ready to talk?</p><!-- /wp:paragraph -->' ) ] );
 		$this->send(
 			'POST',
 			'patterns',
 			[
-				'patterns' => [
+				'patterns'        => [
 					[
 						'name'    => 'user-pattern-7',
 						'title'   => 'Hero',
 						'content' => '<!-- wp:block {"ref":12} /-->',
 					],
 				],
+				'synced_patterns' => [ $this->synced_pattern( 12, 'ready', '<!-- wp:paragraph --><p>Ready to talk?</p><!-- /wp:paragraph -->' ) ],
 			]
 		);
+		$this->send_templates( [ $this->template( 'landing', '<!-- wp:block {"ref":12} /-->' ) ], [], [], [ $this->synced_pattern( 12, 'ready', '<!-- wp:paragraph --><p>Ready to talk?</p><!-- /wp:paragraph -->' ) ] );
 		$copy = get_option( Templates::POST_IDS_OPTION_KEY )[12];
 
 		$response = $this->send( 'DELETE', 'templates', [ 'ids' => [ 'theme//landing' ] ] );
@@ -266,6 +267,84 @@ class Templates_Controller_BrandSiteTest extends TestCase {
 		$this->assertInstanceOf( \WP_Post::class, get_post( $copy ) );
 		$this->assertSame( [ 12 => $copy ], get_option( Templates::POST_IDS_OPTION_KEY ) );
 		$this->assertSame( '<!-- wp:block {"ref":' . $copy . '} /-->', get_option( Patterns::PATTERNS_OPTION_KEY )['user-pattern-7']['content'] );
+	}
+
+	/**
+	 * Removing patterns from the Pattern Library also deletes the copies of the synced patterns only they used.
+	 */
+	public function test_delete_patterns_deletes_the_synced_patterns_only_they_used(): void {
+		$this->send(
+			'POST',
+			'patterns',
+			[
+				'synced_patterns' => [
+					$this->synced_pattern( 12, 'ready', '<!-- wp:paragraph --><p>Ready to talk?</p><!-- /wp:paragraph -->' ),
+					$this->synced_pattern( 13, 'quote', '<!-- wp:paragraph --><p>Great work</p><!-- /wp:paragraph -->' ),
+				],
+				'patterns'        => [
+					[
+						'name'    => 'user-pattern-7',
+						'title'   => 'Hero',
+						'content' => '<!-- wp:block {"ref":12} /-->',
+					],
+					[
+						'name'    => 'user-pattern-8',
+						'title'   => 'Testimonial',
+						'content' => '<!-- wp:block {"ref":13} /-->',
+					],
+				],
+			]
+		);
+		$post_ids = get_option( Templates::POST_IDS_OPTION_KEY );
+
+		$response = $this->send( 'DELETE', 'patterns', [ 'names' => [ 'user-pattern-7' ] ] );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertNull( get_post( $post_ids[12] ) );
+		$this->assertInstanceOf( \WP_Post::class, get_post( $post_ids[13] ), 'The other pattern still uses it.' );
+		$this->assertSame( [ 13 => $post_ids[13] ], get_option( Templates::POST_IDS_OPTION_KEY ) );
+	}
+
+	/**
+	 * Removing a pattern from the Pattern Library keeps the copy of a synced pattern it used when a template still uses it, here through the template's own pattern.
+	 */
+	public function test_delete_patterns_keeps_the_synced_patterns_templates_use(): void {
+		$this->send(
+			'POST',
+			'patterns',
+			[
+				'patterns'        => [
+					[
+						'name'    => 'user-pattern-7',
+						'title'   => 'Hero',
+						'content' => '<!-- wp:block {"ref":12} /-->',
+					],
+				],
+				'synced_patterns' => [ $this->synced_pattern( 12, 'ready', '<!-- wp:paragraph --><p>Ready to talk?</p><!-- /wp:paragraph -->' ) ],
+			]
+		);
+		$this->send_templates(
+			[ $this->template( 'landing', '<!-- wp:pattern {"slug":"gov-brand-cta"} /-->' ) ],
+			[],
+			[
+				'theme/cta' => [
+					'name'    => 'gov-brand-cta',
+					'title'   => 'CTA',
+					'content' => '<!-- wp:block {"ref":12} /-->',
+				],
+			],
+			[ $this->synced_pattern( 12, 'ready', '<!-- wp:paragraph --><p>Ready to talk?</p><!-- /wp:paragraph -->' ) ]
+		);
+		$copy = get_option( Templates::POST_IDS_OPTION_KEY )[12];
+		// As the next request does when it starts.
+		( new Templates() )->register_received_templates();
+
+		$response = $this->send( 'DELETE', 'patterns', [ 'names' => [ 'user-pattern-7' ] ] );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertInstanceOf( \WP_Post::class, get_post( $copy ) );
+		$this->assertSame( [ 12 => $copy ], get_option( Templates::POST_IDS_OPTION_KEY ) );
+		$this->assertSame( '<!-- wp:block {"ref":' . $copy . '} /-->', get_option( Templates::TEMPLATE_PATTERNS_OPTION_KEY )['theme/cta']['content'] );
 	}
 
 	/**
@@ -323,6 +402,34 @@ class Templates_Controller_BrandSiteTest extends TestCase {
 		$this->assertSame( 'Templates removed. The brand site couldn\'t delete "Header" along with them. Nothing else uses it, so you can delete that synced pattern or template part there yourself.', $response->as_error()->get_error_message() );
 		$this->assertSame( [], get_option( Templates::TEMPLATES_OPTION_KEY ) );
 		$this->assertArrayHasKey( 'theme//header', get_option( Templates::POST_IDS_OPTION_KEY ) );
+	}
+
+	/**
+	 * When a synced pattern only the removed pattern used can't be deleted, removing says the patterns are gone and what to do about the synced pattern.
+	 */
+	public function test_delete_patterns_reports_a_post_it_could_not_delete(): void {
+		$this->send(
+			'POST',
+			'patterns',
+			[
+				'patterns'        => [
+					[
+						'name'    => 'user-pattern-7',
+						'title'   => 'Hero',
+						'content' => '<!-- wp:block {"ref":12} /-->',
+					],
+				],
+				'synced_patterns' => [ $this->synced_pattern( 12, 'ready', '<!-- wp:paragraph --><p>Ready to talk?</p><!-- /wp:paragraph -->' ) ],
+			]
+		);
+		add_filter( 'pre_delete_post', '__return_false' );
+
+		$response = $this->send( 'DELETE', 'patterns', [ 'names' => [ 'user-pattern-7' ] ] );
+
+		$this->assertSame( 500, $response->get_status() );
+		$this->assertSame( 'Patterns removed. The brand site couldn\'t delete "Ready" along with them. Nothing else uses it, so you can delete that synced pattern or template part there yourself.', $response->as_error()->get_error_message() );
+		$this->assertSame( [], get_option( Patterns::PATTERNS_OPTION_KEY ) );
+		$this->assertArrayHasKey( 12, get_option( Templates::POST_IDS_OPTION_KEY ) );
 	}
 
 	/**
