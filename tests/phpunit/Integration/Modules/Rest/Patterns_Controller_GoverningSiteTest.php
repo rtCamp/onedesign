@@ -106,6 +106,41 @@ class Patterns_Controller_GoverningSiteTest extends TestCase {
 	}
 
 	/**
+	 * A brand site's patterns come back with the labels the brand site gives their categories, sanitized.
+	 */
+	public function test_lists_a_brand_site_patterns_with_its_category_labels(): void {
+		$this->answer(
+			static fn (): array => [
+				200,
+				[
+					[
+						'name'            => 'hero',
+						'title'           => 'Hero',
+						'content'         => '<p>Hi</p>',
+						'categories'      => [ 'lab-demo' ],
+						'category_labels' => [ 'lab-demo' => 'Lab <script>alert(1)</script>Demo' ],
+					],
+					[
+						'name'    => 'footer',
+						'title'   => 'Footer',
+						'content' => '<p>Bye</p>',
+					],
+				],
+			]
+		);
+
+		$patterns = $this->dispatch( 'GET', '/patterns', [ 'site' => 'brand-1' ] )->get_data();
+
+		$this->assertSame(
+			[
+				'hero'   => [ 'lab-demo' => 'Lab Demo' ],
+				'footer' => [],
+			],
+			array_column( $patterns, 'category_labels', 'name' )
+		);
+	}
+
+	/**
 	 * A brand site that fails passes its error on, with its own message.
 	 */
 	public function test_listing_a_brand_site_returns_its_error(): void {

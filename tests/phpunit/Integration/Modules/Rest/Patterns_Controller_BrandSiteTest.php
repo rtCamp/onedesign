@@ -175,17 +175,47 @@ class Patterns_Controller_BrandSiteTest extends TestCase {
 	}
 
 	/**
-	 * The pattern categories a pattern is in exist as soon as it arrives, so nothing is written when a page loads.
+	 * The pattern categories a pattern is in exist as soon as it arrives, so nothing is written when a page loads. Each is named with the label it was sent with, or its slug without one.
 	 */
 	public function test_saved_patterns_add_their_categories(): void {
-		$body                              = $this->patterns_body();
-		$body['patterns'][0]['categories'] = [ 'lab-demo' ];
+		$body                                   = $this->patterns_body();
+		$body['patterns'][0]['categories']      = [ 'lab-demo', 'unlabelled' ];
+		$body['patterns'][0]['category_labels'] = [ 'lab-demo' => 'Lab Demo' ];
 
 		$this->send( 'POST', $body, self::GOVERNING_SITE_URL, Settings::get_api_key() );
 
-		$term = get_term_by( 'slug', 'lab-demo', 'wp_pattern_category' );
-		$this->assertInstanceOf( \WP_Term::class, $term );
-		$this->assertSame( 'lab-demo', $term->name );
+		foreach ( [
+			'lab-demo'   => 'Lab Demo',
+			'unlabelled' => 'unlabelled',
+		] as $slug => $name ) {
+			$term = get_term_by( 'slug', $slug, 'wp_pattern_category' );
+			$this->assertInstanceOf( \WP_Term::class, $term );
+			$this->assertSame( $name, $term->name );
+		}
+	}
+
+	/**
+	 * The patterns are listed with the labels this site gives their categories, so a category it already had keeps its own label.
+	 */
+	public function test_get_patterns_lists_this_site_category_labels(): void {
+		wp_insert_term( 'Our Heroes', 'wp_pattern_category', [ 'slug' => 'lab-hero' ] );
+		$body                                   = $this->patterns_body();
+		$body['patterns'][0]['categories']      = [ 'lab-hero', 'lab-demo' ];
+		$body['patterns'][0]['category_labels'] = [
+			'lab-hero' => 'Heroes',
+			'lab-demo' => 'Lab Demo',
+		];
+
+		$this->send( 'POST', $body, self::GOVERNING_SITE_URL, Settings::get_api_key() );
+		$patterns = $this->send( 'GET', null, self::GOVERNING_SITE_URL, Settings::get_api_key() )->get_data();
+
+		$this->assertSame(
+			[
+				'lab-hero' => 'Our Heroes',
+				'lab-demo' => 'Lab Demo',
+			],
+			$patterns[0]['category_labels']
+		);
 	}
 
 	/**

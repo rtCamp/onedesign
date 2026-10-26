@@ -92,6 +92,11 @@ const BrandSitePicker = ( {
 			className="onedesign-brand-site-modal"
 			shouldCloseOnClickOutside={ ! isApplying }
 			shouldCloseOnEsc={ ! isApplying }
+			onKeyDown={ ( event: React.KeyboardEvent< HTMLDivElement > ) => {
+				if ( isApplying && event.key === 'Escape' ) {
+					event.preventDefault();
+				}
+			} }
 			isDismissible={ ! isApplying }
 			isFullScreen
 		>

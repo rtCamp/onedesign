@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { Modal } from '@wordpress/components';
+import { useState } from '@wordpress/element';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import BrandSitePicker, {
 	type SiteError,
 } from '@/components/brand-site-picker';
@@ -86,6 +88,55 @@ describe( 'BrandSitePicker', () => {
 		);
 
 		expect( onApply ).toHaveBeenCalledWith( [ 'brand-2', 'brand-3' ] );
+	} );
+
+	it( "doesn't let Escape close the modal behind it while applying", async () => {
+		const closeLibrary = vi.fn();
+		// Like the library, the modal behind is open before the picker opens on top of it.
+		const Library = () => {
+			const [ isPicking, setIsPicking ] = useState( false );
+			return (
+				<Modal title="Library" onRequestClose={ closeLibrary }>
+					<button onClick={ () => setIsPicking( true ) }>
+						Apply to Sites
+					</button>
+					{ isPicking && (
+						<BrandSitePicker
+							sites={ sites }
+							siteErrors={ {} }
+							selectedCount={ 2 }
+							countPresent={ ( siteId ) =>
+								present[ siteId ] ?? 0
+							}
+							copy={ copy }
+							onApply={ () =>
+								new Promise< SiteError[] >( () => {} )
+							}
+							onClose={ vi.fn() }
+						/>
+					) }
+				</Modal>
+			);
+		};
+		render( <Library /> );
+
+		fireEvent.click(
+			screen.getByRole( 'button', { name: 'Apply to Sites' } )
+		);
+		fireEvent.click( screen.getByRole( 'checkbox', { name: /Gamma/ } ) );
+		fireEvent.click(
+			screen.getByRole( 'button', { name: 'Apply Patterns' } )
+		);
+		fireEvent.keyDown(
+			screen.getByRole( 'dialog', { name: 'Select Brand Sites' } ),
+			{ key: 'Escape' }
+		);
+		// A modal closes after its exit animation.
+		await act(
+			() => new Promise( ( resolve ) => setTimeout( resolve, 500 ) )
+		);
+
+		expect( closeLibrary ).not.toHaveBeenCalled();
 	} );
 
 	it( 'picks and unpicks a site from the keyboard', () => {

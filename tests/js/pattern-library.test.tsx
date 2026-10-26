@@ -28,29 +28,26 @@ const sharedSites = [
 	},
 ];
 
-// A brand site sends its patterns without category labels.
-const brandHero = {
+const hero = {
 	name: 'theme/hero',
 	title: 'Hero',
 	content: '<!-- wp:paragraph --><p>Hero</p><!-- /wp:paragraph -->',
 	categories: [ 'banner' ],
+	category_labels: { banner: 'Banners' },
 };
 
-const brandFooter = {
+const footer = {
 	name: 'user-pattern-7',
 	title: 'Footer',
 	content: '<!-- wp:paragraph --><p>Footer</p><!-- /wp:paragraph -->',
 	categories: [ 'footer' ],
+	category_labels: { footer: 'Footers' },
 };
-
-const hero = { ...brandHero, category_labels: { banner: 'Banners' } };
-
-const footer = { ...brandFooter, category_labels: { footer: 'Footers' } };
 
 const patternRoutes = ( overrides: Record< string, Handler > = {} ) =>
 	routes( {
 		'GET /onedesign/v1/patterns': () => [ hero, footer ],
-		'GET /onedesign/v1/patterns?site=brand-1': () => [ brandHero ],
+		'GET /onedesign/v1/patterns?site=brand-1': () => [ hero ],
 		'GET /onedesign/v1/patterns?site=brand-2': () => [],
 		...overrides,
 	} );
@@ -175,6 +172,22 @@ describe( 'pattern library', () => {
 		).not.toBeInTheDocument();
 	} );
 
+	it( "lists a brand site's categories on its tab", async () => {
+		patternRoutes();
+
+		render( <PatternLibrary /> );
+		fireEvent.click(
+			await screen.findByRole( 'tab', { name: 'Brand One' } )
+		);
+
+		expect(
+			await screen.findByRole( 'button', { name: 'Banners' } )
+		).toBeInTheDocument();
+		expect(
+			screen.queryByRole( 'button', { name: 'Footers' } )
+		).not.toBeInTheDocument();
+	} );
+
 	it( 'tells a screen reader which category is picked', async () => {
 		patternRoutes();
 
@@ -293,9 +306,9 @@ describe( 'pattern library', () => {
 	} );
 
 	it( 'shares the selected patterns with the picked brand sites, and says so', async () => {
-		let brandTwo: Array< typeof brandHero > = [];
+		let brandTwo: Array< typeof hero > = [];
 		const share = vi.fn( () => {
-			brandTwo = [ brandHero ];
+			brandTwo = [ hero ];
 			return { message: 'The patterns were shared with Brand Two.' };
 		} );
 		patternRoutes( {
@@ -328,12 +341,12 @@ describe( 'pattern library', () => {
 	} );
 
 	it( 'shares with each picked brand site on its own, and names each one that did not get the patterns with its own message', async () => {
-		let brandOne: object[] = [ brandHero ];
+		let brandOne: object[] = [ hero ];
 		const share = vi.fn( ( data ) => {
 			if ( ( data as { site: string } ).site === 'brand-2' ) {
 				return restError( 'The brand site could not be reached.' )();
 			}
-			brandOne = [ brandHero, brandFooter ];
+			brandOne = [ hero, footer ];
 			return { message: 'The patterns were shared with Brand One.' };
 		} );
 		patternRoutes( {
@@ -420,7 +433,7 @@ describe( 'pattern library', () => {
 				if ( brandTwoLoads === 2 ) {
 					return restError( 'Brand Two could not be reached.' )();
 				}
-				return brandTwoLoads === 1 ? [] : [ brandFooter ];
+				return brandTwoLoads === 1 ? [] : [ footer ];
 			},
 			'POST /onedesign/v1/patterns': ( data ) => {
 				if (
@@ -508,7 +521,7 @@ describe( 'pattern library', () => {
 	} );
 
 	it( "removes patterns from a brand site and shows the server's message", async () => {
-		let brandOne = [ brandHero ];
+		let brandOne = [ hero ];
 		const remove = vi.fn( () => {
 			brandOne = [];
 			return { message: 'The patterns were removed from Brand One.' };

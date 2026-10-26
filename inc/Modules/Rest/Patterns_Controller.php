@@ -141,7 +141,7 @@ class Patterns_Controller extends Abstract_REST_Controller {
 		return rest_ensure_response(
 			array_values(
 				array_map(
-					[ Patterns::class, 'sanitize_pattern' ],
+					static fn ( array $pattern ): array => Patterns::sanitize_pattern( $pattern ) + [ 'category_labels' => Patterns::sanitize_category_labels( $pattern ) ],
 					$valid
 				)
 			)
@@ -204,10 +204,10 @@ class Patterns_Controller extends Abstract_REST_Controller {
 	}
 
 	/**
-	 * Lists the patterns this brand site received.
+	 * Lists the patterns this brand site received, with the labels it gives their categories.
 	 */
 	public function get_received_patterns(): WP_REST_Response {
-		return rest_ensure_response( array_values( Patterns::get_received_patterns() ) );
+		return rest_ensure_response( array_values( Patterns::add_category_labels( Patterns::get_received_patterns() ) ) );
 	}
 
 	/**

@@ -24,43 +24,47 @@ final class Patterns implements Registrable {
 	public const PATTERNS_OPTION_KEY = 'onedesign_brand_site_patterns';
 
 	/**
-	 * The schema of a pattern the governing site sends, with the fields brand sites register it with.
+	 * The schema of a pattern the governing site sends, with the fields brand sites register it with and the labels of its categories.
 	 */
 	public const PATTERN_SCHEMA = [
 		'type'       => 'object',
 		'properties' => [
-			'name'          => [
+			'name'            => [
 				'type'      => 'string',
 				'minLength' => 1,
 			],
-			'title'         => [
+			'title'           => [
 				'type'      => 'string',
 				'minLength' => 1,
 			],
-			'content'       => [ 'type' => 'string' ],
-			'description'   => [ 'type' => 'string' ],
-			'categories'    => [
+			'content'         => [ 'type' => 'string' ],
+			'description'     => [ 'type' => 'string' ],
+			'categories'      => [
 				'type'  => 'array',
 				'items' => [ 'type' => 'string' ],
 			],
-			'keywords'      => [
+			'keywords'        => [
 				'type'  => 'array',
 				'items' => [ 'type' => 'string' ],
 			],
-			'viewportWidth' => [ 'type' => 'integer' ],
-			'blockTypes'    => [
+			'viewportWidth'   => [ 'type' => 'integer' ],
+			'blockTypes'      => [
 				'type'  => 'array',
 				'items' => [ 'type' => 'string' ],
 			],
-			'postTypes'     => [
+			'postTypes'       => [
 				'type'  => 'array',
 				'items' => [ 'type' => 'string' ],
 			],
-			'templateTypes' => [
+			'templateTypes'   => [
 				'type'  => 'array',
 				'items' => [ 'type' => 'string' ],
 			],
-			'inserter'      => [ 'type' => 'boolean' ],
+			'inserter'        => [ 'type' => 'boolean' ],
+			'category_labels' => [
+				'type'                 => 'object',
+				'additionalProperties' => [ 'type' => 'string' ],
+			],
 		],
 		'required'   => [ 'name', 'title', 'content' ],
 	];
@@ -161,6 +165,8 @@ final class Patterns implements Registrable {
 	/**
 	 * Adds patterns the governing site sent, or updates the ones this site has, with the pattern categories they're in.
 	 *
+	 * A category this site doesn't have is named with the governing site's label.
+	 *
 	 * @param array<int,array<string,mixed>> $patterns Patterns that match PATTERN_SCHEMA.
 	 */
 	public static function add_received_patterns( array $patterns ): void {
@@ -168,12 +174,13 @@ final class Patterns implements Registrable {
 
 		// Each pattern is stored under its sanitized name, which is the name it's listed and removed by.
 		foreach ( $patterns as $pattern ) {
+			$labels                    = self::sanitize_category_labels( $pattern );
 			$pattern                   = self::sanitize_pattern( $pattern );
 			$saved[ $pattern['name'] ] = $pattern;
 
 			foreach ( $pattern['categories'] as $category ) {
 				if ( ! term_exists( $category, 'wp_pattern_category' ) ) {
-					wp_insert_term( $category, 'wp_pattern_category', [ 'slug' => $category ] );
+					wp_insert_term( $labels[ $category ] ?? $category, 'wp_pattern_category', [ 'slug' => $category ] );
 				}
 			}
 		}
@@ -219,13 +226,29 @@ final class Patterns implements Registrable {
 	}
 
 	/**
+	 * Gets the labels a pattern's categories were sent with, keyed by slug, each sanitized.
+	 *
+	 * @param array<string,mixed> $pattern A pattern that matches PATTERN_SCHEMA.
+	 *
+	 * @return array<string,string>
+	 */
+	public static function sanitize_category_labels( array $pattern ): array {
+		$labels = (array) ( $pattern['category_labels'] ?? [] );
+
+		return array_combine(
+			array_map( 'sanitize_text_field', array_map( 'strval', array_keys( $labels ) ) ),
+			array_map( 'sanitize_text_field', array_map( 'strval', $labels ) )
+		);
+	}
+
+	/**
 	 * Adds the label this site gives each of the patterns' categories, keyed by slug. A category this site doesn't have keeps its slug as its label.
 	 *
 	 * @param array<string,array<string,mixed>> $patterns Patterns with their category slugs.
 	 *
 	 * @return array<string,array<string,mixed>> The patterns, each with its category_labels.
 	 */
-	private static function add_category_labels( array $patterns ): array {
+	public static function add_category_labels( array $patterns ): array {
 		$labels = self::get_category_labels();
 
 		foreach ( $patterns as &$pattern ) {
