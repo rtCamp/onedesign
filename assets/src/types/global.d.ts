@@ -19,6 +19,7 @@ export interface OneDesignSettings {
 	restNonce: string;
 	apiKey: string;
 	settingsLink: string;
+	setupUrl: string;
 	sharedSites?: OneDesignSharedSite[];
 }
 

@@ -1,6 +1,3 @@
-/**
- * External dependencies
- */
 import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import type { EventEmitter } from 'node:events';
@@ -31,6 +28,7 @@ Object.defineProperty( window, 'OneDesignSettings', {
 		restNonce: 'nonce',
 		apiKey: '',
 		settingsLink: 'https://example.com/wp-admin/',
+		setupUrl: '/wp-admin/admin.php?page=onedesign-settings',
 		multisites: [],
 		isMultisite: false,
 		isGoverningSiteSelected: false,

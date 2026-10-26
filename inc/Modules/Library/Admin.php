@@ -41,7 +41,7 @@ final class Admin implements Registrable {
 	 * Registers the Pattern Library screen on a governing site.
 	 */
 	public function add_submenu(): void {
-		if ( ! Settings::is_governing_site() || ! Settings::get_shared_sites() ) {
+		if ( ! Settings::is_governing_site() ) {
 			return;
 		}
 

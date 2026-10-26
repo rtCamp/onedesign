@@ -85,6 +85,30 @@ describe( 'pattern library', () => {
 		window.OneDesignSettings = localizedSettings;
 	} );
 
+	it( 'tells the admin to add a brand site when there are none', async () => {
+		window.OneDesignSettings = { ...localizedSettings, sharedSites: [] };
+		patternRoutes( {
+			'GET /onedesign/v1/brand-patterns': () => ( {
+				patterns: {},
+				errors: [],
+			} ),
+		} );
+
+		render( <PatternLibrary /> );
+
+		expect(
+			await screen.findByText(
+				'There are no brand sites to share patterns with. Add one on the settings page, then come back here to share patterns with it.'
+			)
+		).toBeInTheDocument();
+		expect(
+			screen.getByRole( 'link', { name: 'Add a brand site' } )
+		).toHaveAttribute( 'href', localizedSettings.setupUrl );
+		expect(
+			screen.queryByRole( 'tab', { name: 'Current Site Patterns' } )
+		).not.toBeInTheDocument();
+	} );
+
 	it( 'each tab lists its own patterns and categories', async () => {
 		patternRoutes();
 

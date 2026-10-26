@@ -37,6 +37,10 @@ const copy: LibraryCopy = {
 	search: __( 'Search patterns…', 'onedesign' ),
 	loading: __( 'Loading patterns…', 'onedesign' ),
 	empty: __( 'No patterns found.', 'onedesign' ),
+	noBrandSites: __(
+		'There are no brand sites to share patterns with. Add one on the settings page, then come back here to share patterns with it.',
+		'onedesign'
+	),
 	selected: ( count ) =>
 		sprintf(
 			/* translators: %d: Number of selected patterns. */

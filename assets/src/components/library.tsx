@@ -22,6 +22,7 @@ export interface LibraryCopy extends BrandSitePickerCopy {
 	search: string;
 	loading: string;
 	empty: string;
+	noBrandSites: string;
 	selected: ( count: number ) => string;
 	applied: ( siteNames: string ) => string;
 	remove: string;
@@ -96,6 +97,20 @@ const Library = ( {
 			),
 		[]
 	);
+
+	if ( sites.length === 0 ) {
+		return (
+			<div className="onedesign-library-empty">
+				<p>{ copy.noBrandSites }</p>
+				<Button
+					variant="primary"
+					href={ window.OneDesignSettings.setupUrl }
+				>
+					{ __( 'Add a brand site', 'onedesign' ) }
+				</Button>
+			</div>
+		);
+	}
 
 	const isCurrentSite = tab === CURRENT_SITE;
 	const tabItems = isCurrentSite ? items : ( brandItems[ tab ] ?? null );
