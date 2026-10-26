@@ -33,8 +33,6 @@ class Admin implements Registrable {
 	public function register_hooks(): void {
 		add_action( 'admin_menu', [ $this, 'add_settings_page' ] );
 		add_action( 'admin_footer', [ $this, 'add_templates_button_to_editor' ] );
-		add_filter( 'should_load_remote_block_patterns', '__return_false' );
-		add_action( 'after_setup_theme', [ $this, 'remove_core_block_patterns' ] );
 		add_filter( 'allowed_block_types_all', [ $this, 'allowed_block_types' ], 10, 2 );
 
 		// Create templates, patterns and template parts from saved options.
@@ -218,13 +216,6 @@ class Admin implements Registrable {
 			return [];
 		}
 		return $allowed_block_types;
-	}
-
-	/**
-	 * Remove core block patterns.
-	 */
-	public function remove_core_block_patterns(): void {
-		remove_theme_support( 'core-block-patterns' );
 	}
 
 	/**

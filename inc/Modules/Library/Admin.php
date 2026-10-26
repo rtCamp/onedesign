@@ -35,6 +35,8 @@ final class Admin implements Registrable {
 		add_action( 'admin_menu', [ $this, 'add_submenu' ] );
 		add_action( 'load-' . self::PATTERN_LIBRARY_HOOK, [ $this, 'load_block_editor' ] );
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_scripts' ] );
+		add_filter( 'should_load_remote_block_patterns', '__return_false' );
+		add_action( 'after_setup_theme', [ $this, 'remove_core_block_patterns' ] );
 	}
 
 	/**
@@ -112,5 +114,12 @@ final class Admin implements Registrable {
 		wp_enqueue_script( 'wp-editor' );
 		wp_enqueue_script( $handle );
 		wp_enqueue_style( Assets::LIBRARY_STYLES_HANDLE );
+	}
+
+	/**
+	 * Remove core block patterns.
+	 */
+	public function remove_core_block_patterns(): void {
+		remove_theme_support( 'core-block-patterns' );
 	}
 }
