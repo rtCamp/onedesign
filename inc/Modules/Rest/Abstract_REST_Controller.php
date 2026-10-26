@@ -66,6 +66,22 @@ abstract class Abstract_REST_Controller extends WP_REST_Controller implements Re
 	}
 
 	/**
+	 * Whether the request is from a brand site of this governing site, signed with that brand's API key.
+	 *
+	 * @param \WP_REST_Request<array<string,mixed>> $request Request.
+	 */
+	public function is_brand_request( $request ): bool {
+		if ( ! Settings::is_governing_site() ) {
+			return false;
+		}
+
+		$shared_sites = Settings::get_shared_sites();
+		$site_url     = $this->get_requesting_site_url( $request );
+
+		return $this->has_api_key( $request, $shared_sites[ $site_url ]['api_key'] ?? '' );
+	}
+
+	/**
 	 * Whether the request is from the governing site this brand site is connected to, signed with this site's API key.
 	 *
 	 * @param \WP_REST_Request<array<string,mixed>> $request Request.

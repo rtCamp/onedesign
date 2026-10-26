@@ -57,6 +57,99 @@ class Governing_Site_Controller_ConsumerSiteTest extends TestCase {
 	}
 
 	/**
+	 * Succeeds even when no governing site was previously set.
+	 */
+	public function test_remove_governing_site_succeeds_when_already_unset(): void {
+		delete_option( Settings::OPTION_CONSUMER_PARENT_SITE_URL );
+
+		$request  = new WP_REST_Request( 'DELETE', '/onedesign/v1/governing-site' );
+		$response = $this->server->dispatch( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+	}
+
+	/**
+	 * Disconnecting tells the governing site to remove this brand site before clearing the local pairing.
+	 */
+	public function test_remove_governing_site_notifies_governing_site(): void {
+		Settings::set_parent_site_url( 'https://governing.example.com' );
+
+		$requested_urls = [];
+		$filter         = static function ( $preempt, $args, $url ) use ( &$requested_urls ) { // phpcs:ignore SlevomatCodingStandard.Functions.UnusedParameter.UnusedParameter
+			$requested_urls[] = $url;
+			return [
+				'response' => [
+					'code'    => 200,
+					'message' => 'OK',
+				],
+				'body'     => '',
+				'headers'  => [],
+				'cookies'  => [],
+			];
+		};
+		add_filter( 'pre_http_request', $filter, 10, 3 );
+
+		$request  = new WP_REST_Request( 'DELETE', '/onedesign/v1/governing-site' );
+		$response = $this->server->dispatch( $request );
+		$data     = $response->get_data();
+
+		remove_filter( 'pre_http_request', $filter );
+
+		$this->assertTrue( $data['governing_site_notified'] );
+		$this->assertSame( [ 'https://governing.example.com/wp-json/onedesign/v1/brand-site' ], $requested_urls );
+		$this->assertNull( Settings::get_parent_site_url() );
+	}
+
+	/**
+	 * An unreachable governing site doesn't block the local disconnect, but the admin is told to finish it there.
+	 */
+	public function test_remove_governing_site_disconnects_locally_when_governing_site_unreachable(): void {
+		Settings::set_parent_site_url( 'https://governing.example.com' );
+
+		$filter = static fn () => new \WP_Error( 'http_request_failed', 'cURL error 7' );
+		add_filter( 'pre_http_request', $filter );
+
+		$request  = new WP_REST_Request( 'DELETE', '/onedesign/v1/governing-site' );
+		$response = $this->server->dispatch( $request );
+		$data     = $response->get_data();
+
+		remove_filter( 'pre_http_request', $filter );
+
+		$this->assertFalse( $data['governing_site_notified'] );
+		$this->assertStringContainsString( 'https://governing.example.com', $data['message'] );
+		$this->assertStringContainsString( 'could not be notified', $data['message'] );
+		$this->assertNull( Settings::get_parent_site_url() );
+	}
+
+	/**
+	 * A governing site that rejects this site's key may have already removed it, and the warning says so.
+	 */
+	public function test_remove_governing_site_warns_when_governing_site_does_not_recognize_it(): void {
+		Settings::set_parent_site_url( 'https://governing.example.com' );
+
+		$filter = static fn () => [
+			'response' => [
+				'code'    => 401,
+				'message' => 'Unauthorized',
+			],
+			'body'     => '',
+			'headers'  => [],
+			'cookies'  => [],
+		];
+		add_filter( 'pre_http_request', $filter );
+
+		$request  = new WP_REST_Request( 'DELETE', '/onedesign/v1/governing-site' );
+		$response = $this->server->dispatch( $request );
+		$data     = $response->get_data();
+
+		remove_filter( 'pre_http_request', $filter );
+
+		$this->assertFalse( $data['governing_site_notified'] );
+		$this->assertStringContainsString( 'did not recognize', $data['message'] );
+		$this->assertNull( Settings::get_parent_site_url() );
+	}
+
+	/**
 	 * Only a governing site with this site's key can connect it, so a logged-in admin (from set_up) is refused.
 	 */
 	public function test_connect_refuses_an_admin_without_the_key(): void {
@@ -129,15 +222,13 @@ class Governing_Site_Controller_ConsumerSiteTest extends TestCase {
 	}
 
 	/**
-	 * An admin disconnecting clears the governing site.
+	 * Brand site registers the governing-site DELETE route.
 	 */
-	public function test_remove_governing_site_clears_the_governing_site(): void {
-		Settings::set_parent_site_url( 'https://governing.example.com' );
+	public function test_registers_governing_site_delete_route(): void {
+		$routes = $this->server->get_routes();
+		$ns     = '/' . Governing_Site_Controller::NAMESPACE;
 
-		$response = $this->server->dispatch( new WP_REST_Request( 'DELETE', '/onedesign/v1/governing-site' ) );
-
-		$this->assertSame( 200, $response->get_status() );
-		$this->assertNull( Settings::get_parent_site_url() );
+		$this->assertArrayHasKey( 'DELETE', $routes[ $ns . '/governing-site' ][1]['methods'] );
 	}
 
 	/**

@@ -8,6 +8,7 @@ const mockedApiFetch = apiFetch as MockedFunction< typeof apiFetch >;
 const mockSiteSettingsApi = ( handlers: {
 	governingSiteUrl?: string;
 	regeneratedKey?: string;
+	disconnectResponse?: Record< string, unknown >;
 } ) =>
 	mockedApiFetch.mockImplementation( async ( { path, method = 'GET' } ) => {
 		if ( path === '/onedesign/v1/secret-key' && method === 'POST' ) {
@@ -18,6 +19,14 @@ const mockSiteSettingsApi = ( handlers: {
 			return {
 				onedesign_parent_site_url: handlers.governingSiteUrl ?? '',
 			};
+		}
+
+		if ( path === '/onedesign/v1/governing-site' && method === 'DELETE' ) {
+			return (
+				handlers.disconnectResponse ?? {
+					governing_site_notified: true,
+				}
+			);
 		}
 
 		throw new Error( `Unexpected request: ${ method } ${ path }` );
@@ -85,6 +94,37 @@ describe( 'SiteSettings', () => {
 				{ selector: '.components-notice__content' }
 			)
 		).toBeInTheDocument();
+	} );
+
+	it( 'warns when the governing site could not be notified of the disconnection', async () => {
+		mockSiteSettingsApi( {
+			governingSiteUrl: 'https://governing.example.com/',
+			disconnectResponse: {
+				governing_site_notified: false,
+				message: 'The governing site could not be notified.',
+			},
+		} );
+
+		render( <SiteSettings /> );
+
+		await screen.findByDisplayValue( 'https://governing.example.com/' );
+		fireEvent.click(
+			screen.getByRole( 'button', { name: 'Disconnect Governing Site' } )
+		);
+		fireEvent.click( screen.getByRole( 'button', { name: 'Disconnect' } ) );
+
+		expect(
+			await screen.findByText(
+				'The governing site could not be notified.',
+				{
+					selector: '.components-notice__content',
+				}
+			)
+		).toBeInTheDocument();
+		expect(
+			screen.queryByText( 'Governing site disconnected successfully.' )
+		).not.toBeInTheDocument();
+		expect( screen.getByDisplayValue( '' ) ).toBeInTheDocument();
 	} );
 
 	it( 'loads once on mount without the API key, and does not reload after regenerating', async () => {

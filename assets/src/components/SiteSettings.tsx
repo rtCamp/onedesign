@@ -88,11 +88,21 @@ const SiteSettings = (): JSX.Element => {
 
 	const deleteGoverningSiteConnection = useCallback( async () => {
 		try {
-			await apiFetch( {
+			const data = await apiFetch< {
+				governing_site_notified?: boolean;
+				message: string;
+			} >( {
 				path: '/onedesign/v1/governing-site',
 				method: 'DELETE',
 			} );
 			setGoverningSite( '' );
+
+			// Disconnected locally, but the governing site may still list this site.
+			if ( data?.governing_site_notified === false ) {
+				setNotice( { type: 'warning', message: data.message } );
+				return;
+			}
+
 			setNotice( {
 				type: 'success',
 				message: __(
