@@ -9,12 +9,82 @@ declare(strict_types = 1);
 
 namespace OneDesign\Modules\Rest;
 
+use OneDesign\Modules\Settings\Settings;
 use OneDesign\Utils;
 
 /**
  * Class - Remote_Client
  */
 class Remote_Client {
+	/**
+	 * Asks the governing site to remove this brand site from its shared sites.
+	 *
+	 * @return true|\WP_Error True if the governing site removed this site.
+	 */
+	public static function deregister_from_governing_site(): true|\WP_Error {
+		// Only call on brand sites.
+		if ( ! Settings::is_consumer_site() ) {
+			return new \WP_Error(
+				'onedesign_unauthorized_site',
+				__( 'The requesting site is not a shared brand site.', 'onedesign' ),
+			);
+		}
+
+		$parent_url = Settings::get_parent_site_url();
+		if ( empty( $parent_url ) ) {
+			return new \WP_Error(
+				'onedesign_no_parent',
+				__( 'No governing site is configured.', 'onedesign' ),
+			);
+		}
+
+		// Child authenticating to the governing site.
+		$our_public_key = Settings::get_api_key();
+		if ( empty( $our_public_key ) ) {
+			return new \WP_Error(
+				'onedesign_no_key',
+				__( 'No API key is configured.', 'onedesign' ),
+			);
+		}
+
+		$response = self::request(
+			$parent_url,
+			'brand-site',
+			$our_public_key,
+			[
+				'method' => \WP_REST_Server::DELETABLE,
+			]
+		);
+
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		$code = wp_remote_retrieve_response_code( $response );
+
+		// The governing site only authenticates brand sites it lists with a matching key.
+		if ( 401 === $code || 403 === $code ) {
+			return new \WP_Error(
+				'onedesign_unrecognized_site',
+				__( 'The governing site does not recognize this site.', 'onedesign' ),
+				[ 'status' => $code ]
+			);
+		}
+
+		if ( 200 !== $code ) {
+			return new \WP_Error(
+				'onedesign_rest_failed_to_connect',
+				__( 'Failed to connect to the governing site.', 'onedesign' ),
+				[
+					'status' => $code,
+					'body'   => wp_remote_retrieve_body( $response ),
+				]
+			);
+		}
+
+		return true;
+	}
+
 	/**
 	 * Tells a brand site to forget this governing site, so it drops the connection.
 	 *

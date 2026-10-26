@@ -116,6 +116,7 @@ Code contributions, bug reports, and feature requests are welcome! The following
 │   │   │   └── Settings.php
 │   │   ├── Rest/
 │   │   │   ├── Abstract_REST_Controller.php
+│   │   │   ├── Brand_Site_Controller.php
 │   │   │   ├── Governing_Site_Controller.php
 │   │   │   ├── Multisite_Controller.php
 │   │   │   ├── Patterns_Controller.php # Lists, adds and removes the patterns in a site's library.
