@@ -48,6 +48,7 @@ class Admin implements Registrable {
 		wp_localize_script( Assets::MULTISITE_SETUP_SCRIPT_HANDLE, 'OneDesignSettings', Assets::get_localized_data() );
 
 		wp_enqueue_script( Assets::MULTISITE_SETUP_SCRIPT_HANDLE );
+		wp_enqueue_style( Assets::ADMIN_STYLES_HANDLE );
 
 		// @todo Move other scripts from Assets to here.
 	}
