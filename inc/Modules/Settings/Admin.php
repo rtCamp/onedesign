@@ -11,7 +11,6 @@ namespace OneDesign\Modules\Settings;
 
 use OneDesign\Contracts\Interfaces\Registrable;
 use OneDesign\Modules\Core\Assets;
-use OneDesign\Modules\Multisite\Settings as MU_Settings;
 
 /**
  * Class - Admin
@@ -167,19 +166,7 @@ final class Admin implements Registrable {
 	 * Enqueue the scripts and styles for the settings screen.
 	 */
 	public function enqueue_settings_scripts(): void {
-		wp_localize_script(
-			Assets::SETTINGS_SCRIPT_HANDLE,
-			'OneDesignSettings',
-			array_merge(
-				Assets::get_localized_data(),
-				[
-					'multisites'              => MU_Settings::get_all_multisites_info(),
-					'isMultisite'             => is_multisite(),
-					'isGoverningSiteSelected' => MU_Settings::is_governing_site_selected(),
-					'currentSiteId'           => is_multisite() ? get_current_blog_id() : null,
-				]
-			)
-		);
+		wp_localize_script( Assets::SETTINGS_SCRIPT_HANDLE, 'OneDesignSettings', Assets::get_localized_data() );
 
 		wp_enqueue_script( Assets::SETTINGS_SCRIPT_HANDLE );
 

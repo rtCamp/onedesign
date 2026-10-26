@@ -5,7 +5,7 @@ import SiteTable from '@/components/SiteTable';
 import SiteModal from '@/components/SiteModal';
 import SiteSettings from '@/components/SiteSettings';
 import SiteTypeSettings from '@/components/SiteTypeSettings';
-import { API_NAMESPACE, NONCE } from '@/js/constants';
+import { API_NAMESPACE, NONCE } from '@/js/utils';
 import type { SiteType } from '@/types/global';
 
 export interface NoticeType {

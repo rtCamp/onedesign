@@ -80,6 +80,25 @@ final class AssetsTest extends TestCase {
 	}
 
 	/**
+	 * Ensures localized data exposes the expected keys.
+	 */
+	public function test_get_localized_data_returns_expected_keys(): void {
+		update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_GOVERNING, false );
+
+		$data = Assets::get_localized_data();
+
+		$this->assertArrayHasKey( 'nonce', $data );
+		$this->assertArrayHasKey( 'api_key', $data );
+		$this->assertArrayHasKey( 'restNamespace', $data );
+		$this->assertArrayHasKey( 'restUrl', $data );
+		$this->assertArrayHasKey( 'setupUrl', $data );
+		$this->assertArrayHasKey( 'sharedSites', $data );
+		$this->assertArrayHasKey( 'multisites', $data );
+		$this->assertArrayHasKey( 'isGoverningSiteSelected', $data );
+		$this->assertArrayHasKey( 'currentSiteId', $data );
+	}
+
+	/**
 	 * Keeps the brand sites' API keys out of the page, and doesn't generate a key on governing sites.
 	 */
 	public function test_get_localized_data_omits_secrets(): void {
@@ -98,7 +117,7 @@ final class AssetsTest extends TestCase {
 
 		$data = Assets::get_localized_data();
 
-		$this->assertSame( '', $data['apiKey'], 'Governing sites have no consumer key.' );
+		$this->assertSame( '', $data['api_key'], 'Governing sites have no consumer key.' );
 		$this->assertFalse( get_option( Settings::OPTION_CONSUMER_API_KEY ), 'No consumer key is generated on governing sites.' );
 		$this->assertCount( 1, $data['sharedSites'] );
 		$this->assertArrayNotHasKey( 'api_key', $data['sharedSites'][0] );
@@ -107,7 +126,7 @@ final class AssetsTest extends TestCase {
 		update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_CONSUMER, false );
 		$this->reset_localized_data();
 
-		$this->assertNotSame( '', Assets::get_localized_data()['apiKey'] );
+		$this->assertNotSame( '', Assets::get_localized_data()['api_key'] );
 
 		$this->reset_localized_data();
 	}
