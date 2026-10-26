@@ -57,6 +57,78 @@ class Governing_Site_Controller_ConsumerSiteTest extends TestCase {
 	}
 
 	/**
+	 * Only a governing site with this site's key can connect it, so a logged-in admin (from set_up) is refused.
+	 */
+	public function test_connect_refuses_an_admin_without_the_key(): void {
+		delete_option( Settings::OPTION_CONSUMER_PARENT_SITE_URL );
+
+		$request = new WP_REST_Request( 'POST', '/onedesign/v1/governing-site' );
+		$request->set_header( 'X-OneDesign-Site-URL', 'https://governing.example.com' );
+
+		$response = $this->server->dispatch( $request );
+
+		$this->assertSame( 403, $response->get_status() );
+		$this->assertNull( Settings::get_parent_site_url() );
+	}
+
+	/**
+	 * A request with this site's key connects it to the sender, identified by
+	 * X-OneDesign-Site-URL. The user is logged out so success can only come from the key.
+	 */
+	public function test_connect_with_the_key_connects_the_sender(): void {
+		delete_option( Settings::OPTION_CONSUMER_PARENT_SITE_URL );
+		$api_key = Settings::get_api_key();
+
+		wp_set_current_user( 0 );
+
+		$request = new WP_REST_Request( 'POST', '/onedesign/v1/governing-site' );
+		$request->set_header( 'X-OneDesign-Token', $api_key );
+		$request->set_header( 'X-OneDesign-Site-URL', 'https://governing.example.com' );
+
+		$response = $this->server->dispatch( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( 'https://governing.example.com', Settings::get_parent_site_url() );
+	}
+
+	/**
+	 * A brand that is already connected refuses to be repointed to a different governing site.
+	 */
+	public function test_connect_rejects_a_different_governing_site_when_connected(): void {
+		Settings::set_parent_site_url( 'https://governing.example.com' );
+		$api_key = Settings::get_api_key();
+		wp_set_current_user( 0 );
+
+		$request = new WP_REST_Request( 'POST', '/onedesign/v1/governing-site' );
+		$request->set_header( 'X-OneDesign-Token', $api_key );
+		$request->set_header( 'X-OneDesign-Site-URL', 'https://other.example.com' );
+
+		$response = $this->server->dispatch( $request );
+
+		$this->assertSame( 409, $response->get_status() );
+		$this->assertSame( 'onedesign_already_connected', $response->get_data()['code'] );
+		$this->assertSame( 'https://governing.example.com', Settings::get_parent_site_url() );
+	}
+
+	/**
+	 * The same governing site, with or without a trailing slash, can connect again.
+	 */
+	public function test_connect_accepts_the_same_governing_site_when_connected(): void {
+		Settings::set_parent_site_url( 'https://governing.example.com' );
+		$api_key = Settings::get_api_key();
+		wp_set_current_user( 0 );
+
+		$request = new WP_REST_Request( 'POST', '/onedesign/v1/governing-site' );
+		$request->set_header( 'X-OneDesign-Token', $api_key );
+		$request->set_header( 'X-OneDesign-Site-URL', 'https://governing.example.com/' );
+
+		$response = $this->server->dispatch( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( 'https://governing.example.com', Settings::get_parent_site_url() );
+	}
+
+	/**
 	 * An admin disconnecting clears the governing site.
 	 */
 	public function test_remove_governing_site_clears_the_governing_site(): void {

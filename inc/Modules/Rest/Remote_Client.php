@@ -16,6 +16,42 @@ use OneDesign\Utils;
  */
 class Remote_Client {
 	/**
+	 * Runs a brand site's health check, which also connects it to this governing site.
+	 *
+	 * @param string $url     The brand site's URL.
+	 * @param string $api_key The brand site's API key.
+	 *
+	 * @return true|\WP_Error True if the brand site accepted the key.
+	 */
+	public static function check_brand_site( string $url, string $api_key ): true|\WP_Error {
+		$response = self::request(
+			$url,
+			'governing-site',
+			$api_key,
+			[
+				'method'  => \WP_REST_Server::CREATABLE,
+				'timeout' => 5, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout -- An admin is waiting for the answer.
+			]
+		);
+
+		$code = is_wp_error( $response ) ? 0 : (int) wp_remote_retrieve_response_code( $response );
+
+		if ( 200 === $code ) {
+			return true;
+		}
+
+		if ( 401 === $code || 403 === $code ) {
+			return new \WP_Error( 'onedesign_bad_key', __( 'The brand site rejected this API key. Copy the key from the brand site\'s OneDesign settings and try again.', 'onedesign' ), [ 'status' => 400 ] );
+		}
+
+		if ( 409 === $code ) {
+			return new \WP_Error( 'onedesign_already_connected', __( 'This brand site is already connected to a different governing site. Disconnect it there first, then try again.', 'onedesign' ), [ 'status' => 409 ] );
+		}
+
+		return new \WP_Error( 'onedesign_health_check_failed', __( 'Could not reach the brand site. Check the URL, and that OneDesign is active there, then try again.', 'onedesign' ), [ 'status' => 502 ] );
+	}
+
+	/**
 	 * Sends a JSON request to a OneDesign route on a brand site, and decodes its answer. Anything but a 200 is an error with the brand site's own message.
 	 *
 	 * @param array{url: string, api_key: string} $site_data The brand site, with its stored key.
