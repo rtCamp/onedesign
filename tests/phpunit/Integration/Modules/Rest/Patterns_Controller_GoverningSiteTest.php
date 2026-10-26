@@ -271,6 +271,45 @@ class Patterns_Controller_GoverningSiteTest extends TestCase {
 	}
 
 	/**
+	 * Sharing a pattern again after a synced pattern it nests is unpublished drops that synced pattern from the brand site's copy, and the copy only it used.
+	 */
+	public function test_share_patterns_again_drops_a_synced_pattern_that_is_no_longer_published(): void {
+		$this->connect_brand_one();
+		$nested = self::factory()->post->create(
+			[
+				'post_type'    => 'wp_block',
+				'post_title'   => 'Lab Ready',
+				'post_content' => '<!-- wp:paragraph --><p>Ready to talk?</p><!-- /wp:paragraph -->',
+			]
+		);
+		$hero   = self::factory()->post->create(
+			[
+				'post_type'    => 'wp_block',
+				'post_title'   => 'Lab Hero',
+				'post_content' => '<!-- wp:block {"ref":' . $nested . '} /-->',
+			]
+		);
+		$body   = [
+			'site'  => 'brand-1',
+			'names' => [ 'user-pattern-' . $hero ],
+		];
+		$this->dispatch( 'POST', '/patterns', $body );
+		$copy = get_option( Templates::POST_IDS_OPTION_KEY )[ $nested ];
+		wp_update_post(
+			[
+				'ID'          => $nested,
+				'post_status' => 'draft',
+			]
+		);
+
+		$response = $this->dispatch( 'POST', '/patterns', $body );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( '<!-- wp:block /-->', get_option( Patterns::PATTERNS_OPTION_KEY )[ 'user-pattern-' . $hero ]['content'] );
+		$this->assertNull( get_post( $copy ) );
+	}
+
+	/**
 	 * A password-protected synced pattern stays out of the library, since core doesn't render it and brand sites would get it without the password.
 	 */
 	public function test_leaves_out_password_protected_patterns(): void {

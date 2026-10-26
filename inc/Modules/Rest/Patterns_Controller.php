@@ -159,13 +159,14 @@ class Patterns_Controller extends Abstract_REST_Controller {
 			return new \WP_Error( 'onedesign_patterns_not_found', __( 'None of these patterns exist on this site.', 'onedesign' ), [ 'status' => 400 ] );
 		}
 
-		$references = Templates::get_references( ...array_column( $patterns, 'content' ) );
-		$shared     = Remote_Client::request_brand_site(
+		$references         = Templates::get_references( ...array_column( $patterns, 'content' ) );
+		$synced_pattern_ids = array_keys( $references['synced_patterns'] );
+		$shared             = Remote_Client::request_brand_site(
 			$site,
 			'patterns',
 			WP_REST_Server::CREATABLE,
 			[
-				'patterns'        => $patterns,
+				'patterns'        => array_map( static fn ( array $pattern ): array => [ 'content' => Templates::drop_unsent_refs( (string) $pattern['content'], $synced_pattern_ids ) ] + $pattern, $patterns ),
 				'synced_patterns' => Templates::get_brand_synced_patterns( $references['synced_patterns'], $site['name'] ),
 			]
 		);
@@ -228,7 +229,11 @@ class Patterns_Controller extends Abstract_REST_Controller {
 
 		Patterns::add_received_patterns( (array) $request['patterns'] );
 
-		return rest_ensure_response( [ 'message' => __( 'Patterns saved.', 'onedesign' ) ] );
+		// What the old versions used and the new ones don't is removed.
+		$message = __( 'Patterns saved.', 'onedesign' );
+		$removed = Templates::remove_unused( $message );
+
+		return is_wp_error( $removed ) ? $removed : rest_ensure_response( [ 'message' => $message ] );
 	}
 
 	/**

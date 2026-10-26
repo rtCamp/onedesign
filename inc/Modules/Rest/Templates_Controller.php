@@ -257,7 +257,24 @@ class Templates_Controller extends Abstract_REST_Controller {
 	 * Adds the templates the governing site sent, with the patterns, template parts and synced patterns they use, or updates the ones this site has.
 	 *
 	 * @param \WP_REST_Request $request The request object.
-	 * @phpstan-param \WP_REST_Request<array{templates: array<int,array<string,mixed>>, patterns: array<string,array<string,mixed>>, template_parts: array<int,array{original_id: string, slug: string, title?: string, description?: string, content: string, area?: string}>, synced_patterns: array<int,array{original_id: int, slug: string, title?: string, content: string}>}> $request
+	 * @phpstan-param \WP_REST_Request<array{
+	 *   templates: array<int,array<string,mixed>>,
+	 *   patterns: array<string,array<string,mixed>>,
+	 *   template_parts: array<int,array{
+	 *     original_id: string,
+	 *     slug: string,
+	 *     title?: string,
+	 *     description?: string,
+	 *     content: string,
+	 *     area?: string
+	 *   }>,
+	 *   synced_patterns: array<int,array{
+	 *     original_id: int,
+	 *     slug: string,
+	 *     title?: string,
+	 *     content: string
+	 *   }>
+	 * }> $request
 	 */
 	public function save_received_templates( WP_REST_Request $request ): WP_REST_Response|\WP_Error {
 		// The templates, patterns and template parts point at this site's copies of the synced patterns, so those are saved first.
@@ -267,8 +284,15 @@ class Templates_Controller extends Abstract_REST_Controller {
 		}
 
 		$saved = Templates::add_received_templates( (array) $request['templates'], (array) $request['patterns'], (array) $request['template_parts'], $synced_pattern_ids );
+		if ( is_wp_error( $saved ) ) {
+			return $saved;
+		}
 
-		return is_wp_error( $saved ) ? $saved : rest_ensure_response( [ 'message' => __( 'Templates saved.', 'onedesign' ) ] );
+		// What the old versions used and the new ones don't is removed.
+		$message = __( 'Templates saved.', 'onedesign' );
+		$removed = Templates::remove_unused( $message );
+
+		return is_wp_error( $removed ) ? $removed : rest_ensure_response( [ 'message' => $message ] );
 	}
 
 	/**

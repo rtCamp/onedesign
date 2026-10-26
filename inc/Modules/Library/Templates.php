@@ -248,11 +248,7 @@ final class Templates implements Registrable {
 
 		update_option( self::TEMPLATES_OPTION_KEY, array_diff_key( $templates, $removed ), false );
 
-		$used     = self::get_used_references();
-		$patterns = get_option( self::TEMPLATE_PATTERNS_OPTION_KEY, [] );
-		update_option( self::TEMPLATE_PATTERNS_OPTION_KEY, array_filter( $patterns, static fn ( array $pattern ): bool => isset( $used['patterns'][ $pattern['name'] ] ) ), false );
-
-		return self::delete_unused_posts( $removed, $used, $message );
+		return self::remove_unused( $message );
 	}
 
 	/**
@@ -355,29 +351,29 @@ final class Templates implements Registrable {
 	}
 
 	/**
-	 * Deletes the template parts and synced patterns this site created for the governing site that removed templates or patterns used and nothing it has still uses.
+	 * Removes the patterns, template parts and synced patterns this site keeps for the governing site that neither its templates nor the patterns from the Pattern Library use.
 	 *
-	 * @param array<int|string,array<string,mixed>> $removed         The removed templates or patterns.
-	 * @param array                                 $used            What get_used_references() returned once they were gone.
-	 * @param string                                $removed_message What the governing site is told was removed, which the error leads with.
-	 * @phpstan-param References $used
+	 * @param string $message What the governing site is told was saved or removed, which the error leads with.
 	 *
 	 * @return true|\WP_Error True if every one of them was deleted.
 	 */
-	public static function delete_unused_posts( array $removed, array $used, string $removed_message ): true|\WP_Error {
-		$unused          = self::get_references( ...array_column( $removed, 'content' ) );
-		$unused_post_ids = array_merge(
-			array_keys( array_diff_key( $unused['synced_patterns'], $used['synced_patterns'] ) ),
-			array_map( static fn ( \WP_Block_Template $template_part ): ?int => $template_part->wp_id, array_diff_key( $unused['template_parts'], $used['template_parts'] ) )
+	public static function remove_unused( string $message ): true|\WP_Error {
+		$used     = self::get_used_references();
+		$patterns = get_option( self::TEMPLATE_PATTERNS_OPTION_KEY, [] );
+		update_option( self::TEMPLATE_PATTERNS_OPTION_KEY, array_filter( $patterns, static fn ( array $pattern ): bool => isset( $used['patterns'][ $pattern['name'] ] ) ), false );
+
+		$used_post_ids = array_merge(
+			array_keys( $used['synced_patterns'] ),
+			array_map( static fn ( \WP_Block_Template $template_part ): ?int => $template_part->wp_id, $used['template_parts'] )
 		);
 
 		// Only the posts this site created for the governing site, never its own.
 		$post_ids = get_option( self::POST_IDS_OPTION_KEY, [] );
 		$error    = null;
-		foreach ( array_intersect( $post_ids, $unused_post_ids ) as $original_id => $post_id ) {
+		foreach ( array_diff( $post_ids, $used_post_ids ) as $original_id => $post_id ) {
 			if ( ! wp_delete_post( $post_id, true ) ) {
-				/* translators: 1: "Patterns removed." or "Templates removed.", 2: template part or synced pattern title. */
-				$error = new \WP_Error( 'onedesign_post_not_deleted', sprintf( __( '%1$s The brand site couldn\'t delete "%2$s" along with them. Nothing else uses it, so you can delete that synced pattern or template part there yourself.', 'onedesign' ), $removed_message, get_the_title( $post_id ) ), [ 'status' => 500 ] );
+				/* translators: 1: "Templates saved.", "Templates removed.", "Patterns saved." or "Patterns removed.", 2: template part or synced pattern title. */
+				$error = new \WP_Error( 'onedesign_post_not_deleted', sprintf( __( '%1$s The brand site couldn\'t delete "%2$s" along with them. Nothing else uses it, so you can delete that synced pattern or template part there yourself.', 'onedesign' ), $message, get_the_title( $post_id ) ), [ 'status' => 500 ] );
 				continue;
 			}
 
@@ -420,15 +416,32 @@ final class Templates implements Registrable {
 	 * @param int[]  $synced_patterns The ids of the synced patterns the brand site is sent.
 	 */
 	public static function rename_references( string $content, string $site_name, array $synced_patterns ): string {
-		return traverse_and_serialize_blocks(
+		$renamed = traverse_and_serialize_blocks(
 			parse_blocks( $content ),
-			static function ( array &$block ) use ( $site_name, $synced_patterns ): string {
+			static function ( array &$block ) use ( $site_name ): string {
 				if ( in_array( $block['blockName'], [ 'core/template-part', 'core/pattern' ], true ) && isset( $block['attrs']['slug'] ) ) {
 					$block['attrs']['slug'] = self::get_brand_slug( (string) $block['attrs']['slug'], $site_name );
 					// The brand site keeps the template part in its own theme.
 					unset( $block['attrs']['theme'] );
 				}
 
+				return '';
+			}
+		);
+
+		return self::drop_unsent_refs( $renamed, $synced_patterns );
+	}
+
+	/**
+	 * Drops the synced patterns blocks use that the brand site isn't sent.
+	 *
+	 * @param string $content         Block markup.
+	 * @param int[]  $synced_patterns The ids of the synced patterns the brand site is sent.
+	 */
+	public static function drop_unsent_refs( string $content, array $synced_patterns ): string {
+		return traverse_and_serialize_blocks(
+			parse_blocks( $content ),
+			static function ( array &$block ) use ( $synced_patterns ): string {
 				if ( 'core/block' === $block['blockName'] && ! in_array( (int) ( $block['attrs']['ref'] ?? 0 ), $synced_patterns, true ) ) {
 					unset( $block['attrs']['ref'] );
 				}
@@ -584,7 +597,8 @@ final class Templates implements Registrable {
 			if ( 'core/pattern' === $block['blockName'] && ! empty( $attrs['slug'] ) ) {
 				$name = (string) $attrs['slug'];
 
-				$pattern = isset( $found['patterns'][ $name ] ) ? null : \WP_Block_Patterns_Registry::get_instance()->get_registered( $name );
+				// A brand site's template patterns are read from where they're saved, since a request that just saved them hasn't registered them.
+				$pattern = isset( $found['patterns'][ $name ] ) ? null : ( array_column( get_option( self::TEMPLATE_PATTERNS_OPTION_KEY, [] ), null, 'name' )[ $name ] ?? \WP_Block_Patterns_Registry::get_instance()->get_registered( $name ) );
 				if ( $pattern ) {
 					$found['patterns'][ $name ] = $pattern;
 					$found                      = self::find_references( parse_blocks( $pattern['content'] ), $found );

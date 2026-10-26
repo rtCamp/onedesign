@@ -218,7 +218,7 @@ final class Patterns implements Registrable {
 
 		update_option( self::PATTERNS_OPTION_KEY, array_diff_key( $patterns, $removed ), false );
 
-		return Templates::delete_unused_posts( $removed, Templates::get_used_references(), $message );
+		return Templates::remove_unused( $message );
 	}
 
 	/**

@@ -91,7 +91,7 @@ class Templates_Controller_BrandSiteTest extends TestCase {
 						'original_id' => 'theme//landing',
 						'title'       => 'Landing<script>alert(3)</script>',
 						'description' => '<img src=x onerror=alert(4)>',
-						'content'     => self::UNSAFE_CONTENT,
+						'content'     => self::UNSAFE_CONTENT . '<!-- wp:pattern {"slug":"gov-brand-cta"} /--><!-- wp:template-part {"slug":"gov-brand-header"} /-->',
 					],
 				],
 				'patterns'       => [
@@ -633,6 +633,86 @@ class Templates_Controller_BrandSiteTest extends TestCase {
 		$this->assertSame( $post_ids, get_option( Templates::POST_IDS_OPTION_KEY ) );
 		$this->assertSame( 1, (int) wp_count_posts( 'wp_block' )->publish );
 		$this->assertStringContainsString( 'Hero, updated', get_post( $post_ids[12] )->post_content );
+	}
+
+	/**
+	 * Sending a template again deletes the copies only its old version used, and keeps the ones its new version uses, here through a pattern this request hasn't registered.
+	 */
+	public function test_sending_a_template_again_deletes_what_only_its_old_version_used(): void {
+		$ready = $this->synced_pattern( 12, 'ready', '<!-- wp:paragraph --><p>Ready to talk?</p><!-- /wp:paragraph -->' );
+		$this->send_templates(
+			[ $this->template( 'landing', '<!-- wp:template-part {"slug":"gov-brand-header"} /--><!-- wp:pattern {"slug":"gov-brand-cta"} /--><!-- wp:block {"ref":12} /-->' ) ],
+			[ $this->template_part( 'header' ) ],
+			[
+				'theme/cta' => [
+					'name'    => 'gov-brand-cta',
+					'title'   => 'CTA',
+					'content' => '<!-- wp:block {"ref":13} /-->',
+				],
+			],
+			[ $ready, $this->synced_pattern( 13, 'quote', '<!-- wp:paragraph --><p>Great work</p><!-- /wp:paragraph -->' ) ]
+		);
+		$post_ids = get_option( Templates::POST_IDS_OPTION_KEY );
+		// As the next request does when it starts.
+		( new Templates() )->register_received_templates();
+
+		$this->send_templates(
+			[ $this->template( 'landing', '<!-- wp:pattern {"slug":"gov-brand-hero"} /-->' ) ],
+			[],
+			[
+				'theme/hero' => [
+					'name'    => 'gov-brand-hero',
+					'title'   => 'Hero',
+					'content' => '<!-- wp:block {"ref":12} /-->',
+				],
+			],
+			[ $ready ]
+		);
+
+		$this->assertSame( [ 12 => $post_ids[12] ], get_option( Templates::POST_IDS_OPTION_KEY ) );
+		$this->assertInstanceOf( \WP_Post::class, get_post( $post_ids[12] ) );
+		$this->assertNull( get_post( $post_ids[13] ) );
+		$this->assertNull( get_post( $post_ids['theme//header'] ) );
+		$this->assertSame( [ 'theme/hero' ], array_keys( get_option( Templates::TEMPLATE_PATTERNS_OPTION_KEY ) ) );
+	}
+
+	/**
+	 * Sending a template again after a template part it uses stops using a synced pattern deletes that synced pattern's copy.
+	 */
+	public function test_sending_a_template_again_deletes_what_its_template_part_stopped_using(): void {
+		$template = $this->template( 'landing', '<!-- wp:template-part {"slug":"gov-brand-header"} /-->' );
+		$this->send_templates( [ $template ], [ $this->template_part( 'header', '<!-- wp:block {"ref":12} /-->' ) ], [], [ $this->synced_pattern( 12, 'ready', '<!-- wp:paragraph --><p>Ready to talk?</p><!-- /wp:paragraph -->' ) ] );
+		$post_ids = get_option( Templates::POST_IDS_OPTION_KEY );
+
+		$this->send_templates( [ $template ], [ $this->template_part( 'header' ) ] );
+
+		$this->assertNull( get_post( $post_ids[12] ) );
+		$this->assertInstanceOf( \WP_Post::class, get_post( $post_ids['theme//header'] ) );
+	}
+
+	/**
+	 * Sending a pattern from the Pattern Library again deletes the copies of the synced patterns only its old version used.
+	 */
+	public function test_sending_a_pattern_again_deletes_the_synced_patterns_only_its_old_version_used(): void {
+		$pattern = [
+			'name'  => 'user-pattern-7',
+			'title' => 'Hero',
+		];
+		$this->send(
+			'POST',
+			'patterns',
+			[
+				'patterns'        => [ [ 'content' => '<!-- wp:block {"ref":12} /-->' ] + $pattern ],
+				'synced_patterns' => [ $this->synced_pattern( 12, 'ready', '<!-- wp:paragraph --><p>Ready to talk?</p><!-- /wp:paragraph -->' ) ],
+			]
+		);
+		$copy = get_option( Templates::POST_IDS_OPTION_KEY )[12];
+
+		$response = $this->send( 'POST', 'patterns', [ 'patterns' => [ [ 'content' => '<!-- wp:paragraph --><p>Hero</p><!-- /wp:paragraph -->' ] + $pattern ] ] );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertNull( get_post( $copy ) );
+		$this->assertSame( [], get_option( Templates::POST_IDS_OPTION_KEY ) );
 	}
 
 	/**
