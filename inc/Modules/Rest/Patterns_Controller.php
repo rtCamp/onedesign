@@ -11,6 +11,7 @@ namespace OneDesign\Modules\Rest;
 
 use OneDesign\Modules\Post_Types\Constants;
 use OneDesign\Modules\Settings\Settings;
+use OneDesign\Utils;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
@@ -46,7 +47,7 @@ class Patterns_Controller extends Abstract_REST_Controller {
 			[
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => [ $this, 'get_brand_site_patterns' ],
-				'permission_callback' => [ $this, 'check_api_permissions' ],
+				'permission_callback' => [ $this, 'is_governing_request' ],
 			]
 		);
 
@@ -101,7 +102,7 @@ class Patterns_Controller extends Abstract_REST_Controller {
 			[
 				'methods'             => WP_REST_Server::DELETABLE,
 				'callback'            => [ $this, 'remove_brand_site_patterns' ],
-				'permission_callback' => [ $this, 'check_api_permissions' ],
+				'permission_callback' => [ $this, 'is_governing_request' ],
 				'args'                => [
 					'pattern_names' => [
 						'required'          => true,
@@ -186,7 +187,7 @@ class Patterns_Controller extends Abstract_REST_Controller {
 			[
 				'methods'             => WP_REST_Server::CREATABLE,
 				'callback'            => [ $this, 'receive_patterns' ],
-				'permission_callback' => [ $this, 'check_api_permissions' ],
+				'permission_callback' => [ $this, 'is_governing_request' ],
 				'args'                => [
 					'patterns_data'    => [
 						'required'          => true,
@@ -250,8 +251,9 @@ class Patterns_Controller extends Abstract_REST_Controller {
 			[
 				'method'  => 'DELETE',
 				'headers' => [
-					'X-OneDesign-Token' => $remote_api_key,
-					'Content-Type'      => 'application/json',
+					'X-OneDesign-Token'    => $remote_api_key,
+					'X-OneDesign-Site-URL' => Utils::get_current_site_url(),
+					'Content-Type'         => 'application/json',
 				],
 				'body'    => (string) wp_json_encode(
 					[
@@ -366,8 +368,9 @@ class Patterns_Controller extends Abstract_REST_Controller {
 				$remote_url,
 				[
 					'headers' => [
-						'X-OneDesign-Token' => $remote_api_key,
-						'Content-Type'      => 'application/json',
+						'X-OneDesign-Token'    => $remote_api_key,
+						'X-OneDesign-Site-URL' => Utils::get_current_site_url(),
+						'Content-Type'         => 'application/json',
 					],
 					'timeout' => 45, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout -- Admin-only request to a brand site that may be slow.
 				]
@@ -628,8 +631,9 @@ class Patterns_Controller extends Abstract_REST_Controller {
 				[
 					'method'  => 'POST',
 					'headers' => [
-						'X-OneDesign-Token' => $remote_api_key,
-						'Content-Type'      => 'application/json',
+						'X-OneDesign-Token'    => $remote_api_key,
+						'X-OneDesign-Site-URL' => Utils::get_current_site_url(),
+						'Content-Type'         => 'application/json',
 					],
 					'body'    => (string) wp_json_encode(
 						[

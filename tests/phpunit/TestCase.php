@@ -9,6 +9,7 @@ declare( strict_types = 1 );
 
 namespace OneDesign\Tests;
 
+use OneDesign\Modules\Settings\Settings;
 use WP_UnitTestCase;
 
 /**
@@ -82,4 +83,21 @@ abstract class TestCase extends WP_UnitTestCase {
 	}
 
 	// Add any common setup or utility methods for tests here.
+
+	/**
+	 * Configures the current site as a governing site with connected brand sites.
+	 *
+	 * @param array<array<string,mixed>> $brand_sites The brand sites, as Settings::set_shared_sites() takes them.
+	 */
+	protected function set_up_governing_site( array $brand_sites = [
+		[
+			'id'      => 'brand-1',
+			'name'    => 'Brand One',
+			'url'     => 'https://brand.example.org',
+			'api_key' => 'brand-key',
+		],
+	] ): void {
+		update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_GOVERNING );
+		Settings::set_shared_sites( $brand_sites );
+	}
 }
