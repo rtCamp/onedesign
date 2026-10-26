@@ -1,25 +1,24 @@
-/**
- * External dependencies
- */
-import { describe, expect, it, type Mock } from 'vitest';
+import { describe, expect, it, type MockedFunction } from 'vitest';
 import { render, screen } from '@testing-library/react';
-
-/**
- * Internal dependencies
- */
+import apiFetch from '@wordpress/api-fetch';
 import SiteSettings from '@/components/SiteSettings';
 
-const fetchMock = global.fetch as Mock;
+const mockedApiFetch = apiFetch as MockedFunction< typeof apiFetch >;
+
+const mockSiteSettingsApi = ( handlers: { governingSiteUrl?: string } ) =>
+	mockedApiFetch.mockImplementation( async ( { path, method = 'GET' } ) => {
+		if ( path === '/wp/v2/settings' && method === 'GET' ) {
+			return {
+				onedesign_parent_site_url: handlers.governingSiteUrl ?? '',
+			};
+		}
+
+		throw new Error( `Unexpected request: ${ method } ${ path }` );
+	} );
 
 describe( 'SiteSettings', () => {
 	it( 'renders the settings cards once loading resolves', async () => {
-		fetchMock.mockResolvedValue( {
-			ok: true,
-			json: async () => ( {
-				secret_key: 'secret-abc',
-				governing_site_url: 'https://gov.example',
-			} ),
-		} );
+		mockSiteSettingsApi( { governingSiteUrl: 'https://gov.example' } );
 
 		render( <SiteSettings /> );
 
@@ -30,13 +29,32 @@ describe( 'SiteSettings', () => {
 		).toBeInTheDocument();
 	} );
 
-	it( 'surfaces an error notice when a request fails', async () => {
-		fetchMock.mockResolvedValue( { ok: false } );
+	it( "shows the server's message when a request fails", async () => {
+		mockedApiFetch.mockRejectedValue( {
+			code: 'rest_forbidden',
+			message: 'Sorry, you are not allowed to do that.',
+			data: { status: 403 },
+		} );
 
 		render( <SiteSettings /> );
 
 		expect(
-			await screen.findByText( /failed to fetch/i )
+			await screen.findByText( 'Sorry, you are not allowed to do that.' )
+		).toBeInTheDocument();
+	} );
+
+	it( 'loads the api key and governing site details', async () => {
+		mockSiteSettingsApi( {
+			governingSiteUrl: 'https://governing.example.com/',
+		} );
+
+		render( <SiteSettings /> );
+
+		expect(
+			await screen.findByDisplayValue( 'api-key' )
+		).toBeInTheDocument();
+		expect(
+			screen.getByDisplayValue( 'https://governing.example.com/' )
 		).toBeInTheDocument();
 	} );
 } );

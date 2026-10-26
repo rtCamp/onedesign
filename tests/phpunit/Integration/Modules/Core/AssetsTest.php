@@ -93,6 +93,7 @@ final class AssetsTest extends TestCase {
 		$this->assertArrayHasKey( 'restUrl', $data );
 		$this->assertArrayHasKey( 'setupUrl', $data );
 		$this->assertArrayHasKey( 'sharedSites', $data );
+		$this->assertArrayHasKey( 'siteType', $data );
 		$this->assertArrayHasKey( 'multisites', $data );
 		$this->assertArrayHasKey( 'isGoverningSiteSelected', $data );
 		$this->assertArrayHasKey( 'currentSiteId', $data );

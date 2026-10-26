@@ -25,6 +25,7 @@ export interface OneDesignSettings {
 	nonce: string;
 	api_key: string;
 	setupUrl: string;
+	siteType: SiteType | null;
 	sharedSites?: OneDesignSharedSite[];
 	restNamespace: string;
 	multisites: OneDesignMultisite[];
