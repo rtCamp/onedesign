@@ -369,6 +369,78 @@ class Shared_Sites_ControllerTest extends TestCase {
 	}
 
 	/**
+	 * Removing a site by id removes it through the setting, and tells the brand site.
+	 */
+	public function test_delete_shared_site_removes_and_notifies_the_brand(): void {
+		Settings::set_shared_sites(
+			[
+				[
+					'id'      => 'abc-1',
+					'name'    => 'A',
+					'url'     => 'https://a.example.com',
+					'api_key' => 'ka',
+				],
+			]
+		);
+
+		$sent   = [];
+		$filter = static function ( $preempt, array $args, string $url ) use ( &$sent ) { // phpcs:ignore SlevomatCodingStandard.Functions.UnusedParameter.UnusedParameter
+			$sent = [ $args, $url ];
+
+			return [
+				'response' => [
+					'code'    => 200,
+					'message' => 'OK',
+				],
+				'body'     => '',
+				'headers'  => [],
+				'cookies'  => [],
+			];
+		};
+		add_filter( 'pre_http_request', $filter, 10, 3 );
+
+		$data = $this->server->dispatch( new WP_REST_Request( 'DELETE', '/onedesign/v1/shared-sites/abc-1' ) )->get_data();
+
+		remove_filter( 'pre_http_request', $filter );
+
+		$this->assertTrue( $data['governing_site_notified'] );
+		$this->assertSame( [], Settings::get_shared_sites() );
+		$this->assertSame( 'https://a.example.com/wp-json/onedesign/v1/governing-site', $sent[1] );
+		$this->assertSame( 'DELETE', $sent[0]['method'] );
+		$this->assertSame( 'ka', $sent[0]['headers']['X-OneDesign-Token'] );
+		$this->assertSame( Utils::get_current_site_url(), $sent[0]['headers']['X-OneDesign-Site-URL'] );
+	}
+
+	/**
+	 * A brand site that can't be notified is explained, and the site is removed anyway. Unknown ids are 404.
+	 */
+	public function test_delete_shared_site_explains_an_unreachable_brand_and_unknown_ids(): void {
+		Settings::set_shared_sites(
+			[
+				[
+					'id'      => 'abc-1',
+					'name'    => 'A',
+					'url'     => 'https://a.example.com',
+					'api_key' => 'ka',
+				],
+			]
+		);
+
+		$this->assertSame( 404, $this->server->dispatch( new WP_REST_Request( 'DELETE', '/onedesign/v1/shared-sites/nope' ) )->get_status() );
+
+		$filter = static fn () => new \WP_Error( 'http_request_failed', 'down' );
+		add_filter( 'pre_http_request', $filter );
+
+		$data = $this->server->dispatch( new WP_REST_Request( 'DELETE', '/onedesign/v1/shared-sites/abc-1' ) )->get_data();
+
+		remove_filter( 'pre_http_request', $filter );
+
+		$this->assertFalse( $data['governing_site_notified'] );
+		$this->assertStringContainsString( 'could not be notified', $data['message'] );
+		$this->assertSame( [], Settings::get_shared_sites() );
+	}
+
+	/**
 	 * Dispatches a save of the brand sites.
 	 *
 	 * @param array<int,array<string,string>> $sites_data The brand sites.
