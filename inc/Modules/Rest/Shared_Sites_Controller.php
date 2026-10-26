@@ -10,6 +10,7 @@ declare(strict_types = 1);
 namespace OneDesign\Modules\Rest;
 
 use OneDesign\Modules\Settings\Settings;
+use OneDesign\Utils;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
@@ -78,22 +79,38 @@ class Shared_Sites_Controller extends Abstract_REST_Controller {
 		$decoded_body = json_decode( $body, true );
 		$sites_data   = $decoded_body['sites_data'] ?? [];
 
+		$stored_sites = array_column( Settings::get_shared_sites(), null, 'id' );
+
 		// check if same url exists more than once or not.
-		$urls = [];
-		foreach ( $sites_data as $site ) {
+		$urls     = [];
+		$to_check = [];
+		foreach ( $sites_data as &$site ) {
 			if ( isset( $site['url'] ) && in_array( $site['url'], $urls, true ) ) {
 				return new \WP_Error( 'duplicate_site_url', __( 'Brand Site already exists.', 'onedesign' ), [ 'status' => 400 ] );
 			}
-			$urls[] = $site['url'] ?? '';
-		}
 
-		// add unique id to each site if not exists.
-		foreach ( $sites_data as &$site ) {
-			if ( isset( $site['id'] ) && ! empty( $site['id'] ) ) {
-				continue;
+			// Add a unique ID if it doesn't exist.
+			$site['id'] = $site['id'] ?? wp_generate_uuid4();
+
+			$site['api_key'] = trim( (string) ( $site['api_key'] ?? '' ) );
+			$stored          = '' !== $site['id'] ? ( $stored_sites[ $site['id'] ] ?? null ) : null;
+			$same_url        = null !== $stored && Utils::normalize_url( (string) ( $site['url'] ?? '' ) ) === Utils::normalize_url( $stored['url'] );
+
+			// New sites, and sites whose URL or key changed, are health-checked before they're saved, which also connects them.
+			if ( ! $same_url || $site['api_key'] !== $stored['api_key'] ) {
+				$to_check[] = $site;
 			}
 
-			$site['id'] = wp_generate_uuid4();
+			$urls[] = $site['url'] ?? '';
+		}
+		unset( $site );
+
+		foreach ( $to_check as $site ) {
+			$checked = Remote_Client::check_brand_site( (string) ( $site['url'] ?? '' ), $site['api_key'] );
+
+			if ( is_wp_error( $checked ) ) {
+				return $checked;
+			}
 		}
 
 		Settings::set_shared_sites( $sites_data );

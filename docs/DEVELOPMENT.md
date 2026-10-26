@@ -106,8 +106,7 @@ Code contributions, bug reports, and feature requests are welcome! The following
 │   │       └── Singleton.php
 │   ├── Modules/
 │   │   ├── Core/
-│   │   │   ├── Assets.php
-│   │   │   └── Rest.php
+│   │   │   └── Assets.php
 │   │   ├── Library/
 │   │   │   ├── Admin.php # Registers the Pattern Library and Template Library screens.
 │   │   │   ├── Patterns.php # Lists a site's patterns, and keeps and registers the ones a brand site received.

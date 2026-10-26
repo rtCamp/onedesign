@@ -217,38 +217,6 @@ const SiteModal = ( {
 		setShowNotice( false );
 
 		try {
-			// Perform health-check
-			const healthCheck = await fetch(
-				`${
-					formData.url
-				}/wp-json/onedesign/v1/health-check?timestamp=${ Date.now() }`,
-				{
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
-						'X-OneDesign-Token': formData.api_key ?? '',
-						'X-OneDesign-Source': 'Settings',
-					},
-				}
-			);
-
-			const healthCheckData = ( await healthCheck.json() ) as {
-				success?: boolean;
-			};
-			if ( ! healthCheckData.success ) {
-				setErrors( {
-					...newErrors,
-					message: __(
-						'Health check failed. Please ensure the site is accessible and the api key is correct.',
-						'onedesign'
-					),
-				} );
-				setShowNotice( true );
-				setIsProcessing( false );
-				return;
-			}
-
-			setShowNotice( false );
 			const submitResponse = await onSubmit();
 
 			if ( submitResponse && ! submitResponse.ok ) {
