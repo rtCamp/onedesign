@@ -32,7 +32,6 @@ final class Admin implements Registrable {
 	/**
 	 * Path to the SVG logo for the menu.
 	 *
-	 * @todo Replace with actual logo.
 	 * @var string
 	 */
 	private const SVG_LOGO_PATH = 'build/images/logo.svg';

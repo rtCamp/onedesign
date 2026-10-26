@@ -240,28 +240,6 @@ final class Settings implements Registrable {
 	}
 
 	/**
-	 * Get a single brand site by URL
-	 *
-	 * @param string $site_url The site URL.
-	 *
-	 * @return ?array{
-	 *   api_key: string,
-	 *   id: string,
-	 *   logo: string,
-	 *   logo_id: int,
-	 *   name: string,
-	 *   url: string,
-	 * }
-	 */
-	public static function get_shared_site_by_url( string $site_url ): ?array {
-		$brand_sites = self::get_shared_sites();
-
-		$normalized_url = trailingslashit( $site_url );
-
-		return $brand_sites[ $normalized_url ] ?? null;
-	}
-
-	/**
 	 * Set the shared sites.
 	 *
 	 * @param array<string,array<string,mixed>> $sites The sites to set.
