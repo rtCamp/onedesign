@@ -6,9 +6,10 @@ import { __ } from '@wordpress/i18n';
 import { useCallback, useEffect, useState } from '@wordpress/element';
 
 /**
- * Internal dependencies
+ * External dependencies
  */
-import { API_NAMESPACE, NONCE, CURRENT_SITE_ID } from '../js/constants';
+import { API_NAMESPACE, NONCE, CURRENT_SITE_ID } from '@/js/constants';
+import type { BrandSite, NoticeType } from '@/admin/settings/page';
 
 type SiteId = number | string;
 
@@ -18,22 +19,10 @@ interface Site {
 	url?: string;
 }
 
-interface Notice {
-	type: 'error' | 'success';
-	message: string;
-}
-
-// Brand-site references may be unsaved rows (no id yet), so keep it loose.
-interface BrandSiteRef {
-	id?: SiteId;
-	name?: string;
-	url?: string;
-}
-
 interface MultiSitesProps {
-	setBrandSites: ( sites: BrandSiteRef[] ) => void;
-	brandSites: BrandSiteRef[];
-	setNotice: ( notice: Notice ) => void;
+	setBrandSites: ( sites: BrandSite[] ) => void;
+	brandSites: BrandSite[];
+	setNotice: ( notice: NoticeType ) => void;
 }
 
 /**
@@ -79,7 +68,7 @@ const MultiSites = ( {
 
 			if ( response.ok ) {
 				const data = ( await response.json() ) as {
-					shared_sites?: Site[];
+					shared_sites?: BrandSite[];
 				};
 				setBrandSites( data.shared_sites || [] );
 

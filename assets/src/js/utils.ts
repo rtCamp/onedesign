@@ -41,8 +41,9 @@ export const getInitials = ( name: string ): string => {
 		first.charAt( 0 ) + ( second ? second.charAt( 0 ) : '' )
 	).toUpperCase();
 };
+
 /**
- * Validates if a given string is a valid URL.
+ * Validates if a given string is a valid http or https URL.
  *
  * @param {string} url - The URL string to validate.
  *
@@ -50,8 +51,7 @@ export const getInitials = ( name: string ): string => {
  */
 export const isValidUrl = ( url: string ): boolean => {
 	try {
-		new URL( url );
-		return true;
+		return [ 'http:', 'https:' ].includes( new URL( url ).protocol );
 	} catch {
 		return false;
 	}

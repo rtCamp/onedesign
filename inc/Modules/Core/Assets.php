@@ -35,7 +35,6 @@ final class Assets implements Registrable {
 	public const ADMIN_STYLES_HANDLE            = self::PREFIX . 'admin';
 	public const EDITOR_STYLES_HANDLE           = self::PREFIX . 'editor';
 	public const MULTISITE_SETUP_SCRIPT_HANDLE  = self::PREFIX . 'multisite-setup';
-	public const ONBOARDING_SCRIPT_HANDLE       = self::PREFIX . 'setup';
 	public const PATTERN_LIBRARY_SCRIPT_HANDLE  = self::PREFIX . 'patterns-library';
 	public const SETTINGS_SCRIPT_HANDLE         = self::PREFIX . 'settings';
 	public const TEMPLATE_LIBRARY_SCRIPT_HANDLE = self::PREFIX . 'templates-library';
@@ -107,9 +106,6 @@ final class Assets implements Registrable {
 
 		$this->register_script( self::SETTINGS_SCRIPT_HANDLE, 'settings' );
 
-		$this->register_script( self::ONBOARDING_SCRIPT_HANDLE, 'onboarding' );
-		$this->register_style( self::ONBOARDING_SCRIPT_HANDLE, 'onboarding', [ 'wp-components' ] );
-
 		$this->register_script( self::MULTISITE_SETUP_SCRIPT_HANDLE, 'multisite-plugin' );
 
 		$this->register_style(
@@ -177,7 +173,6 @@ final class Assets implements Registrable {
 	public function defer_scripts( string $tag, string $handle ): string {
 		$defer_handles = [
 			self::SETTINGS_SCRIPT_HANDLE,
-			self::ONBOARDING_SCRIPT_HANDLE,
 		];
 
 		// Bail if we don't need to defer.

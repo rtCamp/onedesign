@@ -75,14 +75,6 @@ const scripts = {
 			'multisite-plugin',
 			'index.tsx'
 		),
-		onboarding: path.resolve(
-			process.cwd(),
-			'assets',
-			'src',
-			'admin',
-			'onboarding',
-			'index.tsx'
-		),
 		'patterns-library': path.resolve(
 			process.cwd(),
 			'assets',

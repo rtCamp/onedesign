@@ -1,6 +1,3 @@
-/**
- * WordPress dependencies
- */
 import { useState } from '@wordpress/element';
 import {
 	Button,
@@ -10,39 +7,19 @@ import {
 	Modal,
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
-
-/**
- * Internal dependencies
- */
-import { getInitials } from '../js/utils';
 import MultiSites from './MultiSites';
-import { IS_MULTISITE, IS_GOVERNING_SITE_SELECTED } from '../js/constants';
-
-type SiteId = number | string;
-
-interface Site {
-	id?: SiteId;
-	name?: string;
-	url?: string;
-	logo?: string;
-	api_key?: string;
-	logo_id?: number | null;
-	is_editable?: boolean;
-}
-
-interface Notice {
-	type: 'error' | 'success';
-	message: string;
-}
+import type { BrandSite, NoticeType } from '@/admin/settings/page';
+import { IS_MULTISITE, IS_GOVERNING_SITE_SELECTED } from '@/js/constants';
+import { getInitials } from '@/js/utils';
 
 interface SiteTableProps {
-	sites: Site[];
+	sites: ( BrandSite & { is_editable?: boolean } )[];
 	onEdit: ( index: number ) => void;
 	onDelete: ( index: number ) => void;
-	setFormData: ( site: Site ) => void;
+	setFormData: ( data: BrandSite ) => void;
 	setShowModal: ( show: boolean ) => void;
-	setSites: ( sites: Site[] ) => void;
-	setNotice: ( notice: Notice ) => void;
+	setSites: ( sites: BrandSite[] ) => void;
+	setNotice: ( notice: NoticeType ) => void;
 }
 
 /**

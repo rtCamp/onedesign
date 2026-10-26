@@ -54,8 +54,7 @@
 	}
 }
 
-[id="onedesign-multisite-selection-modal"],
-[id="onedesign-site-selection-modal"] {
+[id="onedesign-multisite-selection-modal"] {
 	position: fixed;
 	top: 50%;
 	left: 50%;
@@ -64,8 +63,7 @@
 	min-width: 40vw;
 }
 
-body.onedesign-multisite-selection-modal,
-body.onedesign-site-selection-modal {
+body.onedesign-multisite-selection-modal {
 	&::before {
 		content: "";
 		position: fixed;

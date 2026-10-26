@@ -87,11 +87,8 @@ final class Settings implements Registrable {
 				'label'             => __( 'Consumer API Key', 'onedesign' ),
 				'description'       => __( 'API key used by governing site to authenticate requests from this consumer site.', 'onedesign' ),
 				'sanitize_callback' => 'sanitize_text_field',
-				'show_in_rest'      => [
-					'schema' => [
-						'type' => 'string',
-					],
-				],
+				// Core would return the encrypted key and save a new one unencrypted, so it's only regenerated through the OneDesign route.
+				'show_in_rest'      => false,
 			],
 			self::OPTION_CONSUMER_PARENT_SITE_URL => [
 				'type'              => 'string',
@@ -115,36 +112,8 @@ final class Settings implements Registrable {
 				'label'             => __( 'Brand Sites', 'onedesign' ),
 				'description'       => __( 'An array of brand sites connected to this governing site.', 'onedesign' ),
 				'sanitize_callback' => [ self::class, 'sanitize_shared_sites' ],
-				'show_in_rest'      => [
-					'schema' => [
-						'type'  => 'array',
-						'items' => [
-							'type'       => 'object',
-							'properties' => [
-								'id'      => [
-									'type' => 'string',
-								],
-								'name'    => [
-									'type' => 'string',
-								],
-								'url'     => [
-									'type'   => 'string',
-									'format' => 'uri',
-								],
-								'logo'    => [
-									'type'   => 'string',
-									'format' => 'uri',
-								],
-								'logo_id' => [
-									'type' => 'integer',
-								],
-								'api_key' => [
-									'type' => 'string',
-								],
-							],
-						],
-					],
-				],
+				// The stored sites hold the brand keys, which never leave the server.
+				'show_in_rest'      => false,
 			],
 		];
 
@@ -255,8 +224,10 @@ final class Settings implements Registrable {
 				continue;
 			}
 
+			$decrypted_api_key = ! empty( $brand['api_key'] ) ? Encryptor::decrypt( $brand['api_key'] ) : '';
+
 			$brands_to_return[ $brand['url'] ] = [
-				'api_key' => $brand['api_key'] ?? '',
+				'api_key' => $decrypted_api_key ?: '',
 				'id'      => $brand['id'] ?? '',
 				'logo'    => $brand['logo'] ?? '',
 				'logo_id' => $brand['logo_id'] ?? 0,
@@ -306,6 +277,20 @@ final class Settings implements Registrable {
 	 * }> $sites The sites to set.
 	 */
 	public static function set_shared_sites( array $sites ): bool {
+		foreach ( $sites as &$site ) {
+			if ( empty( $site['api_key'] ) ) {
+				continue;
+			}
+
+			$encrypted_key = Encryptor::encrypt( $site['api_key'] );
+
+			if ( false === $encrypted_key ) {
+				return false;
+			}
+
+			$site['api_key'] = $encrypted_key;
+		}
+
 		return update_option( self::OPTION_GOVERNING_SHARED_SITES, array_values( $sites ), false );
 	}
 

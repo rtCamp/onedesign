@@ -38,7 +38,6 @@ export default [
 			'@wordpress/i18n-no-flanking-whitespace': 'error',
 
 			// Additional WordPress rules not in recommended preset
-			'@wordpress/dependency-group': 'error',
 			'@wordpress/data-no-store-string-literals': 'error',
 			'@wordpress/wp-global-usage': 'error',
 			'@wordpress/react-no-unsafe-timeout': 'error',

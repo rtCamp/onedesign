@@ -1,6 +1,3 @@
-/**
- * External dependencies
- */
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 
@@ -29,7 +26,7 @@ describe( 'SiteTable', () => {
 	it( 'renders a row per site with name and url', () => {
 		const sites = [
 			{
-				id: 1,
+				id: '1',
 				name: 'Alpha',
 				url: 'https://alpha.example',
 				api_key: 'abcdefghij1234',
@@ -46,7 +43,7 @@ describe( 'SiteTable', () => {
 	it( 'opens the edit flow for a site', () => {
 		const sites = [
 			{
-				id: 7,
+				id: '7',
 				name: 'Beta',
 				url: 'https://beta.example',
 				api_key: 'key1234567',
@@ -62,7 +59,7 @@ describe( 'SiteTable', () => {
 	it( 'confirms deletion through the modal', () => {
 		const sites = [
 			{
-				id: 3,
+				id: '3',
 				name: 'Gamma',
 				url: 'https://gamma.example',
 				api_key: 'key1234567',
