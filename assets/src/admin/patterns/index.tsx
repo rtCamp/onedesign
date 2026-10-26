@@ -27,7 +27,7 @@ if ( target ) {
 				<Button
 					icon={ cog }
 					variant="secondary"
-					href={ window.OneDesignSettings.settingsLink }
+					href={ window.OneDesignSettings.setupUrl }
 					label={ __( 'Go to OneDesign Settings', 'onedesign' ) }
 				/>
 			}

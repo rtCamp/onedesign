@@ -24,13 +24,12 @@ Object.defineProperty( global, 'fetch', {
 
 Object.defineProperty( window, 'OneDesignSettings', {
 	value: {
-		restUrl: 'https://example.com/wp-json',
-		restNonce: 'nonce',
-		apiKey: '',
-		settingsLink: 'https://example.com/wp-admin/',
+		restUrl: 'https://example.com/wp-json/',
+		restNamespace: 'onedesign/v1',
+		nonce: 'nonce',
+		api_key: 'api-key',
 		setupUrl: '/wp-admin/admin.php?page=onedesign-settings',
 		multisites: [],
-		isMultisite: false,
 		isGoverningSiteSelected: false,
 		currentSiteId: 1,
 	},

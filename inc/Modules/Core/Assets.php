@@ -10,6 +10,8 @@ declare( strict_types = 1 );
 namespace OneDesign\Modules\Core;
 
 use OneDesign\Contracts\Interfaces\Registrable;
+use OneDesign\Modules\Multisite\Settings as MU_Settings;
+use OneDesign\Modules\Rest\Abstract_REST_Controller;
 use OneDesign\Modules\Settings\Settings;
 
 /**
@@ -66,13 +68,17 @@ final class Assets implements Registrable {
 	public static function get_localized_data(): array {
 		if ( empty( self::$localized_data ) ) {
 			self::$localized_data = [
-				'restUrl'      => esc_url( home_url( '/wp-json' ) ),
-				'restNonce'    => wp_create_nonce( 'wp_rest' ),
+				'nonce'                   => wp_create_nonce( 'wp_rest' ),
 				// Only brand sites use a key of their own, so governing sites don't generate one.
-				'apiKey'       => Settings::is_consumer_site() ? Settings::get_api_key() : '',
-				'settingsLink' => esc_url( admin_url( 'admin.php?page=onedesign-settings' ) ),
-				'setupUrl'     => admin_url( 'admin.php?page=onedesign-settings' ),
-				'sharedSites'  => Settings::get_shared_sites_without_keys(),
+				'api_key'                 => Settings::is_consumer_site() ? Settings::get_api_key() : '',
+				'restNamespace'           => Abstract_REST_Controller::NAMESPACE,
+				'restUrl'                 => esc_url_raw( rest_url() ),
+				'setupUrl'                => admin_url( 'admin.php?page=onedesign-settings' ),
+				'sharedSites'             => Settings::get_shared_sites_without_keys(),
+				// On a network, the governing site is picked from these and brand sites are added from them.
+				'multisites'              => MU_Settings::get_all_multisites_info(),
+				'isGoverningSiteSelected' => MU_Settings::is_governing_site_selected(),
+				'currentSiteId'           => get_current_blog_id(),
 			];
 		}
 

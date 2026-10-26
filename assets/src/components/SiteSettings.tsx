@@ -1,6 +1,3 @@
-/**
- * WordPress dependencies
- */
 import { useEffect, useState, useCallback } from '@wordpress/element';
 import {
 	TextareaControl,
@@ -14,11 +11,7 @@ import {
 	Modal,
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
-
-/**
- * Internal dependencies
- */
-import { API_NAMESPACE, NONCE, API_KEY } from '../js/constants';
+import { API_NAMESPACE, NONCE, API_KEY } from '@/js/utils';
 
 interface NoticeState {
 	type: 'error' | 'success' | 'warning';
