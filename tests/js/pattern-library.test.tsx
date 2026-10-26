@@ -497,9 +497,11 @@ describe( 'pattern library', () => {
 			screen.getByRole( 'tab', { name: 'Current Site Patterns' } )
 		);
 		await openPicker( 'Footer' );
-		expect(
-			screen.getByRole( 'checkbox', { name: /Brand One/ } )
-		).toHaveAttribute( 'aria-disabled', 'true' );
+		const brandOne = screen.getByRole( 'checkbox', { name: /Brand One/ } );
+		expect( brandOne ).toHaveAttribute( 'aria-disabled', 'true' );
+		expect( brandOne ).toHaveTextContent(
+			'Brand One could not be reached.'
+		);
 		expect(
 			screen.getByRole( 'checkbox', { name: /Brand Two/ } )
 		).toHaveAttribute( 'aria-disabled', 'false' );

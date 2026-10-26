@@ -255,6 +255,11 @@ const BrandSitePicker = ( {
 											<span className="onedesign-site-url">
 												{ url }
 											</span>
+											{ siteError && (
+												<span className="onedesign-site-error-message">
+													{ siteError }
+												</span>
+											) }
 											{ ! siteError &&
 												presentCount > 0 && (
 													<div className="onedesign-site-status">
