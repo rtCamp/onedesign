@@ -96,7 +96,7 @@ const scripts = {
 			'src',
 			'admin',
 			'templates',
-			'index.ts'
+			'index.tsx'
 		),
 	},
 	module: {

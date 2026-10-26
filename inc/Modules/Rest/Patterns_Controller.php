@@ -95,19 +95,6 @@ class Patterns_Controller extends Abstract_REST_Controller {
 				]
 			);
 		}
-
-		/**
-		 * Get configured child sites.
-		 */
-		register_rest_route(
-			self::NAMESPACE,
-			'/configured-sites',
-			[
-				'methods'             => WP_REST_Server::READABLE,
-				'callback'            => [ $this, 'get_configured_child_sites' ],
-				'permission_callback' => [ Basic_Options_Controller::class, 'permission_callback' ],
-			]
-		);
 	}
 
 	/**
@@ -204,7 +191,7 @@ class Patterns_Controller extends Abstract_REST_Controller {
 	}
 
 	/**
-	 * Lists the patterns this brand site received, with the labels it gives their categories.
+	 * Lists the patterns this brand site was sent from the Pattern Library, with the labels it gives their categories.
 	 */
 	public function get_received_patterns(): WP_REST_Response {
 		return rest_ensure_response( array_values( Patterns::add_category_labels( Patterns::get_received_patterns() ) ) );
@@ -235,21 +222,6 @@ class Patterns_Controller extends Abstract_REST_Controller {
 	}
 
 	/**
-	 * Get configured child sites (for a parent site type).
-	 */
-	public function get_configured_child_sites(): WP_REST_Response {
-
-		if ( ! Settings::is_governing_site() ) {
-			return new WP_REST_Response( [], 200 ); // Return empty if not a parent site.
-		}
-
-		// Use the option name from your settings class.
-		$child_sites = Settings::get_shared_sites();
-
-		return new WP_REST_Response( array_values( $child_sites ), 200 );
-	}
-
-	/**
 	 * Gets the args the /patterns routes share. The site is optional, since listing without one lists this site's own patterns.
 	 *
 	 * @return array{names: array<string,mixed>, site: array<string,mixed>}
@@ -272,16 +244,5 @@ class Patterns_Controller extends Abstract_REST_Controller {
 				'validate_callback' => 'rest_validate_request_arg',
 			],
 		];
-	}
-
-	/**
-	 * Gets one of this site's brand sites.
-	 *
-	 * @param string $site_id The brand site's ID.
-	 *
-	 * @return array{api_key: string, id: string, logo: string, logo_id: int, name: string, url: string}|\WP_Error The brand site, or an error if it isn't one of this site's.
-	 */
-	private static function get_site( string $site_id ): array|\WP_Error {
-		return Settings::get_shared_site_by_id( $site_id ) ?? new \WP_Error( 'onedesign_site_not_found', __( 'The brand site was not found.', 'onedesign' ), [ 'status' => 404 ] );
 	}
 }

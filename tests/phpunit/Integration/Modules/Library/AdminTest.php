@@ -1,6 +1,6 @@
 <?php
 /**
- * Tests for the Pattern Library screen.
+ * Tests for the library screens.
  *
  * @package OneDesign\Tests\Integration\Modules\Library
  */
@@ -36,7 +36,7 @@ final class AdminTest extends TestCase {
 	public function tear_down(): void {
 		unset( $GLOBALS['submenu'][ Settings_Admin::MENU_SLUG ] );
 
-		foreach ( [ Assets::PATTERN_LIBRARY_SCRIPT_HANDLE, 'wp-editor' ] as $handle ) {
+		foreach ( [ Assets::PATTERN_LIBRARY_SCRIPT_HANDLE, Assets::TEMPLATE_LIBRARY_SCRIPT_HANDLE, 'wp-editor' ] as $handle ) {
 			wp_dequeue_script( $handle );
 		}
 		wp_dequeue_style( Assets::LIBRARY_STYLES_HANDLE );
@@ -51,20 +51,20 @@ final class AdminTest extends TestCase {
 	}
 
 	/**
-	 * A governing site gets the Pattern Library before it connects a brand site, so it's there as soon as the first one is saved.
+	 * A governing site gets the libraries before it connects a brand site, so they're there as soon as the first one is saved.
 	 */
-	public function test_governing_site_has_the_pattern_library_before_any_brand_site(): void {
+	public function test_governing_site_has_the_libraries_before_any_brand_site(): void {
 		$this->set_up_governing_site( [] );
 
 		( new Admin() )->add_submenu();
 
-		$this->assertSame( [ Admin::PATTERN_LIBRARY_SCREEN_ID ], $this->get_submenu_slugs() );
+		$this->assertSame( [ Admin::PATTERN_LIBRARY_SCREEN_ID, Admin::TEMPLATE_LIBRARY_SCREEN_ID ], $this->get_submenu_slugs() );
 	}
 
 	/**
-	 * Brand sites don't get the Pattern Library.
+	 * Brand sites don't get the libraries.
 	 */
-	public function test_brand_site_has_no_pattern_library(): void {
+	public function test_brand_site_has_no_libraries(): void {
 		$this->set_up_brand_site();
 
 		( new Admin() )->add_submenu();
@@ -73,31 +73,38 @@ final class AdminTest extends TestCase {
 	}
 
 	/**
-	 * The Pattern Library screen has the element its app renders into.
+	 * Each library renders into its own element on its own screen.
 	 */
-	public function test_pattern_library_screen_has_the_element_its_app_renders_into(): void {
+	public function test_each_library_screen_has_the_element_its_app_renders_into(): void {
 		ob_start();
 		( new Admin() )->render_pattern_library();
 		$pattern_library = (string) ob_get_clean();
 
+		ob_start();
+		( new Admin() )->render_template_library();
+		$template_library = (string) ob_get_clean();
+
 		$this->assertStringContainsString( '<div id="onedesign-pattern-library"></div>', $pattern_library );
+		$this->assertStringContainsString( '<div id="onedesign-template-library"></div>', $template_library );
 	}
 
 	/**
-	 * The Pattern Library's script and the library styles load on its screen and nowhere else.
+	 * Each library's script and the library styles load on that library's screen and nowhere else.
 	 *
-	 * @param string $hook     The admin page hook.
-	 * @param bool   $expected Whether they load there.
+	 * @param string  $hook   The admin page hook.
+	 * @param ?string $handle The script that loads there, if any.
 	 */
 	#[DataProvider( 'admin_screens' )]
-	public function test_pattern_library_loads_only_on_its_own_screen( string $hook, bool $expected ): void {
+	public function test_each_library_loads_only_on_its_own_screen( string $hook, ?string $handle ): void {
 		( new Assets() )->register_assets();
 		set_current_screen( $hook );
 
 		( new Admin() )->enqueue_scripts( $hook );
 
-		$this->assertSame( $expected, wp_script_is( Assets::PATTERN_LIBRARY_SCRIPT_HANDLE, 'enqueued' ) );
-		$this->assertSame( $expected, wp_style_is( Assets::LIBRARY_STYLES_HANDLE, 'enqueued' ) );
+		foreach ( [ Assets::PATTERN_LIBRARY_SCRIPT_HANDLE, Assets::TEMPLATE_LIBRARY_SCRIPT_HANDLE ] as $library ) {
+			$this->assertSame( $library === $handle, wp_script_is( $library, 'enqueued' ), $library );
+		}
+		$this->assertSame( null !== $handle, wp_style_is( Assets::LIBRARY_STYLES_HANDLE, 'enqueued' ) );
 	}
 
 	/**
@@ -124,17 +131,18 @@ final class AdminTest extends TestCase {
 	}
 
 	/**
-	 * The admin screens, and whether the Pattern Library loads on each.
+	 * The admin screens, and which library script loads on each.
 	 *
-	 * @return array<string,array{string,bool}>
+	 * @return array<string,array{string,?string}>
 	 */
 	public static function admin_screens(): array {
 		return [
-			'Pattern Library' => [ Admin::PATTERN_LIBRARY_HOOK, true ],
-			'Settings'        => [ Settings_Admin::SETTINGS_HOOK, false ],
-			'menu page'       => [ 'toplevel_page_' . Settings_Admin::MENU_SLUG, false ],
-			'post editor'     => [ 'post.php', false ],
-			'dashboard'       => [ 'index.php', false ],
+			'Pattern Library'  => [ Admin::PATTERN_LIBRARY_HOOK, Assets::PATTERN_LIBRARY_SCRIPT_HANDLE ],
+			'Template Library' => [ Admin::TEMPLATE_LIBRARY_HOOK, Assets::TEMPLATE_LIBRARY_SCRIPT_HANDLE ],
+			'Settings'         => [ Settings_Admin::SETTINGS_HOOK, null ],
+			'menu page'        => [ 'toplevel_page_' . Settings_Admin::MENU_SLUG, null ],
+			'post editor'      => [ 'post.php', null ],
+			'dashboard'        => [ 'index.php', null ],
 		];
 	}
 

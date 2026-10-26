@@ -1,6 +1,6 @@
 <?php
 /**
- * Registers the Pattern Library screen.
+ * Registers the Pattern Library and Template Library screens.
  *
  * @package OneDesign\Modules\Library
  */
@@ -19,14 +19,16 @@ use OneDesign\Modules\Settings\Settings;
  */
 final class Admin implements Registrable {
 	/**
-	 * The screen ID of the Pattern Library.
+	 * The screen IDs of the libraries.
 	 */
-	public const PATTERN_LIBRARY_SCREEN_ID = Settings_Admin::MENU_SLUG . '-pattern-library';
+	public const PATTERN_LIBRARY_SCREEN_ID  = Settings_Admin::MENU_SLUG . '-pattern-library';
+	public const TEMPLATE_LIBRARY_SCREEN_ID = Settings_Admin::MENU_SLUG . '-template-library';
 
 	/**
-	 * The admin page hook of the Pattern Library.
+	 * The admin page hooks of the libraries.
 	 */
-	public const PATTERN_LIBRARY_HOOK = Settings_Admin::MENU_SLUG . '_page_' . self::PATTERN_LIBRARY_SCREEN_ID;
+	public const PATTERN_LIBRARY_HOOK  = Settings_Admin::MENU_SLUG . '_page_' . self::PATTERN_LIBRARY_SCREEN_ID;
+	public const TEMPLATE_LIBRARY_HOOK = Settings_Admin::MENU_SLUG . '_page_' . self::TEMPLATE_LIBRARY_SCREEN_ID;
 
 	/**
 	 * {@inheritDoc}
@@ -34,13 +36,14 @@ final class Admin implements Registrable {
 	public function register_hooks(): void {
 		add_action( 'admin_menu', [ $this, 'add_submenu' ] );
 		add_action( 'load-' . self::PATTERN_LIBRARY_HOOK, [ $this, 'load_block_editor' ] );
+		add_action( 'load-' . self::TEMPLATE_LIBRARY_HOOK, [ $this, 'load_block_editor' ] );
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_scripts' ] );
 		add_filter( 'should_load_remote_block_patterns', '__return_false' );
 		add_action( 'after_setup_theme', [ $this, 'remove_core_block_patterns' ] );
 	}
 
 	/**
-	 * Registers the Pattern Library screen on a governing site.
+	 * Registers the library screens on a governing site.
 	 */
 	public function add_submenu(): void {
 		if ( ! Settings::is_governing_site() ) {
@@ -55,6 +58,16 @@ final class Admin implements Registrable {
 			self::PATTERN_LIBRARY_SCREEN_ID,
 			[ $this, 'render_pattern_library' ],
 			1
+		);
+
+		add_submenu_page(
+			Settings_Admin::MENU_SLUG,
+			__( 'Template Library', 'onedesign' ),
+			__( 'Template Library', 'onedesign' ),
+			'manage_options',
+			self::TEMPLATE_LIBRARY_SCREEN_ID,
+			[ $this, 'render_template_library' ],
+			2
 		);
 	}
 
@@ -71,7 +84,19 @@ final class Admin implements Registrable {
 	}
 
 	/**
-	 * Marks the Pattern Library screen as a block editor.
+	 * Template Library content callback.
+	 */
+	public function render_template_library(): void {
+		?>
+		<div class="wrap">
+			<h1><?php esc_html_e( 'Template Library', 'onedesign' ); ?></h1>
+			<div id="onedesign-template-library"></div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Marks the library screens as block editors.
 	 * Like core's block screens, it happens before the admin header, so the block assets core enqueues there load too.
 	 */
 	public function load_block_editor(): void {
@@ -79,16 +104,20 @@ final class Admin implements Registrable {
 	}
 
 	/**
-	 * Enqueues the Pattern Library on its screen.
+	 * Enqueues each library on its own screen.
 	 *
 	 * @param string $hook Current admin page hook.
 	 */
 	public function enqueue_scripts( string $hook ): void {
-		if ( self::PATTERN_LIBRARY_HOOK !== $hook ) {
+		$handle = match ( $hook ) {
+			self::PATTERN_LIBRARY_HOOK  => Assets::PATTERN_LIBRARY_SCRIPT_HANDLE,
+			self::TEMPLATE_LIBRARY_HOOK => Assets::TEMPLATE_LIBRARY_SCRIPT_HANDLE,
+			default                     => null,
+		};
+
+		if ( null === $handle ) {
 			return;
 		}
-
-		$handle = Assets::PATTERN_LIBRARY_SCRIPT_HANDLE;
 
 		/**
 		 * The cards are block previews.

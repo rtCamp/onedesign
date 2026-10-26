@@ -27,7 +27,8 @@ export interface LibraryCopy extends BrandSitePickerCopy {
 	applied: ( siteNames: string ) => string;
 	remove: string;
 	removeMessage: string;
-	categories: string;
+	// Set for a library whose items have categories, to filter by them.
+	categories?: string;
 }
 
 interface LibraryProps {
@@ -43,6 +44,8 @@ interface LibraryProps {
 	onApply: ( keys: string[], siteIds: string[] ) => Promise< SiteError[] >;
 	// Resolves with the server's message.
 	onRemove: ( keys: string[], siteId: string ) => Promise< string >;
+	// Set for a library that can bring a brand site's copies up to date.
+	resync?: { label: string; run: ( siteId: string ) => Promise< string > };
 }
 
 interface NoticeState {
@@ -54,7 +57,7 @@ const PER_PAGE = 9;
 const CURRENT_SITE = 'current-site';
 
 /**
- * A library of this site's patterns and each brand site's copies, which shares them with brand sites and removes them.
+ * A library of this site's patterns or templates and each brand site's copies, which shares them with brand sites and removes them.
  *
  * @param props            - Component properties.
  * @param props.items      - This site's items.
@@ -65,6 +68,7 @@ const CURRENT_SITE = 'current-site';
  * @param props.copy       - The library's own copy.
  * @param props.onApply    - Applies items to brand sites.
  * @param props.onRemove   - Removes items from a brand site.
+ * @param props.resync     - The button that brings a brand site's copies up to date.
  *
  * @return The library.
  */
@@ -77,6 +81,7 @@ const Library = ( {
 	copy,
 	onApply,
 	onRemove,
+	resync,
 }: LibraryProps ) => {
 	const [ tab, setTab ] = useState( CURRENT_SITE );
 	const [ search, setSearch ] = useState( '' );
@@ -141,7 +146,7 @@ const Library = ( {
 		setNotice( null );
 	};
 
-	// Removing resolves with the server's message.
+	// Removing and re-syncing resolve with the server's message.
 	const run = async ( action: () => Promise< string > ) => {
 		setIsBusy( true );
 		try {
@@ -258,15 +263,30 @@ const Library = ( {
 								{ __( 'Apply to Sites', 'onedesign' ) }
 							</Button>
 						) : (
-							<Button
-								variant="primary"
-								isDestructive
-								disabled={ isBusy || selected.length === 0 }
-								isBusy={ isBusy }
-								onClick={ () => setIsConfirming( true ) }
-							>
-								{ copy.remove }
-							</Button>
+							<>
+								{ resync && (
+									<Button
+										variant="secondary"
+										disabled={
+											isBusy || ! tabItems?.length
+										}
+										onClick={ () =>
+											run( () => resync.run( tab ) )
+										}
+									>
+										{ resync.label }
+									</Button>
+								) }
+								<Button
+									variant="primary"
+									isDestructive
+									disabled={ isBusy || selected.length === 0 }
+									isBusy={ isBusy }
+									onClick={ () => setIsConfirming( true ) }
+								>
+									{ copy.remove }
+								</Button>
+							</>
 						) }
 					</div>
 				</div>
@@ -313,35 +333,39 @@ const Library = ( {
 					} ) ),
 				] }
 			>
-				{ () => (
-					<div className="onedesign-library-content">
-						<div className="onedesign-library-categories">
-							<p className="onedesign-library-categories-heading">
-								{ copy.categories }
-							</p>
-							{ (
-								[
-									[ '', __( 'All', 'onedesign' ) ],
-									...Object.entries( categories ),
-								] as Array< [ string, string ] >
-							 ).map( ( [ slug, label ] ) => (
-								<Button
-									key={ slug }
-									aria-pressed={ category === slug }
-									onClick={ () => {
-										setCategory( slug );
-										setPage( 1 );
-									} }
-								>
-									{ label }
-								</Button>
-							) ) }
+				{ () =>
+					copy.categories ? (
+						<div className="onedesign-library-content">
+							<div className="onedesign-library-categories">
+								<p className="onedesign-library-categories-heading">
+									{ copy.categories }
+								</p>
+								{ (
+									[
+										[ '', __( 'All', 'onedesign' ) ],
+										...Object.entries( categories ),
+									] as Array< [ string, string ] >
+								 ).map( ( [ slug, label ] ) => (
+									<Button
+										key={ slug }
+										aria-pressed={ category === slug }
+										onClick={ () => {
+											setCategory( slug );
+											setPage( 1 );
+										} }
+									>
+										{ label }
+									</Button>
+								) ) }
+							</div>
+							<div className="onedesign-library-items">
+								{ renderTab() }
+							</div>
 						</div>
-						<div className="onedesign-library-items">
-							{ renderTab() }
-						</div>
-					</div>
-				) }
+					) : (
+						renderTab()
+					)
+				}
 			</TabPanel>
 
 			{ isPicking && (

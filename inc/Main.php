@@ -30,15 +30,13 @@ final class Main {
 		Modules\Settings\Settings::class,
 		Modules\Library\Admin::class,
 		Modules\Library\Patterns::class,
+		Modules\Library\Templates::class,
 		Modules\Multisite\Admin::class,
 		Modules\Multisite\Settings::class,
 		Modules\Rest\Basic_Options_Controller::class,
 		Modules\Rest\Multisite_Controller::class,
 		Modules\Rest\Patterns_Controller::class,
 		Modules\Rest\Templates_Controller::class,
-		Modules\Post_Types\Admin::class,
-		Modules\Post_Types\CPT_Restriction::class,
-		Modules\Post_Types\Template::class,
 	];
 
 	/**

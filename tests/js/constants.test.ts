@@ -8,7 +8,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const WINDOW_KEYS = [
 	'OneDesignSettings',
-	'TemplateLibraryData',
 	'OneDesignMultiSiteSettings',
 ] as const;
 

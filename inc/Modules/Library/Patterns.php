@@ -163,9 +163,7 @@ final class Patterns implements Registrable {
 	}
 
 	/**
-	 * Adds patterns the governing site sent, or updates the ones this site has, with the pattern categories they're in.
-	 *
-	 * A category this site doesn't have is named with the governing site's label.
+	 * Adds patterns the governing site sent, or updates the ones this site has.
 	 *
 	 * @param array<int,array<string,mixed>> $patterns Patterns that match PATTERN_SCHEMA.
 	 */
@@ -174,18 +172,33 @@ final class Patterns implements Registrable {
 
 		// Each pattern is stored under its sanitized name, which is the name it's listed and removed by.
 		foreach ( $patterns as $pattern ) {
-			$labels                    = self::sanitize_category_labels( $pattern );
-			$pattern                   = self::sanitize_pattern( $pattern );
+			$pattern                   = self::receive_pattern( $pattern );
 			$saved[ $pattern['name'] ] = $pattern;
-
-			foreach ( $pattern['categories'] as $category ) {
-				if ( ! term_exists( $category, 'wp_pattern_category' ) ) {
-					wp_insert_term( $labels[ $category ] ?? $category, 'wp_pattern_category', [ 'slug' => $category ] );
-				}
-			}
 		}
 
 		update_option( self::PATTERNS_OPTION_KEY, $saved, false );
+	}
+
+	/**
+	 * Sanitizes a pattern the governing site sent and adds the pattern categories it's in. It points at this site's copies of the synced patterns it uses.
+	 *
+	 * A category this site doesn't have is named with the governing site's label.
+	 *
+	 * @param array<string,mixed> $pattern A pattern that matches PATTERN_SCHEMA.
+	 *
+	 * @return array<string,mixed> The pattern.
+	 */
+	public static function receive_pattern( array $pattern ): array {
+		$labels  = self::sanitize_category_labels( $pattern );
+		$pattern = self::sanitize_pattern( [ 'content' => Templates::replace_refs( (string) $pattern['content'] ) ] + $pattern );
+
+		foreach ( $pattern['categories'] as $category ) {
+			if ( ! term_exists( $category, 'wp_pattern_category' ) ) {
+				wp_insert_term( $labels[ $category ] ?? $category, 'wp_pattern_category', [ 'slug' => $category ] );
+			}
+		}
+
+		return $pattern;
 	}
 
 	/**

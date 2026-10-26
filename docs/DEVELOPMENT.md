@@ -62,19 +62,11 @@ Code contributions, bug reports, and feature requests are welcome! The following
 │       │   ├── settings
 │       │   │   ├── index.tsx
 │       │   │   └── page.tsx
-│       │   └── templates
-│       │       ├── App.tsx
-│       │       ├── components
-│       │       │   ├── BaseSiteTemplates.tsx
-│       │       │   ├── BrandSiteTemplates.tsx
-│       │       │   ├── MemoizedTemplatePreview.tsx
-│       │       │   ├── SiteSelection.tsx
-│       │       │   └── TemplateModal.tsx
-│       │       ├── index.ts
-│       │       └── template-event.ts
+│       │   └── templates # The Template Library, which shares templates with brand sites.
+│       │       ├── index.tsx
+│       │       └── page.tsx
 │       ├── components
-│       │   ├── brand-site-picker.tsx # The Pattern Library's parts, with library.tsx, preview-card.tsx and use-library-data.ts.
-│       │   ├── Dashicons.tsx
+│       │   ├── brand-site-picker.tsx # The libraries' parts, with library.tsx, preview-card.tsx and use-library-data.ts, which patterns and templates share.
 │       │   ├── library.tsx
 │       │   ├── MultiSites.tsx
 │       │   ├── preview-card.tsx
@@ -85,11 +77,7 @@ Code contributions, bug reports, and feature requests are welcome! The following
 │       │   └── use-library-data.ts
 │       ├── css
 │       │   ├── admin.scss
-│       │   ├── editor.scss
-│       │   ├── library.scss
-│       │   └── template.scss
-│       ├── hooks
-│       │   └── useSitesManagement.ts
+│       │   └── library.scss
 │       ├── images
 │       │   └── logo.svg
 │       ├── js
@@ -122,25 +110,19 @@ Code contributions, bug reports, and feature requests are welcome! The following
 │   │   │   ├── Assets.php
 │   │   │   └── Rest.php
 │   │   ├── Library/
-│   │   │   ├── Admin.php # Registers the Pattern Library screen.
-│   │   │   ├── Constants.php
-│   │   │   └── Patterns.php # Lists a site's patterns, and keeps and registers the ones a brand site received.
+│   │   │   ├── Admin.php # Registers the Pattern Library and Template Library screens.
+│   │   │   ├── Patterns.php # Lists a site's patterns, and keeps and registers the ones a brand site received.
+│   │   │   └── Templates.php # Finds what a site's templates use, and keeps and registers the ones a brand site received.
 │   │   ├── Multisite/
 │   │   │   ├── Admin.php
 │   │   │   └── Settings.php
-│   │   ├── Post_Types/
-│   │   │   ├── Abstract_Post_Type.php
-│   │   │   ├── Admin.php
-│   │   │   ├── Constants.php
-│   │   │   ├── CPT_Restriction.php
-│   │   │   └── Template.php
 │   │   ├── Rest/
 │   │   │   ├── Abstract_REST_Controller.php
 │   │   │   ├── Basic_Options_Controller.php
 │   │   │   ├── Multisite_Controller.php
 │   │   │   ├── Patterns_Controller.php # Lists, adds and removes the patterns in a site's library.
 │   │   │   ├── Remote_Client.php # Sends the requests between the governing and brand sites.
-│   │   │   └── Templates_Controller.php
+│   │   │   └── Templates_Controller.php # Lists, applies, re-syncs and removes the templates in a site's library.
 │   │   └── Settings/
 │   │       ├── Admin.php
 │   │       └── Settings.php
