@@ -63,11 +63,12 @@ class Remote_ClientTest extends TestCase {
 		];
 		add_filter( 'pre_http_request', $filter );
 
-		$result = Remote_Client::get_brand_site_patterns(
+		$result = Remote_Client::request_brand_site(
 			[
 				'url'     => 'https://brand.example.com/',
 				'api_key' => 'old-key',
-			]
+			],
+			'patterns'
 		);
 
 		remove_filter( 'pre_http_request', $filter );
@@ -84,11 +85,12 @@ class Remote_ClientTest extends TestCase {
 		$filter = static fn (): \WP_Error => new \WP_Error( 'http_request_failed', 'cURL error 7' );
 		add_filter( 'pre_http_request', $filter );
 
-		$result = Remote_Client::get_brand_site_patterns(
+		$result = Remote_Client::request_brand_site(
 			[
 				'url'     => 'https://brand.example.com/',
 				'api_key' => 'key',
-			]
+			],
+			'patterns'
 		);
 
 		remove_filter( 'pre_http_request', $filter );

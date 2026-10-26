@@ -54,7 +54,7 @@ final class AdminTest extends TestCase {
 	 * A governing site gets the Pattern Library before it connects a brand site, so it's there as soon as the first one is saved.
 	 */
 	public function test_governing_site_has_the_pattern_library_before_any_brand_site(): void {
-		update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_GOVERNING );
+		$this->set_up_governing_site( [] );
 
 		( new Admin() )->add_submenu();
 
