@@ -1,7 +1,4 @@
-/*
- * Core WordPress classes that don't match `selector-class-pattern` (disabled in stylelint.config.js):
- * - .components-modal__content
- */
+/* stylelint-disable selector-class-pattern */
 
 @use "./editor";
 

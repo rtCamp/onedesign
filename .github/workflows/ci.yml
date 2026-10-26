@@ -84,8 +84,7 @@ jobs:
               - '**.scss'
               - '.editorconfig'
               - '.browserslistrc'
-              - '.stylelintignore'
-              - 'stylelint.config.js'
+              - 'stylelint.config.mjs'
             e2e:
               - '.github/workflows/ci.yml'
               - 'tests/e2e/**/*'
