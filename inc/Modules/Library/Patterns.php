@@ -268,9 +268,11 @@ final class Patterns implements Registrable {
 	/**
 	 * Adds the label this site gives each of the patterns' categories, keyed by slug. A category this site doesn't have keeps its slug as its label.
 	 *
-	 * @param array<string,array<string,mixed>> $patterns Patterns with their category slugs.
+	 * @template TKey of int|string
 	 *
-	 * @return array<string,array<string,mixed>> The patterns, each with its category_labels.
+	 * @param array<TKey,array<string,mixed>> $patterns Patterns with their category slugs.
+	 *
+	 * @return array<TKey,array<string,mixed>> The patterns, each with its category_labels.
 	 */
 	public static function add_category_labels( array $patterns ): array {
 		$labels = self::get_category_labels();

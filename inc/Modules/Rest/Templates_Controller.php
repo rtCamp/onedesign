@@ -353,7 +353,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 		// Keyed by this site's name for each, so the brand site replaces its copy when either site is renamed.
 		$pattern_fields = array_flip( array_keys( Patterns::PATTERN_SCHEMA['properties'] ) );
 		$patterns       = [];
-		foreach ( $shared['patterns'] as $name => $pattern ) {
+		foreach ( Patterns::add_category_labels( $shared['patterns'] ) as $name => $pattern ) {
 			$patterns[ $name ] = [
 				'name'    => Templates::get_brand_slug( $name, $site['name'] ),
 				'content' => $rename( (string) $pattern['content'] ),

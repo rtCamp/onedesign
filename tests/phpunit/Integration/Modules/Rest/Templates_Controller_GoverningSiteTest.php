@@ -80,6 +80,9 @@ class Templates_Controller_GoverningSiteTest extends TestCase {
 		if ( \WP_Block_Patterns_Registry::get_instance()->is_registered( 'lab/cta' ) ) {
 			unregister_block_pattern( 'lab/cta' );
 		}
+		if ( \WP_Block_Pattern_Categories_Registry::get_instance()->is_registered( 'lab-demo' ) ) {
+			unregister_block_pattern_category( 'lab-demo' );
+		}
 		foreach ( get_option( Templates::TEMPLATES_OPTION_KEY, [] ) as $template ) {
 			if ( \WP_Block_Templates_Registry::get_instance()->is_registered( $template['id'] ) ) {
 				unregister_block_template( $template['id'] );
@@ -301,6 +304,29 @@ class Templates_Controller_GoverningSiteTest extends TestCase {
 			]
 		);
 		$this->assertEqualsCanonicalizing( [ $draft, $password ], array_keys( preg_grep( '/<p>(Draft|Secret)<\/p>/', wp_list_pluck( $synced_patterns, 'post_content', 'ID' ) ) ) );
+	}
+
+	/**
+	 * A brand site names the pattern categories of the patterns a template uses as this site names them.
+	 */
+	public function test_apply_templates_names_pattern_categories_as_this_site_does(): void {
+		$this->connect_brand_one();
+		register_block_pattern_category( 'lab-demo', [ 'label' => 'Lab Demo' ] );
+		register_block_pattern(
+			'lab/cta',
+			[
+				'title'      => 'CTA',
+				'content'    => '<!-- wp:paragraph --><p>Talk to us</p><!-- /wp:paragraph -->',
+				'categories' => [ 'lab-demo' ],
+			]
+		);
+		$this->set_template_content( '<!-- wp:pattern {"slug":"lab/cta"} /-->' );
+
+		$this->apply( [ $this->template_id ], 'brand-1' );
+
+		$term = get_term_by( 'slug', 'lab-demo', 'wp_pattern_category' );
+		$this->assertInstanceOf( \WP_Term::class, $term );
+		$this->assertSame( 'Lab Demo', $term->name );
 	}
 
 	/**
