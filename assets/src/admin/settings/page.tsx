@@ -220,6 +220,7 @@ const OneDesignSettingsPage = (): JSX.Element => {
 						setFormData( defaultBrandSite );
 					} }
 					editing={ editingIndex !== null }
+					sites={ sites }
 					originalData={ sites[ editingIndex ?? -1 ] ?? {} }
 				/>
 			) }

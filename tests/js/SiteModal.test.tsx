@@ -13,6 +13,7 @@ const baseProps = {
 	setFormData: vi.fn(),
 	onSubmit: vi.fn(),
 	onClose: vi.fn(),
+	sites: [],
 };
 
 describe( 'SiteModal', () => {
