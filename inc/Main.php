@@ -33,9 +33,11 @@ final class Main {
 		Modules\Library\Templates::class,
 		Modules\Multisite\Admin::class,
 		Modules\Multisite\Settings::class,
-		Modules\Rest\Basic_Options_Controller::class,
+		Modules\Rest\Governing_Site_Controller::class,
 		Modules\Rest\Multisite_Controller::class,
 		Modules\Rest\Patterns_Controller::class,
+		Modules\Rest\Secret_Key_Controller::class,
+		Modules\Rest\Shared_Sites_Controller::class,
 		Modules\Rest\Templates_Controller::class,
 	];
 
