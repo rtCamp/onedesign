@@ -67,11 +67,6 @@ export const API_NAMESPACE =
 	window.OneDesignSettings.restUrl + window.OneDesignSettings.restNamespace;
 
 /**
- * The API key used for authenticating requests to the OneDesign REST API.
- */
-export const API_KEY = window.OneDesignSettings.api_key;
-
-/**
  * WordPress REST API nonce for authenticated requests.
  *
  * @constant

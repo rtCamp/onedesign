@@ -11,12 +11,15 @@ import {
 	Modal,
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
-import { API_NAMESPACE, NONCE, API_KEY } from '@/js/utils';
+import apiFetch from '@wordpress/api-fetch';
+import { API_NAMESPACE, NONCE } from '@/js/utils';
 
 interface NoticeState {
 	type: 'error' | 'success' | 'warning';
 	message: string;
 }
+
+const API_KEY = window.OneDesignSettings.api_key;
 
 /**
  * SiteSettings component for managing API key and governing site connection.
@@ -24,41 +27,12 @@ interface NoticeState {
  * @return Rendered component.
  */
 const SiteSettings = (): JSX.Element => {
-	const [ apiKey, setApiKey ] = useState( '' );
-	const [ isLoading, setIsLoading ] = useState( false );
+	const [ apiKey, setApiKey ] = useState( API_KEY );
+	const [ isLoading, setIsLoading ] = useState( true );
 	const [ notice, setNotice ] = useState< NoticeState | null >( null );
 	const [ governingSite, setGoverningSite ] = useState( '' );
 	const [ showDisconnectionModal, setShowDisconnectionModal ] =
 		useState( false );
-
-	const fetchApiKey = useCallback( async () => {
-		try {
-			setIsLoading( true );
-			const response = await fetch( API_NAMESPACE + '/secret-key', {
-				method: 'GET',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-WP-Nonce': NONCE,
-					'X-OneDesign-Token': API_KEY,
-				},
-			} );
-			if ( ! response.ok ) {
-				throw new Error( 'Network response was not ok' );
-			}
-			const data = ( await response.json() ) as { secret_key?: string };
-			setApiKey( data?.secret_key || '' );
-		} catch {
-			setNotice( {
-				type: 'error',
-				message: __(
-					'Failed to fetch api key. Please try again later.',
-					'onedesign'
-				),
-			} );
-		} finally {
-			setIsLoading( false );
-		}
-	}, [] );
 
 	// regenerate api key using REST endpoint.
 	const regenerateApiKey = useCallback( async () => {
@@ -104,38 +78,23 @@ const SiteSettings = (): JSX.Element => {
 	}, [] );
 
 	const fetchCurrentGoverningSite = useCallback( async () => {
-		setIsLoading( true );
 		try {
-			const response = await fetch(
-				`${ API_NAMESPACE }/governing-site?${ new Date().getTime() }`,
-				{
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
-						'X-WP-Nonce': NONCE,
-						'X-OneDesign-Token': apiKey,
-					},
-				}
-			);
-			if ( ! response.ok ) {
-				throw new Error( 'Network response was not ok' );
-			}
-			const data = ( await response.json() ) as {
-				governing_site_url?: string;
-			};
-			setGoverningSite( data?.governing_site_url || '' );
-		} catch {
+			const data = await apiFetch< {
+				onedesign_parent_site_url?: string;
+			} >( { path: '/wp/v2/settings' } );
+			setGoverningSite( data?.onedesign_parent_site_url || '' );
+		} catch ( error ) {
 			setNotice( {
 				type: 'error',
-				message: __(
-					'Failed to fetch governing site. Please try again later.',
-					'onedesign'
-				),
+				message:
+					( error as { message?: string } )?.message ||
+					__(
+						'Failed to fetch governing site. Please try again later.',
+						'onedesign'
+					),
 			} );
-		} finally {
-			setIsLoading( false );
 		}
-	}, [ apiKey ] );
+	}, [] );
 
 	const deleteGoverningSiteConnection = useCallback( async () => {
 		try {
@@ -175,10 +134,10 @@ const SiteSettings = (): JSX.Element => {
 		setShowDisconnectionModal( true );
 	}, [] );
 
+	// Load once on mount.
 	useEffect( () => {
-		fetchApiKey();
-		fetchCurrentGoverningSite();
-	}, [] ); // eslint-disable-line react-hooks/exhaustive-deps
+		fetchCurrentGoverningSite().finally( () => setIsLoading( false ) );
+	}, [ fetchCurrentGoverningSite ] );
 
 	if ( isLoading ) {
 		return <Spinner />;

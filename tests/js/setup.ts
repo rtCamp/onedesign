@@ -28,6 +28,7 @@ Object.defineProperty( window, 'OneDesignSettings', {
 		restNamespace: 'onedesign/v1',
 		nonce: 'nonce',
 		api_key: 'api-key',
+		siteType: 'governing-site',
 		setupUrl: '/wp-admin/admin.php?page=onedesign-settings',
 		multisites: [],
 		isGoverningSiteSelected: false,
