@@ -137,15 +137,18 @@ const SiteTable = ( {
 									) }
 								</td>
 								<td>
-									<code>
-										{ site?.api_key?.substring( 0, 10 ) }...
-									</code>
+									{ /* The stored key never reaches the browser. */ }
+									<code>••••••••</code>
 								</td>
 								<td>
 									<Button
 										variant="secondary"
 										onClick={ () => {
-											setFormData( site );
+											// The key field starts empty, which keeps the stored key.
+											setFormData( {
+												...site,
+												api_key: '',
+											} );
 											onEdit( index );
 											setShowModal( true );
 										} }
