@@ -1,6 +1,7 @@
 /**
  * External dependencies
  */
+import { describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 
 /**
@@ -9,19 +10,15 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import SiteTable from '@/components/SiteTable';
 
 const baseProps = {
-	onEdit: jest.fn(),
-	onDelete: jest.fn(),
-	setFormData: jest.fn(),
-	setShowModal: jest.fn(),
-	setSites: jest.fn(),
-	setNotice: jest.fn(),
+	onEdit: vi.fn(),
+	onDelete: vi.fn(),
+	setFormData: vi.fn(),
+	setShowModal: vi.fn(),
+	setSites: vi.fn(),
+	setNotice: vi.fn(),
 };
 
 describe( 'SiteTable', () => {
-	beforeEach( () => {
-		jest.clearAllMocks();
-	} );
-
 	it( 'shows an empty-state row when there are no sites', () => {
 		render( <SiteTable sites={ [] } { ...baseProps } /> );
 		expect(

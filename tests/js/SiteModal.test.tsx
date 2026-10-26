@@ -1,6 +1,7 @@
 /**
  * External dependencies
  */
+import { describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 
 /**
@@ -9,16 +10,12 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import SiteModal from '@/components/SiteModal';
 
 const baseProps = {
-	setFormData: jest.fn(),
-	onSubmit: jest.fn(),
-	onClose: jest.fn(),
+	setFormData: vi.fn(),
+	onSubmit: vi.fn(),
+	onClose: vi.fn(),
 };
 
 describe( 'SiteModal', () => {
-	beforeEach( () => {
-		jest.clearAllMocks();
-	} );
-
 	it( 'renders the add-site action when not editing', () => {
 		render(
 			<SiteModal

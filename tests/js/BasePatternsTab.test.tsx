@@ -1,6 +1,7 @@
 /**
  * External dependencies
  */
+import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
 /**
@@ -9,21 +10,17 @@ import { render, screen } from '@testing-library/react';
 import BasePatternsTab from '@/admin/patterns/components/BasePatternsTab';
 
 // MemoizedPatternPreview (imported by BasePatternsTab) pulls in the block editor.
-jest.mock( '@wordpress/block-editor', () => ( {
-	BlockPreview: () => null,
-} ) );
-jest.mock( '@wordpress/blocks', () => ( {
-	parse: jest.fn( () => [] ),
-} ) );
+vi.mock( '@wordpress/block-editor' );
+vi.mock( '@wordpress/blocks' );
 
 const baseProps = {
 	visibleCount: 9,
 	selectedPatterns: [],
-	handlePatternSelection: jest.fn(),
+	handlePatternSelection: vi.fn(),
 	hasMorePatterns: false,
-	loadMorePatterns: jest.fn(),
-	applySelectedPatterns: jest.fn(),
-	setSelectedPatterns: jest.fn(),
+	loadMorePatterns: vi.fn(),
+	applySelectedPatterns: vi.fn(),
+	setSelectedPatterns: vi.fn(),
 };
 
 describe( 'BasePatternsTab', () => {

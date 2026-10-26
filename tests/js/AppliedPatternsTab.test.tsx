@@ -1,6 +1,7 @@
 /**
  * External dependencies
  */
+import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
 /**
@@ -8,25 +9,20 @@ import { render, screen } from '@testing-library/react';
  */
 import AppliedPatternsTab from '@/admin/patterns/components/AppliedPatternsTab';
 
-// MemoizedPatternPreview (a child) pulls in the block editor, whose transitive
-// ESM deps Jest can't transform — stub them out.
-jest.mock( '@wordpress/block-editor', () => ( {
-	BlockPreview: () => null,
-} ) );
-jest.mock( '@wordpress/blocks', () => ( {
-	parse: jest.fn( () => [] ),
-} ) );
+// MemoizedPatternPreview (a child) pulls in the block editor, which doesn't load outside WordPress, so we stub it out.
+vi.mock( '@wordpress/block-editor' );
+vi.mock( '@wordpress/blocks' );
 
 const baseProps = {
 	currentPage: 1,
 	PER_PAGE: 9,
-	handlePatternSelection: jest.fn(),
-	setCurrentPage: jest.fn(),
+	handlePatternSelection: vi.fn(),
+	setCurrentPage: vi.fn(),
 	siteInfo: { value: '1' },
-	applySelectedPatterns: jest.fn(),
-	setSelectedPatterns: jest.fn(),
+	applySelectedPatterns: vi.fn(),
+	setSelectedPatterns: vi.fn(),
 	notice: null,
-	setNotice: jest.fn(),
+	setNotice: vi.fn(),
 };
 
 describe( 'AppliedPatternsTab', () => {

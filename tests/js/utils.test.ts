@@ -1,6 +1,7 @@
 /**
  * External dependencies
  */
+import { describe, expect, it } from 'vitest';
 import { getInitials, isValidUrl, PurifyElement } from '@/js/utils';
 
 describe( 'getInitials', () => {

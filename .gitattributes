@@ -23,6 +23,7 @@
 /stylelint.config.js export-ignore
 /tsconfig.base.json export-ignore
 /tsconfig.json export-ignore
+/vitest.config.mjs export-ignore
 /webpack.config.js export-ignore
 
 # Mark docs as documentation for GitHub Linguist.

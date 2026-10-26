@@ -1,6 +1,7 @@
 /**
  * External dependencies
  */
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 /**
  * WordPress dependencies
@@ -12,9 +13,7 @@ import apiFetch from '@wordpress/api-fetch';
  */
 import Category from '@/admin/patterns/components/Category';
 
-jest.mock( '@wordpress/api-fetch' );
-
-const mockedApiFetch = apiFetch as unknown as jest.Mock;
+const mockedApiFetch = vi.mocked( apiFetch );
 
 const BASE_PATTERNS = [ { categories: [ 'featured' ] } ];
 
@@ -34,7 +33,7 @@ describe( 'Category', () => {
 		render(
 			<Category
 				activeCategory="All"
-				setActiveCategory={ jest.fn() }
+				setActiveCategory={ vi.fn() }
 				isOpen
 				basePatterns={ BASE_PATTERNS }
 			/>
@@ -51,7 +50,7 @@ describe( 'Category', () => {
 		render(
 			<Category
 				activeCategory="All"
-				setActiveCategory={ jest.fn() }
+				setActiveCategory={ vi.fn() }
 				isOpen
 				basePatterns={ [] }
 			/>
@@ -71,7 +70,7 @@ describe( 'Category', () => {
 		render(
 			<Category
 				activeCategory="All"
-				setActiveCategory={ jest.fn() }
+				setActiveCategory={ vi.fn() }
 				isOpen
 				basePatterns={ BASE_PATTERNS }
 			/>
@@ -88,7 +87,7 @@ describe( 'Category', () => {
 		render(
 			<Category
 				activeCategory="All"
-				setActiveCategory={ jest.fn() }
+				setActiveCategory={ vi.fn() }
 				isOpen={ false }
 				basePatterns={ BASE_PATTERNS }
 			/>

@@ -1,6 +1,7 @@
 /**
  * External dependencies
  */
+import { describe, expect, it, type Mock } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
 /**
@@ -8,13 +9,9 @@ import { render, screen } from '@testing-library/react';
  */
 import SiteSettings from '@/components/SiteSettings';
 
-const fetchMock = global.fetch as jest.Mock;
+const fetchMock = global.fetch as Mock;
 
 describe( 'SiteSettings', () => {
-	beforeEach( () => {
-		jest.clearAllMocks();
-	} );
-
 	it( 'renders the settings cards once loading resolves', async () => {
 		fetchMock.mockResolvedValue( {
 			ok: true,
