@@ -47,4 +47,54 @@ class Remote_ClientTest extends TestCase {
 		$this->assertSame( 'No route was found', $result->get_error_message() );
 		$this->assertSame( 404, $result->get_error_data()['status'] );
 	}
+
+	/**
+	 * A brand site that rejects the stored key, after its key was regenerated, asks the admin for the new key.
+	 */
+	public function test_brand_site_rejecting_the_stored_key_asks_for_the_new_key(): void {
+		$filter = static fn (): array => [
+			'response' => [
+				'code'    => 403,
+				'message' => 'Forbidden',
+			],
+			'body'     => '{"code":"rest_forbidden","message":"Sorry, you are not allowed to do that."}',
+			'headers'  => [],
+			'cookies'  => [],
+		];
+		add_filter( 'pre_http_request', $filter );
+
+		$result = Remote_Client::get_brand_site_patterns(
+			[
+				'url'     => 'https://brand.example.com/',
+				'api_key' => 'old-key',
+			]
+		);
+
+		remove_filter( 'pre_http_request', $filter );
+
+		$this->assertInstanceOf( \WP_Error::class, $result );
+		$this->assertSame( 'onedesign_bad_key', $result->get_error_code() );
+		$this->assertSame( 400, $result->get_error_data()['status'] );
+	}
+
+	/**
+	 * A brand site that can't be reached is a bad gateway, not an error on this site.
+	 */
+	public function test_unreachable_brand_site_is_a_bad_gateway(): void {
+		$filter = static fn (): \WP_Error => new \WP_Error( 'http_request_failed', 'cURL error 7' );
+		add_filter( 'pre_http_request', $filter );
+
+		$result = Remote_Client::get_brand_site_patterns(
+			[
+				'url'     => 'https://brand.example.com/',
+				'api_key' => 'key',
+			]
+		);
+
+		remove_filter( 'pre_http_request', $filter );
+
+		$this->assertInstanceOf( \WP_Error::class, $result );
+		$this->assertSame( 'http_request_failed', $result->get_error_code() );
+		$this->assertSame( [ 'status' => 502 ], $result->get_error_data() );
+	}
 }

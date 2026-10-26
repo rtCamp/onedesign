@@ -38,11 +38,16 @@ class Remote_Client {
 		$response = self::request( $site_data['url'], $route, $site_data['api_key'], $args );
 
 		if ( is_wp_error( $response ) ) {
+			$response->add_data( [ 'status' => 502 ] );
 			return $response;
 		}
 
 		$code = wp_remote_retrieve_response_code( $response );
 		$data = json_decode( wp_remote_retrieve_body( $response ), true );
+
+		if ( 401 === $code || 403 === $code ) {
+			return new \WP_Error( 'onedesign_bad_key', __( 'The brand site rejected the API key. This is usually caused when the brand site regenerates its API key. Copy the key from the brand site\'s OneDesign settings, then edit the site under Brand Sites and paste it in.', 'onedesign' ), [ 'status' => 400 ] );
+		}
 
 		if ( 200 !== $code ) {
 			return new \WP_Error(
