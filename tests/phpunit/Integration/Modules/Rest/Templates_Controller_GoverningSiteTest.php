@@ -378,7 +378,7 @@ class Templates_Controller_GoverningSiteTest extends TestCase {
 	}
 
 	/**
-	 * Applying templates again after this site is renamed updates the brand site's copies, and the patterns they use, under the new name instead of adding more.
+	 * Applying templates again after this site is renamed updates the brand site's copies, and the patterns they use, instead of adding more, and they keep the names they got first.
 	 */
 	public function test_apply_templates_again_after_a_rename_updates_the_brand_site_copies(): void {
 		$this->connect_brand_one();
@@ -402,11 +402,11 @@ class Templates_Controller_GoverningSiteTest extends TestCase {
 		$this->assertCount( 1, $templates );
 		$this->assertStringStartsWith( 'lab-governing-brand-one//', $templates[ $this->template_id ]['id'] );
 		$this->assertSame( $post_ids, get_option( Templates::POST_IDS_OPTION_KEY ) );
-		$this->assertSame( 'lab-governing-brand-one-lab-header', get_post( $post_ids[ get_stylesheet() . '//lab-header' ] )->post_name );
-		$this->assertStringContainsString( '"slug":"lab-governing-brand-one-lab-header"', $templates[ $this->template_id ]['content'] );
+		$this->assertSame( $this->brand_slug( 'lab-header' ), get_post( $post_ids[ get_stylesheet() . '//lab-header' ] )->post_name );
+		$this->assertStringContainsString( '"slug":"' . $this->brand_slug( 'lab-header' ) . '"', $templates[ $this->template_id ]['content'] );
 		$this->assertStringContainsString( '{"ref":' . $post_ids[ $hero ] . '}', $templates[ $this->template_id ]['content'] );
-		$this->assertStringContainsString( '"slug":"lab-governing-brand-one-lab-cta"', $templates[ $this->template_id ]['content'] );
-		$this->assertSame( [ 'lab-governing-brand-one-lab-cta' ], array_column( get_option( Templates::TEMPLATE_PATTERNS_OPTION_KEY ), 'name' ) );
+		$this->assertStringContainsString( '"slug":"' . $this->brand_slug( 'lab-cta' ) . '"', $templates[ $this->template_id ]['content'] );
+		$this->assertSame( [ $this->brand_slug( 'lab-cta' ) ], array_column( get_option( Templates::TEMPLATE_PATTERNS_OPTION_KEY ), 'name' ) );
 	}
 
 	/**

@@ -36,6 +36,11 @@ class Templates_Controller_BrandSiteTest extends TestCase {
 	private const UNSAFE_CONTENT = '<!-- wp:paragraph --><p>Hello<img src="x" onerror="alert(1)"></p><!-- /wp:paragraph --><script>alert(2)</script>';
 
 	/**
+	 * The content of this site's own header.
+	 */
+	private const OWN_HEADER = '<!-- wp:paragraph --><p>Our own header</p><!-- /wp:paragraph -->';
+
+	/**
 	 * REST server.
 	 */
 	private ?\WP_REST_Server $server;
@@ -67,16 +72,7 @@ class Templates_Controller_BrandSiteTest extends TestCase {
 		global $wp_rest_server;
 		$wp_rest_server = null;
 
-		foreach ( [ 'gov-brand//landing', 'gov-brand//other' ] as $template ) {
-			if ( \WP_Block_Templates_Registry::get_instance()->is_registered( $template ) ) {
-				unregister_block_template( $template );
-			}
-		}
-		foreach ( [ 'gov-brand-cta', 'user-pattern-7' ] as $pattern ) {
-			if ( \WP_Block_Patterns_Registry::get_instance()->is_registered( $pattern ) ) {
-				unregister_block_pattern( $pattern );
-			}
-		}
+		$this->unregister_received();
 
 		parent::tear_down();
 	}
@@ -157,6 +153,147 @@ class Templates_Controller_BrandSiteTest extends TestCase {
 		( new Patterns() )->register_received_patterns();
 
 		$this->assertSame( $posts, $this->get_posts_table() );
+	}
+
+	/**
+	 * When this site has a template part with the slug a template part it's sent would get, the template, its pattern and the template part that nests it all render the one it was sent, and this site's own stays as it was.
+	 */
+	public function test_a_template_part_whose_slug_this_site_has_renders_where_it_is_used(): void {
+		$own = $this->create_own_header();
+
+		$this->send_landing_template( 'Governing header' );
+
+		$rendered = $this->render_template( 'gov-brand//landing' );
+		$this->assertSame( 3, substr_count( $rendered, '>Governing header</p>' ), 'The template, the footer and the pattern each render it.' );
+		$this->assertStringNotContainsString( 'Our own header', $rendered );
+		$this->assertSame( 'gov-brand-header', get_post( $own )->post_name );
+		$this->assertSame( self::OWN_HEADER, get_post( $own )->post_content );
+	}
+
+	/**
+	 * A template renders this site's copy of a synced pattern sent with it, and when this site has a template part with the slug a template part it's sent would get, the synced pattern that nests it renders the one it was sent.
+	 */
+	public function test_a_synced_pattern_renders_a_template_part_saved_under_another_slug(): void {
+		$this->create_own_header();
+
+		$this->send_templates(
+			[ $this->template( 'landing', '<!-- wp:block {"ref":12} /-->' ) ],
+			[ $this->template_part( 'header', '<!-- wp:paragraph --><p>Governing header</p><!-- /wp:paragraph -->' ) ],
+			[],
+			[ $this->synced_pattern( 12, 'hero', '<!-- wp:template-part {"slug":"gov-brand-header"} /-->' ) ]
+		);
+
+		$rendered = $this->render_template( 'gov-brand//landing' );
+		$this->assertStringContainsString( '>Governing header</p>', $rendered );
+		$this->assertStringNotContainsString( 'Our own header', $rendered );
+	}
+
+	/**
+	 * A template part sent later under the name an earlier one got here leaves the synced pattern and template part that nest the earlier one rendering it.
+	 */
+	public function test_a_template_part_sent_under_a_name_an_earlier_one_got_here_leaves_what_nests_that_one(): void {
+		$this->create_own_header();
+		$this->send_templates(
+			[ $this->template( 'landing', '<!-- wp:block {"ref":12} /--><!-- wp:template-part {"slug":"gov-brand-footer"} /-->' ) ],
+			[
+				$this->template_part( 'footer', '<!-- wp:template-part {"slug":"gov-brand-header"} /-->' ),
+				$this->template_part( 'header', '<!-- wp:paragraph --><p>Governing header</p><!-- /wp:paragraph -->' ),
+			],
+			[],
+			[ $this->synced_pattern( 12, 'hero', '<!-- wp:template-part {"slug":"gov-brand-header"} /-->' ) ]
+		);
+		$kept = get_post( get_option( Templates::POST_IDS_OPTION_KEY )['theme//header'] )->post_name;
+
+		$this->send_templates(
+			[ $this->template( 'other', '<!-- wp:template-part {"slug":"' . $kept . '"} /-->' ) ],
+			[
+				[
+					'original_id' => 'theme//second',
+					'slug'        => $kept,
+					'title'       => 'Second',
+					'content'     => '<!-- wp:paragraph --><p>Second header</p><!-- /wp:paragraph -->',
+					'area'        => 'header',
+				],
+			]
+		);
+
+		$rendered = $this->render_template( 'gov-brand//landing' );
+		$this->assertSame( 2, substr_count( $rendered, '>Governing header</p>' ), 'The synced pattern and the footer each render it.' );
+		$this->assertStringNotContainsString( 'Second header', $rendered );
+	}
+
+	/**
+	 * Sending an edited template part again changes what the template renders, even when this site has a template part with its slug.
+	 */
+	public function test_sending_an_edited_template_part_again_changes_what_renders(): void {
+		$this->create_own_header();
+		$this->send_landing_template( 'Governing header' );
+		$post_ids = get_option( Templates::POST_IDS_OPTION_KEY );
+
+		$this->send_landing_template( 'Governing header v2' );
+
+		$this->assertSame( $post_ids, get_option( Templates::POST_IDS_OPTION_KEY ) );
+		$this->assertSame( 3, substr_count( $this->render_template( 'gov-brand//landing' ), '>Governing header v2</p>' ) );
+	}
+
+	/**
+	 * Removing a template deletes the template parts this site saved for it, including one it saved under another slug, and this site's own template part with that slug stays.
+	 */
+	public function test_delete_templates_deletes_a_template_part_saved_under_another_slug(): void {
+		$own = $this->create_own_header();
+		$this->send_landing_template( 'Governing header' );
+		$post_ids = get_option( Templates::POST_IDS_OPTION_KEY );
+
+		$response = $this->send( 'DELETE', 'templates', [ 'ids' => [ 'theme//landing' ] ] );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertNull( get_post( $post_ids['theme//header'] ) );
+		$this->assertNull( get_post( $post_ids['theme//footer'] ) );
+		$this->assertSame( [], get_option( Templates::POST_IDS_OPTION_KEY ) );
+		$this->assertSame( self::OWN_HEADER, get_post( $own )->post_content );
+	}
+
+	/**
+	 * Sending one template again after either site is renamed leaves the template part and pattern it shares with another template under the names they got here, so the other template still renders them, and removing both templates deletes them.
+	 */
+	public function test_sending_a_template_again_under_other_site_names_keeps_what_it_shares_rendering(): void {
+		$this->send_templates_with_a_shared_header( 'gov-brand', 'landing', 'other' );
+		$post_ids = get_option( Templates::POST_IDS_OPTION_KEY );
+
+		$this->send_templates_with_a_shared_header( 'acme-brand', 'other' );
+
+		$this->assertSame( $post_ids, get_option( Templates::POST_IDS_OPTION_KEY ) );
+		foreach ( [ 'gov-brand//landing', 'acme-brand//other' ] as $template ) {
+			$rendered = $this->render_template( $template );
+			$this->assertSame( 2, substr_count( $rendered, '>Governing header</p>' ), 'The template and its pattern each render it.' );
+			$this->assertStringContainsString( '>Talk to us</p>', $rendered );
+		}
+
+		$first  = $this->send( 'DELETE', 'templates', [ 'ids' => [ 'theme//landing' ] ] );
+		$kept   = get_post( $post_ids['theme//header'] );
+		$second = $this->send( 'DELETE', 'templates', [ 'ids' => [ 'theme//other' ] ] );
+
+		$this->assertSame( 200, $first->get_status() );
+		$this->assertInstanceOf( \WP_Post::class, $kept, 'The other template still uses it.' );
+		$this->assertSame( 200, $second->get_status() );
+		$this->assertNull( get_post( $post_ids['theme//header'] ) );
+		$this->assertSame( [], get_option( Templates::POST_IDS_OPTION_KEY ) );
+		$this->assertSame( [], get_option( Templates::TEMPLATE_PATTERNS_OPTION_KEY ) );
+	}
+
+	/**
+	 * Sending one template again after this site deletes its own template part, whose slug the one it was sent would have had, leaves that template part under the slug it got, so the other template still renders it.
+	 */
+	public function test_sending_a_template_again_after_the_own_template_part_is_deleted_keeps_what_it_shares_rendering(): void {
+		$own = $this->create_own_header();
+		$this->send_templates_with_a_shared_header( 'gov-brand', 'landing', 'other' );
+		wp_delete_post( $own, true );
+
+		$this->send_templates_with_a_shared_header( 'gov-brand', 'other' );
+
+		foreach ( [ 'gov-brand//landing', 'gov-brand//other' ] as $template ) {
+			$this->assertSame( 2, substr_count( $this->render_template( $template ), '>Governing header</p>' ), 'The template and its pattern each render it.' );
+		}
 	}
 
 	/**
@@ -503,12 +640,13 @@ class Templates_Controller_BrandSiteTest extends TestCase {
 	 *
 	 * @param string $slug    The slug on the governing site.
 	 * @param string $content The content.
+	 * @param string $sites   What the sites' names start each name with.
 	 *
 	 * @return array<string,string>
 	 */
-	private function template( string $slug, string $content ): array {
+	private function template( string $slug, string $content, string $sites = 'gov-brand' ): array {
 		return [
-			'id'          => 'gov-brand//' . $slug,
+			'id'          => $sites . '//' . $slug,
 			'original_id' => 'theme//' . $slug,
 			'title'       => ucfirst( $slug ),
 			'content'     => $content,
@@ -518,18 +656,113 @@ class Templates_Controller_BrandSiteTest extends TestCase {
 	/**
 	 * A template part the governing site sends.
 	 *
-	 * @param string $slug The slug on the governing site.
+	 * @param string  $slug    The slug on the governing site.
+	 * @param ?string $content The content, which is a paragraph with its name if there's none.
+	 * @param string  $sites   What the sites' names start each name with.
 	 *
 	 * @return array<string,string>
 	 */
-	private function template_part( string $slug ): array {
+	private function template_part( string $slug, ?string $content = null, string $sites = 'gov-brand' ): array {
 		return [
 			'original_id' => 'theme//' . $slug,
-			'slug'        => 'gov-brand-' . $slug,
+			'slug'        => $sites . '-' . $slug,
 			'title'       => ucfirst( $slug ),
-			'content'     => '<!-- wp:paragraph --><p>' . ucfirst( $slug ) . '</p><!-- /wp:paragraph -->',
+			'content'     => $content ?? '<!-- wp:paragraph --><p>' . ucfirst( $slug ) . '</p><!-- /wp:paragraph -->',
 			'area'        => $slug,
 		];
+	}
+
+	/**
+	 * Sends a template that uses a header directly, through a footer and through a pattern.
+	 *
+	 * @param string $header What the header says.
+	 */
+	private function send_landing_template( string $header ): void {
+		$this->send_templates(
+			[ $this->template( 'landing', '<!-- wp:template-part {"slug":"gov-brand-header"} /--><!-- wp:template-part {"slug":"gov-brand-footer"} /--><!-- wp:pattern {"slug":"gov-brand-cta"} /-->' ) ],
+			[
+				// Before the header it nests, so this site saves it first.
+				$this->template_part( 'footer', '<!-- wp:template-part {"slug":"gov-brand-header"} /-->' ),
+				$this->template_part( 'header', '<!-- wp:paragraph --><p>' . $header . '</p><!-- /wp:paragraph -->' ),
+			],
+			[
+				'theme/cta' => [
+					'name'    => 'gov-brand-cta',
+					'title'   => 'CTA',
+					'content' => '<!-- wp:template-part {"slug":"gov-brand-header"} /-->',
+				],
+			]
+		);
+	}
+
+	/**
+	 * Sends templates that each use a header directly and through a pattern, with the names the sites' names give them.
+	 *
+	 * @param string $sites What the sites' names start each name with.
+	 * @param string ...$slugs The templates' slugs on the governing site.
+	 */
+	private function send_templates_with_a_shared_header( string $sites, string ...$slugs ): void {
+		$header = '<!-- wp:template-part {"slug":"' . $sites . '-header"} /-->';
+
+		$this->send_templates(
+			array_map( fn ( string $slug ): array => $this->template( $slug, $header . '<!-- wp:pattern {"slug":"' . $sites . '-cta"} /-->', $sites ), $slugs ),
+			[ $this->template_part( 'header', '<!-- wp:paragraph --><p>Governing header</p><!-- /wp:paragraph -->', $sites ) ],
+			[
+				'theme/cta' => [
+					'name'    => $sites . '-cta',
+					'title'   => 'CTA',
+					'content' => '<!-- wp:paragraph --><p>Talk to us</p><!-- /wp:paragraph -->' . $header,
+				],
+			]
+		);
+	}
+
+	/**
+	 * Creates this site's own header, with the slug the governing site's header gets here.
+	 *
+	 * @return int The post's id.
+	 */
+	private function create_own_header(): int {
+		$post_id = self::factory()->post->create(
+			[
+				'post_type'    => 'wp_template_part',
+				'post_name'    => 'gov-brand-header',
+				'post_title'   => 'Our own header',
+				'post_content' => self::OWN_HEADER,
+			]
+		);
+		wp_set_object_terms( $post_id, get_stylesheet(), 'wp_theme' );
+
+		return $post_id;
+	}
+
+	/**
+	 * Registers the templates and patterns this site received, as a page load does, and renders a template.
+	 *
+	 * @param string $id The template's id.
+	 */
+	private function render_template( string $id ): string {
+		$this->unregister_received();
+		( new Templates() )->register_received_templates();
+		( new Patterns() )->register_received_patterns();
+
+		return do_blocks( \WP_Block_Templates_Registry::get_instance()->get_registered( $id )->content );
+	}
+
+	/**
+	 * Unregisters the templates and patterns the tests send.
+	 */
+	private function unregister_received(): void {
+		foreach ( [ 'gov-brand//landing', 'gov-brand//other', 'acme-brand//other' ] as $template ) {
+			if ( \WP_Block_Templates_Registry::get_instance()->is_registered( $template ) ) {
+				unregister_block_template( $template );
+			}
+		}
+		foreach ( [ 'gov-brand-cta', 'acme-brand-cta', 'user-pattern-7' ] as $pattern ) {
+			if ( \WP_Block_Patterns_Registry::get_instance()->is_registered( $pattern ) ) {
+				unregister_block_pattern( $pattern );
+			}
+		}
 	}
 
 	/**

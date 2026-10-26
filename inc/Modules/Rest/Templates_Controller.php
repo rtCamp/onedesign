@@ -261,12 +261,12 @@ class Templates_Controller extends Abstract_REST_Controller {
 	 */
 	public function save_received_templates( WP_REST_Request $request ): WP_REST_Response|\WP_Error {
 		// The templates, patterns and template parts point at this site's copies of the synced patterns, so those are saved first.
-		$saved = Templates::add_received_synced_patterns( (array) $request['synced_patterns'] );
-		if ( is_wp_error( $saved ) ) {
-			return $saved;
+		$synced_pattern_ids = Templates::add_received_synced_patterns( (array) $request['synced_patterns'] );
+		if ( is_wp_error( $synced_pattern_ids ) ) {
+			return $synced_pattern_ids;
 		}
 
-		$saved = Templates::add_received_templates( (array) $request['templates'], (array) $request['patterns'], (array) $request['template_parts'] );
+		$saved = Templates::add_received_templates( (array) $request['templates'], (array) $request['patterns'], (array) $request['template_parts'], $synced_pattern_ids );
 
 		return is_wp_error( $saved ) ? $saved : rest_ensure_response( [ 'message' => __( 'Templates saved.', 'onedesign' ) ] );
 	}

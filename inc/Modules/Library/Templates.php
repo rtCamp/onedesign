@@ -157,15 +157,17 @@ final class Templates implements Registrable {
 	}
 
 	/**
-	 * Adds the templates the governing site sent, with the patterns and template parts they use, or updates the ones this site has.
+	 * Adds the templates the governing site sent, with the patterns and template parts they use, or updates the ones this site has, and points the synced patterns sent with them at those.
 	 *
-	 * @param array<int,array<string,mixed>>                                                                                            $templates      Templates that match TEMPLATE_SCHEMA.
-	 * @param array<string,array<string,mixed>>                                                                                         $patterns       Patterns that match Patterns::PATTERN_SCHEMA, keyed by the governing site's name for each.
-	 * @param array<int,array{original_id: string, slug: string, title?: string, description?: string, content: string, area?: string}> $template_parts Template parts that match TEMPLATE_PART_SCHEMA.
+	 * @param array<int,array<string,mixed>>                                                                                            $templates          Templates that match TEMPLATE_SCHEMA.
+	 * @param array<string,array<string,mixed>>                                                                                         $patterns           Patterns that match Patterns::PATTERN_SCHEMA, keyed by the governing site's name for each.
+	 * @param array<int,array{original_id: string, slug: string, title?: string, description?: string, content: string, area?: string}> $template_parts     Template parts that match TEMPLATE_PART_SCHEMA.
+	 * @param int[]                                                                                                                     $synced_pattern_ids This site's copies of the synced patterns sent with them.
 	 *
-	 * @return true|\WP_Error True if every template part was saved.
+	 * @return true|\WP_Error True if every template part and synced pattern was saved.
 	 */
-	public static function add_received_templates( array $templates, array $patterns, array $template_parts ): true|\WP_Error {
+	public static function add_received_templates( array $templates, array $patterns, array $template_parts, array $synced_pattern_ids ): true|\WP_Error {
+		$post_ids = [];
 		foreach ( $template_parts as $template_part ) {
 			$post_id = self::save_post(
 				$template_part['original_id'],
@@ -186,17 +188,44 @@ final class Templates implements Registrable {
 			// Core finds a template part by its theme, and lists it under its area.
 			wp_set_object_terms( $post_id, get_stylesheet(), 'wp_theme' );
 			wp_set_object_terms( $post_id, sanitize_key( $template_part['area'] ?? '' ) ?: 'uncategorized', 'wp_template_part_area' );
+
+			$post_ids[ sanitize_title( $template_part['slug'] ) ] = $post_id;
 		}
 
 		$saved_patterns = get_option( self::TEMPLATE_PATTERNS_OPTION_KEY, [] );
+
+		$names = [
+			'core/template-part' => array_map( static fn ( int $post_id ): string => get_post_field( 'post_name', $post_id ), $post_ids ),
+			'core/pattern'       => [],
+		];
+
 		foreach ( $patterns as $key => $pattern ) {
-			$saved_patterns[ $key ] = Patterns::receive_pattern( $pattern );
+			$names['core/pattern'][ $pattern['name'] ] = $saved_patterns[ $key ]['name'] ?? $pattern['name'];
+		}
+
+		$point_at_kept_names = static fn ( string $content ): string => self::rename_to_kept_names( $content, $names );
+
+		foreach ( array_merge( $post_ids, $synced_pattern_ids ) as $post_id ) {
+			$saved = self::rewrite_content( $post_id, $point_at_kept_names );
+
+			if ( is_wp_error( $saved ) ) {
+				return $saved;
+			}
+		}
+
+		foreach ( $patterns as $key => $pattern ) {
+			$saved_patterns[ $key ] = Patterns::receive_pattern(
+				[
+					'name'    => $names['core/pattern'][ $pattern['name'] ],
+					'content' => $point_at_kept_names( (string) $pattern['content'] ),
+				] + $pattern
+			);
 		}
 		update_option( self::TEMPLATE_PATTERNS_OPTION_KEY, $saved_patterns, false );
 
 		$saved = self::get_received_templates();
 		foreach ( $templates as $template ) {
-			$template = self::sanitize_template( [ 'content' => self::replace_refs( (string) $template['content'] ) ] + $template );
+			$template = self::sanitize_template( [ 'content' => $point_at_kept_names( self::replace_refs( (string) $template['content'] ) ) ] + $template );
 
 			$saved[ $template['original_id'] ] = $template;
 		}
@@ -255,9 +284,9 @@ final class Templates implements Registrable {
 	 *
 	 * @param array<int,array{original_id: int, slug: string, title?: string, content: string}> $synced_patterns Synced patterns that match SYNCED_PATTERN_SCHEMA.
 	 *
-	 * @return true|\WP_Error True if every one of them was saved.
+	 * @return int[]|\WP_Error This site's copies, or the error if one of them wasn't saved.
 	 */
-	public static function add_received_synced_patterns( array $synced_patterns ): true|\WP_Error {
+	public static function add_received_synced_patterns( array $synced_patterns ): array|\WP_Error {
 		$post_ids = [];
 		foreach ( $synced_patterns as $synced_pattern ) {
 			$post_id = self::save_post(
@@ -287,7 +316,7 @@ final class Templates implements Registrable {
 			}
 		}
 
-		return true;
+		return $post_ids;
 	}
 
 	/**
@@ -432,7 +461,9 @@ final class Templates implements Registrable {
 	}
 
 	/**
-	 * Gets the name a brand site gets something of this site's under, which starts with both sites' names so it can't clash with the brand site's own.
+	 * Gets the name a brand site gets something of this site's under.
+	 *
+	 * It starts with both sites' names so it's unlikely to match one of the brand site's own. A template part, pattern or synced pattern the brand site already has keeps the name it got first, even after either site is renamed.
 	 *
 	 * It only has what core allows in a template id, so a name in a non-Latin script gives the hex of its bytes.
 	 *
@@ -460,6 +491,7 @@ final class Templates implements Registrable {
 
 		if ( get_post_type( $post_id ) === $post['post_type'] ) {
 			$post['ID'] = $post_id;
+			unset( $post['post_name'] );
 		}
 
 		// Both expect slashed fields.
@@ -502,6 +534,27 @@ final class Templates implements Registrable {
 		);
 
 		return is_wp_error( $updated ) ? $updated : true;
+	}
+
+	/**
+	 * Points the template parts and patterns in markup the governing site sent at the names this site has them under.
+	 *
+	 * @param string                             $content Block markup with the names the governing site sent.
+	 * @param array<string,array<string,string>> $names   This site's names, keyed by block name and then by the ones the governing site sent.
+	 */
+	private static function rename_to_kept_names( string $content, array $names ): string {
+		return traverse_and_serialize_blocks(
+			parse_blocks( $content ),
+			static function ( array &$block ) use ( $names ): string {
+				$slug = (string) ( $block['attrs']['slug'] ?? '' );
+
+				if ( isset( $block['blockName'], $names[ $block['blockName'] ][ $slug ] ) ) {
+					$block['attrs']['slug'] = $names[ $block['blockName'] ][ $slug ];
+				}
+
+				return '';
+			}
+		);
 	}
 
 	/**
