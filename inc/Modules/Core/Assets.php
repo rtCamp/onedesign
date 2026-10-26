@@ -104,9 +104,7 @@ final class Assets implements Registrable {
 	}
 
 	/**
-	 * Register admin assets to WordPress.
-	 *
-	 * Assets are registered once centrally, and enqueued in the modules that need them.
+	 * Register all scripts and styles.
 	 */
 	public function register_assets(): void {
 
@@ -135,8 +133,6 @@ final class Assets implements Registrable {
 			'library',
 			[ 'wp-components', 'wp-block-editor' ],
 		);
-
-		wp_enqueue_style( self::ADMIN_STYLES_HANDLE );
 	}
 
 	/**

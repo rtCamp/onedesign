@@ -109,8 +109,17 @@ final class Admin implements Registrable {
 	 * @param string $hook Current admin page hook.
 	 */
 	public function enqueue_scripts( string $hook ): void {
-		if ( strpos( $hook, self::SCREEN_ID ) !== false ) {
-			$this->enqueue_settings_scripts();
+		if ( self::SETTINGS_HOOK !== $hook ) {
+			return;
+		}
+
+		wp_localize_script( Assets::SETTINGS_SCRIPT_HANDLE, 'OneDesignSettings', Assets::get_localized_data() );
+		wp_enqueue_script( Assets::SETTINGS_SCRIPT_HANDLE );
+		wp_enqueue_style( Assets::ADMIN_STYLES_HANDLE );
+
+		// The brand site logo field picks images from the media library.
+		if ( Settings::is_governing_site() ) {
+			wp_enqueue_media();
 		}
 	}
 
@@ -160,22 +169,6 @@ final class Admin implements Registrable {
 		);
 
 		return $links;
-	}
-
-	/**
-	 * Enqueue the scripts and styles for the settings screen.
-	 */
-	public function enqueue_settings_scripts(): void {
-		wp_localize_script( Assets::SETTINGS_SCRIPT_HANDLE, 'OneDesignSettings', Assets::get_localized_data() );
-
-		wp_enqueue_script( Assets::SETTINGS_SCRIPT_HANDLE );
-
-		// only load media uploader in governing site settings page.
-		if ( ! Settings::is_governing_site() ) {
-			return;
-		}
-
-		wp_enqueue_media();
 	}
 
 	/**
