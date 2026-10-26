@@ -100,4 +100,12 @@ abstract class TestCase extends WP_UnitTestCase {
 		update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_GOVERNING );
 		Settings::set_shared_sites( $brand_sites );
 	}
+
+	/**
+	 * Configures the current site as a brand site connected to a governing site.
+	 */
+	protected function set_up_brand_site(): void {
+		update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_CONSUMER );
+		update_option( Settings::OPTION_CONSUMER_PARENT_SITE_URL, 'https://governing.example.com' );
+	}
 }
