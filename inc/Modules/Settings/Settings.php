@@ -11,6 +11,7 @@ namespace OneDesign\Modules\Settings;
 
 use OneDesign\Contracts\Interfaces\Registrable;
 use OneDesign\Encryptor;
+use OneDesign\Utils;
 
 /**
  * Class - Settings
@@ -323,6 +324,31 @@ final class Settings implements Registrable {
 		}
 
 		return update_option( self::OPTION_GOVERNING_SHARED_SITES, array_values( $sites ), false );
+	}
+
+	/**
+	 * Remove a single brand site by URL.
+	 *
+	 * @param string $site_url The site URL.
+	 *
+	 * @return bool Whether the site was removed.
+	 */
+	public static function remove_shared_site( string $site_url ): bool {
+		$sites = get_option( self::OPTION_GOVERNING_SHARED_SITES, [] );
+		$sites = is_array( $sites ) ? $sites : [];
+
+		$normalized_url = Utils::normalize_url( $site_url );
+
+		$remaining_sites = array_filter(
+			$sites,
+			static fn ( $site ): bool => empty( $site['url'] ) || Utils::normalize_url( $site['url'] ) !== $normalized_url
+		);
+
+		if ( count( $remaining_sites ) === count( $sites ) ) {
+			return false;
+		}
+
+		return update_option( self::OPTION_GOVERNING_SHARED_SITES, array_values( $remaining_sites ), false );
 	}
 
 	/**

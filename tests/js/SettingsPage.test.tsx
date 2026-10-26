@@ -261,4 +261,120 @@ describe( 'SettingsPage', () => {
 
 		expect( screen.queryByTestId( 'site-modal' ) ).not.toBeInTheDocument();
 	} );
+
+	it( "shows the server's error and leaves the brand site alone when deleting fails", async () => {
+		setSharedSites( [
+			{
+				id: 'one',
+				name: 'Brand Site',
+				url: 'https://brand.example.com/',
+				logo: '',
+				logo_id: 0,
+			},
+		] );
+		mockedApiFetch.mockRejectedValueOnce( {
+			code: 'onedesign_site_not_found',
+			message: 'The brand site was not found.',
+			data: { status: 404 },
+		} );
+
+		render( <SettingsPage /> );
+
+		fireEvent.click(
+			await screen.findByRole( 'button', { name: 'Delete Site' } )
+		);
+
+		const notices = await screen.findAllByText(
+			'The brand site was not found.'
+		);
+		expect( notices.length ).toBeGreaterThanOrEqual( 1 );
+		expect( screen.getByTestId( 'site-count' ) ).toHaveTextContent( '1' );
+	} );
+
+	it( 'removes a brand site through the server, which disconnects it', async () => {
+		setSharedSites( [
+			{
+				id: 'one',
+				name: 'Brand Site',
+				url: 'https://brand.example.com/',
+				logo: '',
+				logo_id: 0,
+			},
+			{
+				id: 'two',
+				name: 'Remaining Site',
+				url: 'https://remaining.example.com/',
+				logo: '',
+				logo_id: 0,
+			},
+		] );
+		mockedApiFetch.mockResolvedValueOnce( {
+			governing_site_notified: true,
+			message: 'Brand site removed successfully.',
+		} );
+		global.fetch = vi.fn();
+
+		render( <SettingsPage /> );
+
+		fireEvent.click(
+			await screen.findByRole( 'button', { name: 'Delete Site' } )
+		);
+
+		await waitFor( () => {
+			expect( screen.getByTestId( 'site-count' ) ).toHaveTextContent(
+				'1'
+			);
+		} );
+		expect( mockedApiFetch ).toHaveBeenLastCalledWith( {
+			path: '/onedesign/v1/shared-sites/one',
+			method: 'DELETE',
+		} );
+		expect( global.fetch ).not.toHaveBeenCalled();
+		const notices = await screen.findAllByText(
+			'Brand site removed successfully.'
+		);
+		expect( notices.length ).toBeGreaterThanOrEqual( 1 );
+		expect(
+			screen.queryByText( /was removed, but/, {
+				selector: '.components-notice__content',
+			} )
+		).not.toBeInTheDocument();
+	} );
+
+	it( 'warns when a deleted brand site could not be notified', async () => {
+		setSharedSites( [
+			{
+				id: 'one',
+				name: 'Brand Site',
+				url: 'https://brand.example.com/',
+				logo: '',
+				logo_id: 0,
+			},
+		] );
+		mockedApiFetch.mockResolvedValueOnce( {
+			governing_site_notified: false,
+			message: 'Brand Site was removed, but it could not be notified.',
+		} );
+
+		render( <SettingsPage /> );
+
+		fireEvent.click(
+			await screen.findByRole( 'button', { name: 'Delete Site' } )
+		);
+
+		const message = 'Brand Site was removed, but it could not be notified.';
+		expect(
+			await screen.findByText( message, {
+				selector: '.components-notice__content',
+			} )
+		).toBeInTheDocument();
+
+		// The admin can dismiss it once they have acted on it.
+		fireEvent.click( screen.getByRole( 'button', { name: 'Close' } ) );
+		expect(
+			screen.queryByText( message, {
+				selector: '.components-notice__content',
+			} )
+		).not.toBeInTheDocument();
+	} );
 } );

@@ -16,6 +16,40 @@ use OneDesign\Utils;
  */
 class Remote_Client {
 	/**
+	 * Tells a brand site to forget this governing site, so it drops the connection.
+	 *
+	 * Failures are logged, since a brand site that can't be reached can still be disconnected from its own settings.
+	 *
+	 * @param array{url: string, api_key: string} $site_data The brand site, with its stored key.
+	 *
+	 * @return bool True if the brand site confirmed it.
+	 */
+	public static function disconnect_brand_site( array $site_data ): bool {
+		if ( empty( $site_data['url'] ) || empty( $site_data['api_key'] ) ) {
+			return false;
+		}
+
+		$response = self::request(
+			$site_data['url'],
+			'governing-site',
+			$site_data['api_key'],
+			[
+				'method'  => \WP_REST_Server::DELETABLE,
+				'timeout' => 5, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout -- Only runs when an admin removes a brand site or uninstalls the plugin.
+			]
+		);
+
+		$code = is_wp_error( $response ) ? 0 : wp_remote_retrieve_response_code( $response );
+
+		if ( 200 !== $code ) {
+			Utils::log( sprintf( 'Could not disconnect the brand site %s: %s', $site_data['url'], is_wp_error( $response ) ? $response->get_error_message() : 'HTTP ' . $code ) );
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
 	 * Runs a brand site's health check, which also connects it to this governing site.
 	 *
 	 * @param string $url     The brand site's URL.

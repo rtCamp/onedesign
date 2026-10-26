@@ -139,4 +139,80 @@ class Governing_Site_Controller_ConsumerSiteTest extends TestCase {
 		$this->assertSame( 200, $response->get_status() );
 		$this->assertNull( Settings::get_parent_site_url() );
 	}
+
+	/**
+	 * The governing site, presenting this site's token, clears the pairing, and isn't told about it in turn.
+	 */
+	public function test_remove_governing_site_clears_pairing(): void {
+		wp_set_current_user( 0 );
+
+		$requested_urls = [];
+		$filter         = static function ( $preempt, $args, $url ) use ( &$requested_urls ) { // phpcs:ignore SlevomatCodingStandard.Functions.UnusedParameter.UnusedParameter
+			$requested_urls[] = $url;
+			return new \WP_Error( 'blocked', 'Intercepted' );
+		};
+		add_filter( 'pre_http_request', $filter, 10, 3 );
+
+		$response = $this->server->dispatch( $this->governing_request( 'DELETE', '/onedesign/v1/governing-site' ) );
+
+		remove_filter( 'pre_http_request', $filter );
+
+		$this->assertSame( [], $requested_urls );
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertNull( Settings::get_parent_site_url() );
+	}
+
+	/**
+	 * Only the governing site this brand site is connected to can remove it.
+	 */
+	public function test_remove_governing_site_rejects_other_sites(): void {
+		Settings::set_parent_site_url( 'https://governing.example.com' );
+
+		wp_set_current_user( 0 );
+
+		$request = new WP_REST_Request( 'DELETE', '/onedesign/v1/governing-site' );
+		$request->set_header( 'X-OneDesign-Site-URL', 'https://other.example.com' );
+		$request->set_header( 'X-OneDesign-Token', Settings::get_api_key() );
+
+		$response = $this->server->dispatch( $request );
+
+		$this->assertSame( 401, $response->get_status() );
+		$this->assertSame( 'https://governing.example.com', Settings::get_parent_site_url() );
+	}
+
+	/**
+	 * The governing site can't remove this brand site without its token.
+	 */
+	public function test_remove_governing_site_rejects_wrong_token(): void {
+		Settings::set_parent_site_url( 'https://governing.example.com' );
+
+		wp_set_current_user( 0 );
+
+		$request = new WP_REST_Request( 'DELETE', '/onedesign/v1/governing-site' );
+		$request->set_header( 'X-OneDesign-Site-URL', 'https://governing.example.com' );
+		$request->set_header( 'X-OneDesign-Token', 'wrong-key' );
+
+		$response = $this->server->dispatch( $request );
+
+		$this->assertSame( 401, $response->get_status() );
+		$this->assertSame( 'https://governing.example.com', Settings::get_parent_site_url() );
+	}
+
+	/**
+	 * Builds a request from the governing site this brand site is connected to.
+	 *
+	 * @param string $method HTTP method.
+	 * @param string $route  REST route.
+	 *
+	 * @return \WP_REST_Request<array<string,mixed>>
+	 */
+	private function governing_request( string $method, string $route ): WP_REST_Request {
+		Settings::set_parent_site_url( 'https://governing.example.com' );
+
+		$request = new WP_REST_Request( $method, $route );
+		$request->set_header( 'X-OneDesign-Site-URL', 'https://governing.example.com' );
+		$request->set_header( 'X-OneDesign-Token', Settings::get_api_key() );
+
+		return $request;
+	}
 }

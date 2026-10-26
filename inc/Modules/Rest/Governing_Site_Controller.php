@@ -36,7 +36,7 @@ class Governing_Site_Controller extends Abstract_REST_Controller {
 					[
 						'methods'             => WP_REST_Server::DELETABLE,
 						'callback'            => [ $this, 'remove_governing_site' ],
-						'permission_callback' => static fn () => current_user_can( 'manage_options' ),
+						'permission_callback' => fn ( $request ) => current_user_can( 'manage_options' ) || $this->is_governing_request( $request ),
 					],
 				],
 			);

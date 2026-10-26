@@ -1,12 +1,11 @@
 import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
-import { Snackbar } from '@wordpress/components';
+import { Notice, Snackbar } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
 import SiteTable from '@/components/SiteTable';
 import SiteModal from '@/components/SiteModal';
 import SiteSettings from '@/components/SiteSettings';
 import SiteTypeSettings from '@/components/SiteTypeSettings';
-import { API_NAMESPACE } from '@/js/utils';
 import type { SiteType } from '@/types/global';
 
 export interface NoticeType {
@@ -41,6 +40,11 @@ const SHARED_SITES_ENDPOINT = '/onedesign/v1/shared-sites';
  */
 apiFetch.use( apiFetch.createNonceMiddleware( NONCE ) );
 
+interface DeleteSiteResponse {
+	governing_site_notified?: boolean;
+	message?: string;
+}
+
 /**
  * Settings page component for OneDesign plugin.
  *
@@ -54,6 +58,11 @@ const OneDesignSettingsPage = (): JSX.Element => {
 	);
 	const [ formData, setFormData ] = useState< BrandSite >( defaultBrandSite );
 	const [ notice, setNotice ] = useState< NoticeType | null >( null );
+
+	// Kept until dismissed, since each one asks the admin to finish disconnecting a brand site.
+	const [ disconnectNotices, setDisconnectNotices ] = useState<
+		NoticeType[]
+	>( [] );
 
 	const handleFormSubmit = async (): Promise< boolean | string > => {
 		const updated: BrandSite[] =
@@ -95,45 +104,52 @@ const OneDesignSettingsPage = (): JSX.Element => {
 		}
 	};
 
-	const handleDelete = async ( index: number ) => {
-		const updated = sites.filter( ( _, i ) => i !== index );
-		const token = NONCE;
+	const handleDelete = async ( index: number ): Promise< void > => {
+		const removedSite = sites[ index ];
+
+		if ( ! removedSite ) {
+			return;
+		}
+
+		let response: DeleteSiteResponse;
 
 		try {
-			const response = await fetch( `${ API_NAMESPACE }/shared-sites`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-WP-NONCE': token,
-				},
-				body: JSON.stringify( { sites_data: updated } ),
+			response = await apiFetch< DeleteSiteResponse >( {
+				path: `${ SHARED_SITES_ENDPOINT }/${ encodeURIComponent(
+					removedSite.id ?? ''
+				) }`,
+				method: 'DELETE',
 			} );
-			if ( ! response.ok ) {
-				setNotice( {
-					type: 'error',
-					message: __(
-						'Failed to delete Brand site. Please try again.',
-						'onedesign'
-					),
-				} );
-				return;
-			}
-			setNotice( {
-				type: 'success',
-				message: __( 'Brand Site deleted successfully.', 'onedesign' ),
-			} );
-			setSites( updated );
-			if ( updated.length === 0 ) {
-				window.location.reload();
-			}
-		} catch {
+		} catch ( error ) {
 			setNotice( {
 				type: 'error',
-				message: __(
-					'Error deleting Brand site. Please try again later.',
-					'onedesign'
-				),
+				message:
+					( error as { message?: string } )?.message ||
+					__( 'Failed to update shared sites', 'onedesign' ),
 			} );
+			return;
+		}
+
+		setSites( ( current ) =>
+			current.filter( ( site ) => site.id !== removedSite.id )
+		);
+
+		if ( response?.governing_site_notified === false && response.message ) {
+			const disconnectNotice: NoticeType = {
+				type: 'warning',
+				message: response.message,
+			};
+
+			setDisconnectNotices( ( notices ) => [
+				...notices.filter(
+					( item ) => item.message !== disconnectNotice.message
+				),
+				disconnectNotice,
+			] );
+		}
+
+		if ( response?.governing_site_notified && response.message ) {
+			setNotice( { type: 'success', message: response.message } );
 		}
 	};
 
@@ -151,6 +167,23 @@ const OneDesignSettingsPage = (): JSX.Element => {
 					{ notice?.message }
 				</Snackbar>
 			) }
+
+			{ disconnectNotices.map( ( disconnectNotice ) => (
+				<Notice
+					key={ disconnectNotice.message }
+					status={ disconnectNotice.type }
+					isDismissible
+					onRemove={ () =>
+						setDisconnectNotices( ( notices ) =>
+							notices.filter(
+								( item ) => item !== disconnectNotice
+							)
+						)
+					}
+				>
+					{ disconnectNotice.message }
+				</Notice>
+			) ) }
 
 			{ ! SITE_TYPE && <SiteTypeSettings /> }
 
