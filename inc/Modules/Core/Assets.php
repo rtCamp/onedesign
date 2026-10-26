@@ -76,8 +76,8 @@ final class Assets implements Registrable {
 				'setupUrl'                => admin_url( 'admin.php?page=onedesign-settings' ),
 				'sharedSites'             => Settings::get_shared_sites_without_keys(),
 				'siteType'                => Settings::get_site_type(),
-				// On a network, the governing site is picked from these and brand sites are added from them.
-				'multisites'              => MU_Settings::get_all_multisites_info(),
+				// On a network, the governing site is picked from these.
+				'multisites'              => is_network_admin() ? MU_Settings::get_all_multisites_info() : [],
 				'isGoverningSiteSelected' => MU_Settings::is_governing_site_selected(),
 				'currentSiteId'           => get_current_blog_id(),
 			];
