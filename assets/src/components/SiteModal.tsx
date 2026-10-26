@@ -10,7 +10,7 @@ import {
 import { __ } from '@wordpress/i18n';
 import { useInstanceId } from '@wordpress/compose';
 import type { SyntheticEvent } from 'react';
-import type { BrandSite, defaultBrandSite } from '@/admin/settings/page';
+import type { defaultBrandSite } from '@/admin/settings/page';
 import { isValidUrl, withTrailingSlash } from '@/js/utils';
 
 interface FormErrors {
@@ -18,13 +18,6 @@ interface FormErrors {
 	url: string;
 	api_key: string;
 	message: string;
-}
-
-interface SubmitResponse {
-	ok: boolean;
-	json: () => Promise< { message?: string } >;
-	data?: { status?: number };
-	message?: string;
 }
 
 // Minimal typing for the `wp.media` global used for logo selection.
@@ -110,11 +103,12 @@ const DeleteConfirmationModal = ( {
 interface SiteModalProps {
 	formData: typeof defaultBrandSite;
 	setFormData: ( data: typeof defaultBrandSite ) => void;
-	onSubmit: () => Promise< SubmitResponse | void >;
+	// Resolves true on success, or false or the server's error message on failure.
+	onSubmit: () => Promise< boolean | string >;
 	onClose: () => void;
 	editing: boolean;
 	sites: ( typeof defaultBrandSite )[];
-	originalData?: Partial< BrandSite >;
+	originalData: typeof defaultBrandSite | undefined;
 }
 
 /**
@@ -137,7 +131,7 @@ const SiteModal = ( {
 	onClose,
 	editing,
 	sites,
-	originalData = {},
+	originalData,
 }: SiteModalProps ): JSX.Element => {
 	const [ errors, setErrors ] = useState< FormErrors >( {
 		name: '',
@@ -150,10 +144,14 @@ const SiteModal = ( {
 	const [ showDeleteConfirm, setShowDeleteConfirm ] = useState( false );
 	const logoControlId = useInstanceId( SiteModal, 'onedesign-site-logo' );
 
-	const handleSubmit = async () => {
+	// A blank API key means the user hasn't typed one yet.
+	const typedApiKey = ( formData.api_key ?? '' ).trim();
+	const needsApiKey = ! editing || formData.url !== originalData?.url;
+
+	const handleSubmit = async (): Promise< void > => {
 		// Validate inputs
 		let siteUrlError = '';
-		if ( ! formData.url?.trim() ) {
+		if ( ! formData.url.trim() ) {
 			siteUrlError = __( 'Site URL is required.', 'onedesign' );
 		} else if ( ! isValidUrl( formData.url ) ) {
 			siteUrlError = __(
@@ -162,19 +160,20 @@ const SiteModal = ( {
 			);
 		}
 
-		const newErrors: FormErrors = {
-			name: ! formData.name?.trim()
+		const newErrors = {
+			name: ! formData.name.trim()
 				? __( 'Site Name is required.', 'onedesign' )
 				: '',
 			url: siteUrlError,
-			api_key: ! formData.api_key?.trim()
-				? __( 'API Key is required.', 'onedesign' )
-				: '',
+			api_key:
+				needsApiKey && ! typedApiKey
+					? __( 'API Key is required.', 'onedesign' )
+					: '',
 			message: '',
 		};
 
-		// Make sure site name is under 20 characters
-		if ( ( formData.name?.length ?? 0 ) > 20 ) {
+		// make sure site name is under 20 characters
+		if ( formData.name.length > 20 ) {
 			newErrors.name = __(
 				'Site Name must be under 20 characters.',
 				'onedesign'
@@ -219,28 +218,16 @@ const SiteModal = ( {
 		try {
 			const submitResponse = await onSubmit();
 
-			if ( submitResponse && ! submitResponse.ok ) {
-				const errorData = await submitResponse.json();
+			if ( submitResponse !== true ) {
 				setErrors( {
 					...newErrors,
 					message:
-						errorData.message ||
-						__(
-							'An error occurred while saving the site. Please try again.',
-							'onedesign'
-						),
-				} );
-				setShowNotice( true );
-			}
-			if ( submitResponse?.data?.status === 400 ) {
-				setErrors( {
-					...newErrors,
-					message:
-						submitResponse?.message ||
-						__(
-							'An error occurred while saving the site. Please try again.',
-							'onedesign'
-						),
+						typeof submitResponse === 'string' && submitResponse
+							? submitResponse
+							: __(
+									'An error occurred while saving the site. Please try again.',
+									'onedesign'
+								),
 				} );
 				setShowNotice( true );
 			}
@@ -253,11 +240,9 @@ const SiteModal = ( {
 				),
 			} );
 			setShowNotice( true );
+		} finally {
 			setIsProcessing( false );
-			return;
 		}
-
-		setIsProcessing( false );
 	};
 
 	const handleLogoSelect = () => {
@@ -348,12 +333,12 @@ const SiteModal = ( {
 		} // Always allow submission for new sites
 
 		return (
-			formData?.name !== originalData?.name ||
-			formData?.url !== originalData?.url ||
-			formData?.api_key !== originalData?.api_key ||
-			formData?.logo !== originalData?.logo
+			formData.name !== originalData?.name ||
+			formData.url !== originalData?.url ||
+			typedApiKey !== '' ||
+			formData.logo !== originalData?.logo
 		);
-	}, [ editing, formData, originalData ] );
+	}, [ editing, formData, originalData, typedApiKey ] );
 
 	// Button should be disabled if:
 	// 1. Currently processing, OR
@@ -363,7 +348,7 @@ const SiteModal = ( {
 		isProcessing ||
 		! formData.name ||
 		! formData.url ||
-		! formData.api_key ||
+		( needsApiKey && ! typedApiKey ) ||
 		( editing && ! hasChanges );
 
 	return (
@@ -489,15 +474,26 @@ const SiteModal = ( {
 					</BaseControl>
 
 					<TextareaControl
-						label={ __( 'API Key*', 'onedesign' ) }
+						label={
+							needsApiKey
+								? __( 'API Key*', 'onedesign' )
+								: __( 'API Key', 'onedesign' )
+						}
 						value={ formData.api_key ?? '' }
 						onChange={ ( value ) =>
 							setFormData( { ...formData, api_key: value } )
 						}
-						help={ __(
-							'This is the api key that will be used to authenticate the site for onedesign.',
-							'onedesign'
-						) }
+						help={
+							needsApiKey
+								? __(
+										'This is the API key that will be used to authenticate the site for OneDesign.',
+										'onedesign'
+									)
+								: __(
+										'Leave blank to keep the current key.',
+										'onedesign'
+									)
+						}
 						__nextHasNoMarginBottom
 					/>
 

@@ -1,11 +1,12 @@
-import { useState, useEffect } from '@wordpress/element';
+import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { Snackbar } from '@wordpress/components';
+import apiFetch from '@wordpress/api-fetch';
 import SiteTable from '@/components/SiteTable';
 import SiteModal from '@/components/SiteModal';
 import SiteSettings from '@/components/SiteSettings';
 import SiteTypeSettings from '@/components/SiteTypeSettings';
-import { API_NAMESPACE, NONCE } from '@/js/utils';
+import { API_NAMESPACE } from '@/js/utils';
 import type { SiteType } from '@/types/global';
 
 export interface NoticeType {
@@ -17,6 +18,7 @@ export interface BrandSite {
 	id?: string;
 	name: string;
 	url: string;
+	// Only set while the admin types a key.
 	api_key?: string;
 	logo?: string;
 	logo_id?: number | null;
@@ -30,7 +32,14 @@ export const defaultBrandSite: BrandSite = {
 
 export type EditingIndex = number | null;
 
+const NONCE = window.OneDesignSettings.nonce;
 const SITE_TYPE = ( window.OneDesignSettings.siteType as SiteType ) || '';
+const SHARED_SITES_ENDPOINT = '/onedesign/v1/shared-sites';
+
+/**
+ * Create NONCE middleware for apiFetch
+ */
+apiFetch.use( apiFetch.createNonceMiddleware( NONCE ) );
 
 /**
  * Settings page component for OneDesign plugin.
@@ -40,100 +49,50 @@ const SITE_TYPE = ( window.OneDesignSettings.siteType as SiteType ) || '';
 const OneDesignSettingsPage = (): JSX.Element => {
 	const [ showModal, setShowModal ] = useState( false );
 	const [ editingIndex, setEditingIndex ] = useState< EditingIndex >( null );
-	const [ sites, setSites ] = useState< BrandSite[] >( [] );
+	const [ sites, setSites ] = useState< BrandSite[] >(
+		window.OneDesignSettings.sharedSites ?? []
+	);
 	const [ formData, setFormData ] = useState< BrandSite >( defaultBrandSite );
-	const [ notice, setNotice ] = useState< NoticeType | null >( {
-		type: 'success',
-		message: '',
-	} );
+	const [ notice, setNotice ] = useState< NoticeType | null >( null );
 
-	useEffect( () => {
-		const token = NONCE;
-
-		const fetchData = async () => {
-			try {
-				const sitesRes = await fetch(
-					`${ API_NAMESPACE }/shared-sites`,
-					{
-						headers: {
-							'Content-Type': 'application/json',
-							'X-WP-NONCE': token,
-						},
-					}
-				);
-
-				const sitesData = ( await sitesRes.json() ) as {
-					shared_sites?: BrandSite[];
-				};
-
-				if ( Array.isArray( sitesData?.shared_sites ) ) {
-					setSites( sitesData?.shared_sites );
-				}
-			} catch {
-				setNotice( {
-					type: 'error',
-					message: __(
-						'Error fetching site type or Brand sites.',
-						'onedesign'
-					),
-				} );
-			}
-		};
-
-		fetchData();
-	}, [] );
-
-	const handleFormSubmit = async () => {
-		const updated =
+	const handleFormSubmit = async (): Promise< boolean | string > => {
+		const updated: BrandSite[] =
 			editingIndex !== null
 				? sites.map( ( item, i ) =>
 						i === editingIndex ? formData : item
 					)
 				: [ ...sites, formData ];
 
-		const token = NONCE;
 		try {
-			const response = await fetch( `${ API_NAMESPACE }/shared-sites`, {
+			const data = await apiFetch< { shared_sites?: BrandSite[] } >( {
+				path: SHARED_SITES_ENDPOINT,
 				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-WP-NONCE': token,
-				},
-				body: JSON.stringify( { sites_data: updated } ),
+				data: { sites_data: updated },
 			} );
-			if ( ! response.ok ) {
-				// eslint-disable-next-line no-console
-				console.error(
-					'Error saving Brand site:',
-					response.statusText
-				);
-				return response;
+
+			if ( ! data?.shared_sites ) {
+				return false;
 			}
 
-			if ( sites.length === 0 ) {
+			setSites( data.shared_sites );
+			setFormData( defaultBrandSite );
+			setShowModal( false );
+			setEditingIndex( null );
+
+			if ( data.shared_sites.length === 0 ) {
+				// Reloading causes the menus etc to reflect the missing sites.
 				window.location.reload();
 			}
 
-			setSites( updated );
 			setNotice( {
 				type: 'success',
 				message: __( 'Brand Site saved successfully.', 'onedesign' ),
 			} );
-		} catch {
-			setNotice( {
-				type: 'error',
-				message: __(
-					'Error saving Brand site. Please try again later.',
-					'onedesign'
-				),
-			} );
+			return true;
+		} catch ( error ) {
+			// The modal stays open with the server's message, so the admin can fix the input and retry.
+			return ( error as { message?: string } )?.message || false;
 		}
-
-		setFormData( defaultBrandSite );
-		setShowModal( false );
-		setEditingIndex( null );
-
-		return undefined;
 	};
 
 	const handleDelete = async ( index: number ) => {
@@ -221,7 +180,11 @@ const OneDesignSettingsPage = (): JSX.Element => {
 					} }
 					editing={ editingIndex !== null }
 					sites={ sites }
-					originalData={ sites[ editingIndex ?? -1 ] ?? {} }
+					originalData={
+						editingIndex !== null
+							? sites[ editingIndex ]
+							: undefined
+					}
 				/>
 			) }
 		</>

@@ -97,6 +97,74 @@ class Shared_Sites_ControllerTest extends TestCase {
 	}
 
 	/**
+	 * Saves valid sites data successfully.
+	 */
+	public function test_set_shared_sites_returns_success_for_valid_data(): void {
+		// Its sanitizer gives each site an id.
+		( new Settings() )->register_settings();
+
+		// Both brand sites pass their health check.
+		$filter = static fn (): array => [
+			'response' => [
+				'code'    => 200,
+				'message' => 'OK',
+			],
+			'body'     => '',
+			'headers'  => [],
+			'cookies'  => [],
+		];
+		add_filter( 'pre_http_request', $filter );
+
+		$request = new WP_REST_Request( 'POST', '/onedesign/v1/shared-sites' );
+		$request->set_body(
+			wp_json_encode(
+				[
+					'sites_data' => [
+						[
+							'url'     => 'https://site-a.example.com',
+							'name'    => 'Site A',
+							'api_key' => 'ka',
+						],
+						[
+							'url'     => 'https://site-b.example.com',
+							'name'    => 'Site B',
+							'api_key' => 'kb',
+						],
+					],
+				]
+			)
+		);
+		$request->set_header( 'Content-Type', 'application/json' );
+
+		$response = $this->server->dispatch( $request );
+		$data     = $response->get_data();
+
+		remove_filter( 'pre_http_request', $filter );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertCount( 2, $data['shared_sites'] );
+		$this->assertNotEmpty( $data['shared_sites'][0]['id'] );
+
+		// Verify data was actually persisted to the database.
+		$stored = Settings::get_shared_sites();
+		$this->assertCount( 2, $stored );
+	}
+
+	/**
+	 * Handles empty sites_data gracefully.
+	 */
+	public function test_set_shared_sites_allows_empty_sites_data(): void {
+		$request = new WP_REST_Request( 'POST', '/onedesign/v1/shared-sites' );
+		$request->set_body( wp_json_encode( [ 'sites_data' => [] ] ) );
+		$request->set_header( 'Content-Type', 'application/json' );
+
+		$response = $this->server->dispatch( $request );
+		$data     = $response->get_data();
+
+		$this->assertSame( [], $data['shared_sites'] );
+	}
+
+	/**
 	 * Handles missing sites_data key gracefully.
 	 */
 	public function test_set_shared_sites_handles_missing_sites_data_key(): void {
@@ -108,6 +176,100 @@ class Shared_Sites_ControllerTest extends TestCase {
 
 		// sites_data is required by the route schema → request fails validation.
 		$this->assertSame( 400, $response->get_status() );
+	}
+
+	/**
+	 * A stored site keeps its key when it's saved without one, and the response leaves the key out.
+	 */
+	public function test_set_shared_sites_keeps_stored_keys(): void {
+		Settings::set_shared_sites(
+			[
+				[
+					'id'      => 'abc-1',
+					'name'    => 'A',
+					'url'     => 'https://a.example.com',
+					'api_key' => 'keep-me',
+				],
+			]
+		);
+
+		$response = $this->set_shared_sites(
+			[
+				[
+					'id'   => 'abc-1',
+					'name' => 'A renamed',
+					'url'  => 'https://a.example.com',
+				],
+			]
+		);
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( 'keep-me', Settings::get_shared_sites()['https://a.example.com/']['api_key'] );
+		$this->assertSame( 'A renamed', $response->get_data()['shared_sites'][0]['name'] );
+		$this->assertArrayNotHasKey( 'api_key', $response->get_data()['shared_sites'][0] );
+	}
+
+	/**
+	 * A blank key, even with stray whitespace, keeps the stored key, but a site that moved to another URL doesn't keep it and is checked again.
+	 */
+	public function test_set_shared_sites_only_keeps_the_key_of_an_unchanged_url(): void {
+		Settings::set_shared_sites(
+			[
+				[
+					'id'      => 'abc-1',
+					'name'    => 'A',
+					'url'     => 'https://a.example.com',
+					'api_key' => 'key-a',
+				],
+				[
+					'id'      => 'abc-2',
+					'name'    => 'B',
+					'url'     => 'https://b.example.com',
+					'api_key' => 'key-b',
+				],
+			]
+		);
+
+		$checked_urls = [];
+		$filter       = static function ( $preempt, $args, $url ) use ( &$checked_urls ): array { // phpcs:ignore SlevomatCodingStandard.Functions.UnusedParameter.UnusedParameter
+			$checked_urls[] = $url;
+
+			return [
+				'response' => [
+					'code'    => 200,
+					'message' => 'OK',
+				],
+				'body'     => '',
+				'headers'  => [],
+				'cookies'  => [],
+			];
+		};
+		add_filter( 'pre_http_request', $filter, 10, 3 );
+
+		$response = $this->set_shared_sites(
+			[
+				[
+					'id'      => 'abc-1',
+					'name'    => 'A',
+					'url'     => 'https://a.example.com/',
+					'api_key' => " \n",
+				],
+				[
+					'id'   => 'abc-2',
+					'name' => 'B',
+					'url'  => 'https://elsewhere.example.com',
+				],
+			]
+		);
+
+		remove_filter( 'pre_http_request', $filter );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( [ 'https://elsewhere.example.com/wp-json/onedesign/v1/governing-site' ], $checked_urls );
+
+		$sites = Settings::get_shared_sites();
+		$this->assertSame( 'key-a', $sites['https://a.example.com/']['api_key'] );
+		$this->assertSame( '', $sites['https://elsewhere.example.com/']['api_key'] );
 	}
 
 	/**
