@@ -21,15 +21,6 @@ class Constants {
 	public const ONEDESIGN_SHARED_TEMPLATES = 'onedesign_shared_templates';
 
 	/**
-	 * Brand site patterns.
-	 *
-	 * Note: migrated from consumer_site_patterns to onedesign_brand_site_patterns for better clarity.
-	 *
-	 * @var string
-	 */
-	public const ONEDESIGN_BRAND_SITE_PATTERNS = 'onedesign_brand_site_patterns';
-
-	/**
 	 * Brand site post id's.
 	 *
 	 * @var string

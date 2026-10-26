@@ -5,3 +5,25 @@
  */
 
 export type SiteType = 'governing-site' | 'brand-site' | '';
+
+export interface OneDesignSharedSite {
+	id: string;
+	name: string;
+	url: string;
+	logo: string;
+	logo_id: number;
+}
+
+export interface OneDesignSettings {
+	restUrl: string;
+	restNonce: string;
+	apiKey: string;
+	settingsLink: string;
+	sharedSites?: OneDesignSharedSite[];
+}
+
+declare global {
+	interface Window {
+		OneDesignSettings: OneDesignSettings;
+	}
+}

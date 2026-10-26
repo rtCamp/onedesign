@@ -240,6 +240,54 @@ final class Settings implements Registrable {
 	}
 
 	/**
+	 * Gets the brand sites for the browser, without their API keys.
+	 *
+	 * @return array{
+	 *  id: string,
+	 *  name: string,
+	 *  url: string,
+	 *  logo: string,
+	 *  logo_id: int,
+	 * }[]
+	 */
+	public static function get_shared_sites_without_keys(): array {
+		return array_map(
+			static fn ( array $site ): array => [
+				'id'      => $site['id'],
+				'name'    => $site['name'],
+				'url'     => $site['url'],
+				'logo'    => $site['logo'],
+				'logo_id' => $site['logo_id'],
+			],
+			array_values( self::get_shared_sites() )
+		);
+	}
+
+	/**
+	 * Gets a brand site by its ID.
+	 *
+	 * @param string $site_id The site ID.
+	 *
+	 * @return ?array{
+	 *   api_key: string,
+	 *   id: string,
+	 *   logo: string,
+	 *   logo_id: int,
+	 *   name: string,
+	 *   url: string,
+	 * }
+	 */
+	public static function get_shared_site_by_id( string $site_id ): ?array {
+		foreach ( self::get_shared_sites() as $site ) {
+			if ( $site['id'] === $site_id ) {
+				return $site;
+			}
+		}
+
+		return null;
+	}
+
+	/**
 	 * Set the shared sites.
 	 *
 	 * @param array<string,array<string,mixed>> $sites The sites to set.

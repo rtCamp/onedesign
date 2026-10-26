@@ -3,4 +3,8 @@ declare module '@wordpress/blocks' {
 	export function parse(
 		content: string
 	): Array< Record< string, unknown > >;
+	export function registerBlockType(
+		name: string,
+		settings: Record< string, unknown >
+	): unknown;
 }

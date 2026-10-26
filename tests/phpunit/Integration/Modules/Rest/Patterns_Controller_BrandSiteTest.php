@@ -1,6 +1,6 @@
 <?php
 /**
- * Tests for who may call a brand site's pattern routes.
+ * Tests for Patterns_Controller on a brand site.
  *
  * @package OneDesign\Tests\Integration\Modules\Rest
  */
@@ -9,21 +9,21 @@ declare( strict_types = 1 );
 
 namespace OneDesign\Tests\Integration\Modules\Rest;
 
-use OneDesign\Modules\Post_Types\Constants;
+use OneDesign\Modules\Library\Patterns;
 use OneDesign\Modules\Rest\Abstract_REST_Controller;
 use OneDesign\Modules\Rest\Patterns_Controller;
 use OneDesign\Modules\Settings\Settings;
 use OneDesign\Tests\TestCase;
-use OneDesign\Utils;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use WP_REST_Request;
 
 /**
- * Only the governing site's server, naming itself and signing with the brand's key, reaches a brand site's pattern routes.
+ * The patterns a governing site sends a brand site, and who may send them.
  */
 #[CoversClass( Patterns_Controller::class )]
 #[CoversClass( Abstract_REST_Controller::class )]
+#[CoversClass( Patterns::class )]
 class Patterns_Controller_BrandSiteTest extends TestCase {
 	/**
 	 * The governing site this brand site is connected to. It shares its host with other sites in sub-directories.
@@ -43,17 +43,6 @@ class Patterns_Controller_BrandSiteTest extends TestCase {
 
 		update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_CONSUMER );
 		Settings::set_parent_site_url( self::GOVERNING_SITE_URL );
-		update_option(
-			Constants::ONEDESIGN_BRAND_SITE_PATTERNS,
-			[
-				'hero' => [
-					'name'    => 'hero',
-					'title'   => 'Hero',
-					'content' => '<!-- wp:paragraph --><p>Hello</p><!-- /wp:paragraph -->',
-				],
-			],
-			false
-		);
 
 		global $wp_rest_server;
 		$wp_rest_server = new \WP_REST_Server();
@@ -73,49 +62,23 @@ class Patterns_Controller_BrandSiteTest extends TestCase {
 		global $wp_rest_server;
 		$wp_rest_server = null;
 
+		foreach ( [ 'hero', 'theme/hero' ] as $name ) {
+			if ( \WP_Block_Patterns_Registry::get_instance()->is_registered( $name ) ) {
+				unregister_block_pattern( $name );
+			}
+		}
+
 		parent::tear_down();
 	}
 
 	/**
-	 * The governing site, naming itself and signing with this site's key, reaches each route while nobody is logged in.
-	 *
-	 * @param string               $method The method.
-	 * @param string               $route  The route.
-	 * @param ?array<string,mixed> $body   The JSON body, if any.
+	 * The governing site, with this site's key, can push patterns while nobody is logged in, sending only what Remote_Client sends.
 	 */
-	#[DataProvider( 'brand_site_routes' )]
-	public function test_accepts_the_governing_site_with_the_key( string $method, string $route, ?array $body ): void {
-		$response = $this->send( $method, $route, $body, self::GOVERNING_SITE_URL, Settings::get_api_key() );
+	public function test_save_patterns_accepts_the_governing_site_with_the_key(): void {
+		$response = $this->send( 'POST', $this->patterns_body(), self::GOVERNING_SITE_URL, Settings::get_api_key() );
 
 		$this->assertSame( 200, $response->get_status() );
-	}
-
-	/**
-	 * A request with this site's key whose Origin and User-Agent name the governing site is refused without X-OneDesign-Site-URL, and changes nothing.
-	 *
-	 * @param string               $method The method.
-	 * @param string               $route  The route.
-	 * @param ?array<string,mixed> $body   The JSON body, if any.
-	 */
-	#[DataProvider( 'brand_site_routes' )]
-	public function test_refuses_a_matching_origin_without_the_site_url( string $method, string $route, ?array $body ): void {
-		$response = $this->send( $method, $route, $body, null, Settings::get_api_key() );
-
-		$this->assertContains( $response->get_status(), [ 401, 403 ] );
-		$this->assertSame( [ 'hero' ], array_keys( get_option( Constants::ONEDESIGN_BRAND_SITE_PATTERNS ) ) );
-	}
-
-	/**
-	 * The brand site's pattern routes, each with a body it accepts.
-	 *
-	 * @return array<string,array{string,string,?array<string,mixed>}>
-	 */
-	public static function brand_site_routes(): array {
-		return [
-			'list'    => [ 'GET', '/onedesign/v1/brand-site-patterns', null ],
-			'receive' => [ 'POST', '/onedesign/v1/receive-patterns', self::patterns_body() ],
-			'remove'  => [ 'DELETE', '/onedesign/v1/remove-brand-site-patterns', [ 'pattern_names' => [ 'hero' ] ] ],
-		];
+		$this->assertArrayHasKey( 'hero', get_option( Patterns::PATTERNS_OPTION_KEY ) );
 	}
 
 	/**
@@ -126,10 +89,22 @@ class Patterns_Controller_BrandSiteTest extends TestCase {
 	 */
 	#[DataProvider( 'refused_requests' )]
 	public function test_refuses_other_requests( string $site_url, ?string $token ): void {
-		$response = $this->send( 'POST', '/onedesign/v1/receive-patterns', self::patterns_body(), $site_url, $token ?? Settings::get_api_key() );
+		$this->send( 'POST', $this->patterns_body(), self::GOVERNING_SITE_URL, Settings::get_api_key() );
+		$saved = get_option( Patterns::PATTERNS_OPTION_KEY );
 
-		$this->assertContains( $response->get_status(), [ 401, 403 ] );
-		$this->assertSame( [ 'hero' ], array_keys( get_option( Constants::ONEDESIGN_BRAND_SITE_PATTERNS ) ) );
+		$banner                        = $this->patterns_body();
+		$banner['patterns'][0]['name'] = 'banner';
+		$requests                      = [
+			'GET'    => null,
+			'POST'   => $banner,
+			'DELETE' => [ 'names' => [ 'hero' ] ],
+		];
+		foreach ( $requests as $method => $body ) {
+			$response = $this->send( $method, $body, $site_url, $token ?? Settings::get_api_key(), true );
+
+			$this->assertContains( $response->get_status(), [ 401, 403 ], $method );
+		}
+		$this->assertSame( $saved, get_option( Patterns::PATTERNS_OPTION_KEY ) );
 	}
 
 	/**
@@ -147,77 +122,146 @@ class Patterns_Controller_BrandSiteTest extends TestCase {
 	}
 
 	/**
+	 * A logged-in admin of this site is no governing site, so without the key they're refused too.
+	 */
+	public function test_save_patterns_refuses_an_admin_without_the_key(): void {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+
+		$response = $this->send( 'POST', $this->patterns_body(), self::GOVERNING_SITE_URL, '', true );
+
+		$this->assertContains( $response->get_status(), [ 401, 403 ] );
+		$this->assertFalse( get_option( Patterns::PATTERNS_OPTION_KEY ) );
+	}
+
+	/**
 	 * A key that can't be decrypted (say, after the salts changed) matches no token, not even an empty one.
 	 */
-	public function test_refuses_everything_when_the_key_cannot_be_decrypted(): void {
+	public function test_save_patterns_refuses_everything_when_the_key_cannot_be_decrypted(): void {
 		update_option( Settings::OPTION_CONSUMER_API_KEY, base64_encode( str_repeat( 'x', 48 ) ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- A value Encryptor can't decrypt.
 
-		$response = $this->send( 'GET', '/onedesign/v1/brand-site-patterns', null, self::GOVERNING_SITE_URL, '' );
+		$response = $this->send( 'POST', $this->patterns_body(), self::GOVERNING_SITE_URL, '', true );
 
 		$this->assertContains( $response->get_status(), [ 401, 403 ] );
+		$this->assertFalse( get_option( Patterns::PATTERNS_OPTION_KEY ) );
 	}
 
 	/**
-	 * A site that isn't a brand site takes no pattern from anyone, even with the right headers.
+	 * Scripts and event handlers in a pattern never reach the stored pattern, or the pattern this site registers from it.
 	 */
-	public function test_refuses_everything_on_a_site_that_is_not_a_brand_site(): void {
-		update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_GOVERNING );
-
-		$response = $this->send( 'GET', '/onedesign/v1/brand-site-patterns', null, self::GOVERNING_SITE_URL, Settings::get_api_key() );
-
-		$this->assertContains( $response->get_status(), [ 401, 403 ] );
-	}
-
-	/**
-	 * The governing site's server names itself in X-OneDesign-Site-URL when it pushes patterns to a brand site.
-	 */
-	public function test_governing_site_sends_its_url_with_the_key(): void {
-		$this->set_up_governing_site();
-		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
-		register_block_pattern(
-			'onedesign-test/hero',
-			[
-				'title'   => 'Hero',
-				'content' => '<!-- wp:paragraph --><p>Hello</p><!-- /wp:paragraph -->',
-			]
-		);
-
-		$headers = [];
-		add_filter( // phpcs:ignore WordPressVIPMinimum.Hooks.RestrictedHooks.http_request_args -- It only reads the headers.
-			'http_request_args',
-			static function ( array $args ) use ( &$headers ): array {
-				$headers = $args['headers'];
-				return $args;
-			}
-		);
-		add_filter(
-			'pre_http_request',
-			static fn (): array => [
-				'headers'  => [],
-				'body'     => '{}',
-				'response' => [
-					'code'    => 200,
-					'message' => 'OK',
-				],
-				'cookies'  => [],
-			]
-		);
-
-		$request = new WP_REST_Request( 'POST', '/onedesign/v1/push-patterns' );
-		$request->set_header( 'Content-Type', 'application/json' );
-		$request->set_body(
-			(string) wp_json_encode(
+	public function test_saved_patterns_have_no_scripts(): void {
+		$body = [
+			'patterns' => [
 				[
-					'pattern_names'   => [ 'onedesign-test/hero' ],
-					'target_site_ids' => [ 'brand-1' ],
-				]
-			)
-		);
-		$this->server->dispatch( $request );
-		unregister_block_pattern( 'onedesign-test/hero' );
+					'name'        => 'hero',
+					'title'       => 'Hero<script>alert(1)</script>',
+					'description' => '<img src=x onerror=alert(2)>',
+					'content'     => '<!-- wp:paragraph --><p>Hello<img src="x" onerror="alert(3)"></p><!-- /wp:paragraph --><script>alert(4)</script>',
+				],
+			],
+		];
 
-		$this->assertSame( Utils::get_current_site_url(), $headers['X-OneDesign-Site-URL'] ?? null );
-		$this->assertSame( 'brand-key', $headers['X-OneDesign-Token'] ?? null );
+		$response = $this->send( 'POST', $body, self::GOVERNING_SITE_URL, Settings::get_api_key() );
+		( new Patterns() )->register_received_patterns();
+
+		$this->assertSame( 200, $response->get_status() );
+		$stored     = (string) wp_json_encode( get_option( Patterns::PATTERNS_OPTION_KEY ) );
+		$registered = \WP_Block_Patterns_Registry::get_instance()->get_registered( 'hero' );
+		$this->assertIsArray( $registered );
+		foreach ( [ $stored, $registered['title'] . $registered['content'] ] as $html ) {
+			$this->assertStringNotContainsString( '<script', $html );
+			$this->assertStringNotContainsString( 'onerror', $html );
+		}
+		$this->assertStringContainsString( '<p>Hello<img src="x"', $registered['content'] );
+	}
+
+	/**
+	 * The pattern categories a pattern is in exist as soon as it arrives, so nothing is written when a page loads.
+	 */
+	public function test_saved_patterns_add_their_categories(): void {
+		$body                              = $this->patterns_body();
+		$body['patterns'][0]['categories'] = [ 'lab-demo' ];
+
+		$this->send( 'POST', $body, self::GOVERNING_SITE_URL, Settings::get_api_key() );
+
+		$term = get_term_by( 'slug', 'lab-demo', 'wp_pattern_category' );
+		$this->assertInstanceOf( \WP_Term::class, $term );
+		$this->assertSame( 'lab-demo', $term->name );
+	}
+
+	/**
+	 * A pattern keeps its namespaced name, so it's registered under the name the governing site gave it.
+	 */
+	public function test_saved_patterns_keep_namespaced_names(): void {
+		$body                        = $this->patterns_body();
+		$body['patterns'][0]['name'] = 'theme/hero';
+
+		$this->send( 'POST', $body, self::GOVERNING_SITE_URL, Settings::get_api_key() );
+		( new Patterns() )->register_received_patterns();
+
+		$this->assertSame( [ 'theme/hero' ], array_keys( get_option( Patterns::PATTERNS_OPTION_KEY ) ) );
+		$this->assertTrue( \WP_Block_Patterns_Registry::get_instance()->is_registered( 'theme/hero' ) );
+	}
+
+	/**
+	 * A pattern is stored under its sanitized name, so it's listed and removed by that name.
+	 */
+	public function test_saved_patterns_are_removed_by_the_name_they_are_listed_with(): void {
+		$body                        = $this->patterns_body();
+		$body['patterns'][0]['name'] = ' theme/hero<br>';
+
+		$this->send( 'POST', $body, self::GOVERNING_SITE_URL, Settings::get_api_key() );
+		$names = array_column( $this->send( 'GET', null, self::GOVERNING_SITE_URL, Settings::get_api_key() )->get_data(), 'name' );
+		$this->send( 'DELETE', [ 'names' => $names ], self::GOVERNING_SITE_URL, Settings::get_api_key() );
+
+		$this->assertSame( [ 'theme/hero' ], $names );
+		$this->assertSame( [], get_option( Patterns::PATTERNS_OPTION_KEY ) );
+	}
+
+	/**
+	 * A pattern without content is refused before anything is stored.
+	 */
+	public function test_save_patterns_refuses_a_pattern_without_content(): void {
+		$response = $this->send(
+			'POST',
+			[
+				'patterns' => [
+					[
+						'name'  => 'hero',
+						'title' => 'Hero',
+					],
+				],
+			],
+			self::GOVERNING_SITE_URL,
+			Settings::get_api_key()
+		);
+
+		$this->assertSame( 400, $response->get_status() );
+		$this->assertSame( 'rest_invalid_param', $response->as_error()->get_error_code() );
+		$this->assertFalse( get_option( Patterns::PATTERNS_OPTION_KEY ) );
+	}
+
+	/**
+	 * A brand site with no patterns lists none, which isn't an error.
+	 */
+	public function test_get_patterns_lists_none_on_a_new_brand_site(): void {
+		$response = $this->send( 'GET', null, self::GOVERNING_SITE_URL, Settings::get_api_key() );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( [], $response->get_data() );
+	}
+
+	/**
+	 * Removing patterns takes out only those, and removing one that's already gone is fine.
+	 */
+	public function test_delete_patterns_removes_them_and_accepts_ones_already_gone(): void {
+		$this->send( 'POST', $this->patterns_body(), self::GOVERNING_SITE_URL, Settings::get_api_key() );
+
+		$response = $this->send( 'DELETE', [ 'names' => [ 'hero', 'gone' ] ], self::GOVERNING_SITE_URL, Settings::get_api_key() );
+		$again    = $this->send( 'DELETE', [ 'names' => [ 'hero' ] ], self::GOVERNING_SITE_URL, Settings::get_api_key() );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( 200, $again->get_status() );
+		$this->assertSame( [], get_option( Patterns::PATTERNS_OPTION_KEY ) );
 	}
 
 	/**
@@ -225,34 +269,34 @@ class Patterns_Controller_BrandSiteTest extends TestCase {
 	 *
 	 * @return array<string,mixed>
 	 */
-	private static function patterns_body(): array {
+	private function patterns_body(): array {
 		return [
-			'patterns_data' => [
+			'patterns' => [
 				[
-					'name'    => 'cta',
-					'title'   => 'Call to action',
-					'content' => '<!-- wp:paragraph --><p>Buy</p><!-- /wp:paragraph -->',
+					'name'    => 'hero',
+					'title'   => 'Hero',
+					'content' => '<!-- wp:paragraph --><p>Hello</p><!-- /wp:paragraph -->',
 				],
 			],
 		];
 	}
 
 	/**
-	 * Dispatches a request to a brand site route, with the Origin and User-Agent a browser or script can set, naming the governing site.
+	 * Dispatches a request to /patterns.
 	 *
 	 * @param string               $method   The method.
-	 * @param string               $route    The route.
 	 * @param ?array<string,mixed> $body     The JSON body, if any.
-	 * @param ?string              $site_url The URL the request says it's from in X-OneDesign-Site-URL, or null to send no header.
+	 * @param string               $site_url The URL the request says it's from.
 	 * @param string               $token    The token, or '' to send none.
+	 * @param bool                 $spoofed  Whether to add the Origin and User-Agent a browser or script can set, naming the sender and the governing site.
 	 */
-	private function send( string $method, string $route, ?array $body, ?string $site_url, string $token ): \WP_REST_Response {
-		$request = new WP_REST_Request( $method, $route );
+	private function send( string $method, ?array $body, string $site_url, string $token, bool $spoofed = false ): \WP_REST_Response {
+		$request = new WP_REST_Request( $method, '/onedesign/v1/patterns' );
 		$request->set_header( 'Content-Type', 'application/json' );
-		$request->set_header( 'Origin', $site_url ?? self::GOVERNING_SITE_URL );
-		$request->set_header( 'User-Agent', 'WordPress/6.9; ' . self::GOVERNING_SITE_URL );
-		if ( null !== $site_url ) {
-			$request->set_header( 'X-OneDesign-Site-URL', $site_url );
+		$request->set_header( 'X-OneDesign-Site-URL', $site_url );
+		if ( $spoofed ) {
+			$request->set_header( 'Origin', $site_url );
+			$request->set_header( 'User-Agent', 'WordPress/6.9; ' . self::GOVERNING_SITE_URL );
 		}
 		if ( '' !== $token ) {
 			$request->set_header( 'X-OneDesign-Token', $token );

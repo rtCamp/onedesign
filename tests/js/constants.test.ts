@@ -4,14 +4,10 @@
  * states to exercise that resolution and the derived values.
  */
 
-/**
- * External dependencies
- */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const WINDOW_KEYS = [
 	'OneDesignSettings',
-	'patternSyncData',
 	'TemplateLibraryData',
 	'OneDesignMultiSiteSettings',
 ] as const;
@@ -74,17 +70,17 @@ describe( 'constants', () => {
 	it( 'follows the source precedence (primary wins, else next defined)', async () => {
 		const preferred = await loadConstants( {
 			OneDesignSettings: { restUrl: 'https://winner.example' },
-			patternSyncData: { restUrl: 'https://loser.example' },
+			OneDesignMultiSiteSettings: { restUrl: 'https://loser.example' },
 		} );
 		expect( preferred.API_NAMESPACE ).toBe(
 			'https://winner.example/onedesign/v1'
 		);
 
 		const fallback = await loadConstants( {
-			patternSyncData: { restUrl: 'https://patterns.example' },
+			OneDesignMultiSiteSettings: { restUrl: 'https://network.example' },
 		} );
 		expect( fallback.API_NAMESPACE ).toBe(
-			'https://patterns.example/onedesign/v1'
+			'https://network.example/onedesign/v1'
 		);
 	} );
 

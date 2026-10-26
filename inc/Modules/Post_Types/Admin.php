@@ -25,7 +25,6 @@ class Admin implements Registrable {
 	/**
 	 * Screens used for redirects.
 	 */
-	public const PATTERN_REDIRECT_SCREEN  = 'onedesign-pattern-library';
 	public const TEMPLATE_REDIRECT_SCREEN = 'onedesign-template-library';
 
 	/**
@@ -33,11 +32,7 @@ class Admin implements Registrable {
 	 */
 	public function register_hooks(): void {
 		add_action( 'admin_menu', [ $this, 'add_settings_page' ] );
-		add_action( 'admin_footer', [ $this, 'print_pattern_library_button_in_editor_js_template' ] );
 		add_action( 'admin_footer', [ $this, 'add_templates_button_to_editor' ] );
-		add_action( 'wp_ajax_register_block_patterns', [ $this, 'ajax_register_block_patterns' ] );
-		add_action( 'wp_ajax_nopriv_register_block_patterns', [ $this, 'ajax_register_block_patterns' ] );
-		add_action( 'init', [ $this, 'register_block_patterns_if_not_exist' ] );
 		add_filter( 'should_load_remote_block_patterns', '__return_false' );
 		add_action( 'after_setup_theme', [ $this, 'remove_core_block_patterns' ] );
 		add_filter( 'allowed_block_types_all', [ $this, 'allowed_block_types' ], 10, 2 );
@@ -45,7 +40,6 @@ class Admin implements Registrable {
 		// Create templates, patterns and template parts from saved options.
 		add_action( 'after_setup_theme', [ $this, 'create_template' ], 99 );
 		// Plugin specific redirects.
-		add_action( 'admin_init', [ $this, 'handle_pattern_library_redirect' ] );
 		add_action( 'admin_init', [ $this, 'templates_page_redirection' ] );
 	}
 
@@ -57,16 +51,6 @@ class Admin implements Registrable {
 		if ( ! Settings::is_governing_site() || ! Settings::get_shared_sites() ) {
 			return;
 		}
-
-		add_submenu_page(
-			self::MENU_SLUG,
-			__( 'Pattern Library', 'onedesign' ),
-			__( 'Pattern Library', 'onedesign' ),
-			'manage_options',
-			self::PATTERN_REDIRECT_SCREEN,
-			'__return_null',
-			2
-		);
 
 		add_submenu_page(
 			self::MENU_SLUG,
@@ -229,7 +213,7 @@ class Admin implements Registrable {
 	 * @return bool|string[]
 	 */
 	public function allowed_block_types( bool|array $allowed_block_types, \WP_Block_Editor_Context $editor_context ): array|bool {
-		// Allow all block types in the Pattern Library post type.
+		// Allow all block types in the Template Library post type.
 		if ( isset( $editor_context->post->post_type ) && ( Template::get_slug() === $editor_context->post->post_type ) ) {
 			return [];
 		}
@@ -241,26 +225,6 @@ class Admin implements Registrable {
 	 */
 	public function remove_core_block_patterns(): void {
 		remove_theme_support( 'core-block-patterns' );
-	}
-
-	/**
-	 * Prints the Pattern Library Button Template.
-	 */
-	public function print_pattern_library_button_in_editor_js_template(): void {
-		$current_screen = get_current_screen();
-		if ( ! $current_screen instanceof \WP_Screen || Pattern::get_slug() !== $current_screen->post_type ) {
-			return;
-		}
-		?>
-		<script id="pattern-library-gutenberg-button" type="text/html">
-			<div id="pattern-library-button">
-				<button id="pattern-library-main-button" type="button" class="button button-primary button-large">
-					<span class="pattern-library-main-button-active">
-					<?php esc_html_e( 'Patterns Selection', 'onedesign' ); ?>
-				</button>
-			</div>
-		</script>
-		<?php
 	}
 
 	/**
@@ -284,87 +248,6 @@ class Admin implements Registrable {
 	}
 
 	/**
-	 * Register block patterns via ajax.
-	 */
-	public function ajax_register_block_patterns(): void {
-		// Verify nonce for security.
-		if ( ! check_ajax_referer( 'onedesign_nonce', 'security', false ) ) {
-			wp_send_json_error( [ 'message' => 'Invalid security token.' ], 403 );
-		}
-
-		// Call the registration function.
-		$this->register_block_patterns_if_not_exist();
-
-		// Return success.
-		wp_send_json_success( [ 'message' => 'Patterns registered successfully' ] );
-	}
-
-	/**
-	 * Register block patterns if not exist.
-	 */
-	public function register_block_patterns_if_not_exist(): void {
-		$site_patterns = get_option( Constants::ONEDESIGN_BRAND_SITE_PATTERNS );
-		if ( ! is_array( $site_patterns ) ) {
-			return;
-		}
-
-		foreach ( $site_patterns as $pattern_name => $pattern_data ) {
-			if ( ! is_array( $pattern_data ) || empty( $pattern_name ) ) {
-				continue;
-			}
-
-			// Check if pattern already registered.
-			if ( class_exists( '\WP_Block_Patterns_Registry' ) && \WP_Block_Patterns_Registry::get_instance()->is_registered( $pattern_name ) ) {
-				continue;
-			}
-
-			// Prepare pattern args.
-			$pattern_args = [
-				'title'       => $pattern_data['title'] ?? '',
-				'content'     => $pattern_data['content'] ?? '',
-				'categories'  => $pattern_data['categories'] ?? [],
-				'keywords'    => $pattern_data['keywords'] ?? [],
-				'description' => $pattern_data['description'] ?? '',
-			];
-
-			// Register categories if they are not registered.
-			if ( ! empty( $pattern_args['categories'] ) ) {
-				foreach ( $pattern_args['categories'] as $category ) {
-					if ( term_exists( $category, 'wp_pattern_category' ) ) {
-						continue;
-					}
-
-					wp_insert_term( $category, 'wp_pattern_category' );
-				}
-			}
-
-			// Add optional properties if they exist.
-			if ( isset( $pattern_data['viewportWidth'] ) ) {
-				$pattern_args['viewportWidth'] = $pattern_data['viewportWidth'];
-			}
-			if ( isset( $pattern_data['blockTypes'] ) ) {
-				$pattern_args['blockTypes'] = $pattern_data['blockTypes'];
-			}
-			if ( isset( $pattern_data['postTypes'] ) ) {
-				$pattern_args['postTypes'] = $pattern_data['postTypes'];
-			}
-			if ( isset( $pattern_data['templateTypes'] ) ) {
-				$pattern_args['templateTypes'] = $pattern_data['templateTypes'];
-			}
-			if ( isset( $pattern_data['inserter'] ) ) {
-				$pattern_args['inserter'] = $pattern_data['inserter'];
-			}
-
-			// Only register if we have required content.
-			if ( empty( $pattern_args['title'] ) || empty( $pattern_args['content'] ) ) {
-				continue;
-			}
-
-			register_block_pattern( $pattern_name, $pattern_args );
-		}
-	}
-
-	/**
 	 * Handle the redirect to create or open the Templates post.
 	 *
 	 * This function checks if the Templates post exists and redirects to it,
@@ -376,7 +259,7 @@ class Admin implements Registrable {
 			return;
 		}
 
-		// Check if a Pattern Library post already exists.
+		// Check if a Template Library post already exists.
 		// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.get_posts_get_posts -- `suppress_filters` is false.
 		$existing_posts = get_posts(
 			[
@@ -405,63 +288,6 @@ class Admin implements Registrable {
 
 		if ( is_wp_error( $new_post_id ) ) {
 			wp_die( esc_html__( 'Error creating template post.', 'onedesign' ) );
-		}
-
-		// Redirect to the newly created post for editing.
-		wp_safe_redirect( admin_url( 'post.php?post=' . $new_post_id . '&action=edit' ) );
-		exit;
-	}
-
-	/**
-	 * Handle the redirect to create or open the Pattern Library post.
-	 *
-	 * This function checks if the Pattern Library post exists and redirects to it,
-	 * or creates a new one if it doesn't exist.
-	 */
-	public function handle_pattern_library_redirect(): void {
-		$pages = [ self::PATTERN_REDIRECT_SCREEN, self::MENU_SLUG ];
-
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( ! isset( $_GET['page'] ) || ! in_array( strtolower( sanitize_text_field( $_GET['page'] ) ), $pages, true ) ) {
-			return;
-		}
-
-		$this->create_and_open_pattern_library_post();
-	}
-
-	/**
-	 * Callback function to create and open a new Pattern Library post.
-	 */
-	private function create_and_open_pattern_library_post(): void {
-		// Check if a Pattern Library post already exists.
-		// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.get_posts_get_posts -- `suppress_filters` is false.
-		$existing_posts = get_posts(
-			[
-				'post_type'        => Pattern::get_slug(),
-				'post_status'      => [ 'publish', 'draft', 'pending', 'private' ],
-				'numberposts'      => 1,
-				'suppress_filters' => false,
-			]
-		);
-
-		if ( ! empty( $existing_posts ) ) {
-			// Redirect to edit the existing post.
-			wp_safe_redirect( admin_url( 'post.php?post=' . $existing_posts[0]->ID . '&action=edit' ) );
-			exit;
-		}
-
-		// If no post exists, create a new one.
-		$new_post_id = wp_insert_post(
-			[
-				'post_type'    => Pattern::get_slug(),
-				'post_title'   => esc_html__( 'Pattern Library', 'onedesign' ),
-				'post_content' => '<!-- wp:heading {"level":2} --><h2>Click on the "Patterns Selection" to push patterns to brand site.</h2><!-- /wp:heading -->',
-				'post_status'  => 'draft',
-			]
-		);
-
-		if ( is_wp_error( $new_post_id ) ) {
-			wp_die( esc_html__( 'Error creating Pattern Library post.', 'onedesign' ) );
 		}
 
 		// Redirect to the newly created post for editing.
