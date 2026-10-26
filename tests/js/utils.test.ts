@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { API_NAMESPACE, isValidUrl, getInitials } from '@/js/utils';
+import {
+	API_NAMESPACE,
+	isValidUrl,
+	withTrailingSlash,
+	getInitials,
+} from '@/js/utils';
 
 describe( 'utils', () => {
 	it( 'validates well-formed urls', () => {
@@ -12,6 +17,16 @@ describe( 'utils', () => {
 		expect( isValidUrl( 'ftp://example.com' ) ).toBe( false );
 		expect( isValidUrl( 'javascript:alert(1)' ) ).toBe( false );
 		expect( isValidUrl( 'mailto:a@b.c' ) ).toBe( false );
+	} );
+
+	it( 'adds a trailing slash only when needed', () => {
+		expect( withTrailingSlash( '' ) ).toBe( '' );
+		expect( withTrailingSlash( 'https://example.com' ) ).toBe(
+			'https://example.com/'
+		);
+		expect( withTrailingSlash( 'https://example.com/' ) ).toBe(
+			'https://example.com/'
+		);
 	} );
 
 	it( 'joins the REST url and namespace', () => {

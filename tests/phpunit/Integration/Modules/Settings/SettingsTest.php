@@ -197,13 +197,13 @@ final class SettingsTest extends TestCase {
 
 		$this->assertSame(
 			[
-				'https://brand-one.example' => [
+				'https://brand-one.example/' => [
 					'api_key' => 'brand-one-key',
 					'id'      => 'brand-1',
 					'logo'    => 'https://brand-one.example/logo.png',
 					'logo_id' => 11,
 					'name'    => 'Brand One',
-					'url'     => 'https://brand-one.example',
+					'url'     => 'https://brand-one.example/',
 				],
 			],
 			Settings::get_shared_sites()

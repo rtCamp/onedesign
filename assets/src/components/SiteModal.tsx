@@ -11,7 +11,7 @@ import { __ } from '@wordpress/i18n';
 import { useInstanceId } from '@wordpress/compose';
 import type { SyntheticEvent } from 'react';
 import type { BrandSite, defaultBrandSite } from '@/admin/settings/page';
-import { isValidUrl } from '@/js/utils';
+import { isValidUrl, withTrailingSlash } from '@/js/utils';
 
 interface FormErrors {
 	name: string;
@@ -113,6 +113,7 @@ interface SiteModalProps {
 	onSubmit: () => Promise< SubmitResponse | void >;
 	onClose: () => void;
 	editing: boolean;
+	sites: ( typeof defaultBrandSite )[];
 	originalData?: Partial< BrandSite >;
 }
 
@@ -125,6 +126,7 @@ interface SiteModalProps {
  * @param props.onSubmit     - Function to call on form submission.
  * @param props.onClose      - Function to call on modal close.
  * @param props.editing      - Whether the modal is in editing mode.
+ * @param props.sites        - The brand sites already added, to catch a duplicate URL.
  * @param props.originalData - Original data for comparison when editing.
  * @return Rendered component.
  */
@@ -134,6 +136,7 @@ const SiteModal = ( {
 	onSubmit,
 	onClose,
 	editing,
+	sites,
 	originalData = {},
 }: SiteModalProps ): JSX.Element => {
 	const [ errors, setErrors ] = useState< FormErrors >( {
@@ -182,6 +185,29 @@ const SiteModal = ( {
 		const hasErrors = Object.values( newErrors ).some( ( err ) => err );
 
 		if ( hasErrors ) {
+			setShowNotice( true );
+			return;
+		}
+
+		const formUrl = withTrailingSlash( formData.url );
+		const isAlreadyExists = sites.some(
+			( site ) =>
+				withTrailingSlash( site.url ) === formUrl &&
+				// Allow keeping the original url in editing mode.
+				! (
+					editing &&
+					withTrailingSlash( originalData?.url ?? '' ) === formUrl
+				)
+		);
+
+		if ( isAlreadyExists ) {
+			setErrors( {
+				...newErrors,
+				message: __(
+					'Site URL already exists. Please use a different URL.',
+					'onedesign'
+				),
+			} );
 			setShowNotice( true );
 			return;
 		}
