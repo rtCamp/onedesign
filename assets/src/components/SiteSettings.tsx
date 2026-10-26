@@ -12,12 +12,7 @@ import {
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
-import { API_NAMESPACE, NONCE } from '@/js/utils';
-
-interface NoticeState {
-	type: 'error' | 'success' | 'warning';
-	message: string;
-}
+import type { NoticeType } from '@/admin/settings/page';
 
 const API_KEY = window.OneDesignSettings.api_key;
 
@@ -29,25 +24,18 @@ const API_KEY = window.OneDesignSettings.api_key;
 const SiteSettings = (): JSX.Element => {
 	const [ apiKey, setApiKey ] = useState( API_KEY );
 	const [ isLoading, setIsLoading ] = useState( true );
-	const [ notice, setNotice ] = useState< NoticeState | null >( null );
+	const [ notice, setNotice ] = useState< NoticeType | null >( null );
 	const [ governingSite, setGoverningSite ] = useState( '' );
 	const [ showDisconnectionModal, setShowDisconnectionModal ] =
 		useState( false );
 
-	// regenerate api key using REST endpoint.
+	// The admin nonce authenticates these same-site requests.
 	const regenerateApiKey = useCallback( async () => {
 		try {
-			const response = await fetch( API_NAMESPACE + '/secret-key', {
+			const data = await apiFetch< { secret_key?: string } >( {
+				path: '/onedesign/v1/secret-key',
 				method: 'POST',
-				headers: {
-					'X-WP-Nonce': NONCE,
-					'X-OneDesign-Token': API_KEY,
-				},
 			} );
-			if ( ! response.ok ) {
-				throw new Error( 'Network response was not ok' );
-			}
-			const data = ( await response.json() ) as { secret_key?: string };
 			if ( data?.secret_key ) {
 				setApiKey( data.secret_key );
 				setNotice( {
@@ -61,18 +49,20 @@ const SiteSettings = (): JSX.Element => {
 				setNotice( {
 					type: 'error',
 					message: __(
-						'Failed to regenerate api key. Please try again later.',
+						'Failed to regenerate API key. Please try again later.',
 						'onedesign'
 					),
 				} );
 			}
-		} catch {
+		} catch ( error ) {
 			setNotice( {
 				type: 'error',
-				message: __(
-					'Error regenerating api key. Please try again later.',
-					'onedesign'
-				),
+				message:
+					( error as { message?: string } )?.message ||
+					__(
+						'Error regenerating API key. Please try again later.',
+						'onedesign'
+					),
 			} );
 		}
 	}, [] );
@@ -98,17 +88,10 @@ const SiteSettings = (): JSX.Element => {
 
 	const deleteGoverningSiteConnection = useCallback( async () => {
 		try {
-			const response = await fetch( `${ API_NAMESPACE }/governing-site`, {
+			await apiFetch( {
+				path: '/onedesign/v1/governing-site',
 				method: 'DELETE',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-WP-Nonce': NONCE,
-					'X-OneDesign-Token': apiKey,
-				},
 			} );
-			if ( ! response.ok ) {
-				throw new Error( 'Network response was not ok' );
-			}
 			setGoverningSite( '' );
 			setNotice( {
 				type: 'success',
@@ -117,18 +100,20 @@ const SiteSettings = (): JSX.Element => {
 					'onedesign'
 				),
 			} );
-		} catch {
+		} catch ( error ) {
 			setNotice( {
 				type: 'error',
-				message: __(
-					'Failed to disconnect governing site. Please try again later.',
-					'onedesign'
-				),
+				message:
+					( error as { message?: string } )?.message ||
+					__(
+						'Failed to disconnect governing site. Please try again later.',
+						'onedesign'
+					),
 			} );
 		} finally {
 			setShowDisconnectionModal( false );
 		}
-	}, [ apiKey ] );
+	}, [] );
 
 	const handleDisconnectGoverningSite = useCallback( async () => {
 		setShowDisconnectionModal( true );
