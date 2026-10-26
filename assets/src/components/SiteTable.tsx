@@ -119,10 +119,7 @@ const SiteTable = ( {
 									{ site?.logo ? (
 										<img
 											src={ site.logo }
-											alt={ __(
-												'Site Logo',
-												'onedesign'
-											) }
+											alt=""
 											style={ {
 												maxWidth: '100px',
 												maxHeight: '50px',

@@ -161,9 +161,11 @@ const SiteSettings = (): JSX.Element => {
 						<Button
 							variant="primary"
 							onClick={ () => {
-								navigator?.clipboard
-									?.writeText( apiKey )
-									?.then( () => {
+								(
+									navigator.clipboard?.writeText( apiKey ) ??
+									Promise.reject( '' )
+								)
+									.then( () => {
 										setNotice( {
 											type: 'success',
 											message: __(
@@ -172,7 +174,7 @@ const SiteSettings = (): JSX.Element => {
 											),
 										} );
 									} )
-									?.catch( ( error: unknown ) => {
+									.catch( ( error ) => {
 										setNotice( {
 											type: 'error',
 											message:
@@ -181,7 +183,7 @@ const SiteSettings = (): JSX.Element => {
 													'onedesign'
 												) +
 												' ' +
-												String( error ),
+												error,
 										} );
 									} );
 							} }
@@ -201,8 +203,10 @@ const SiteSettings = (): JSX.Element => {
 				<CardBody>
 					<div>
 						<TextareaControl
+							label={ __( 'API Key', 'onedesign' ) }
+							hideLabelFromVision
 							value={ apiKey }
-							disabled
+							readOnly
 							onChange={ () => {} }
 							help={ __(
 								'This key is used for secure communication with the Governing site.',

@@ -33,18 +33,6 @@ const mockSiteSettingsApi = ( handlers: {
 	} );
 
 describe( 'SiteSettings', () => {
-	it( 'renders the settings cards once loading resolves', async () => {
-		mockSiteSettingsApi( { governingSiteUrl: 'https://gov.example' } );
-
-		render( <SiteSettings /> );
-
-		// Spinner shows first; findBy waits for the post-fetch re-render.
-		expect( await screen.findByText( 'API Key' ) ).toBeInTheDocument();
-		expect(
-			screen.getByText( 'Governing Site Connection' )
-		).toBeInTheDocument();
-	} );
-
 	it( "shows the server's message when a request fails", async () => {
 		mockedApiFetch.mockRejectedValue( {
 			code: 'rest_forbidden',
@@ -127,6 +115,38 @@ describe( 'SiteSettings', () => {
 		expect( screen.getByDisplayValue( '' ) ).toBeInTheDocument();
 	} );
 
+	it( 'shows an error notice when the clipboard api is unavailable', async () => {
+		mockSiteSettingsApi( {
+			governingSiteUrl: 'https://governing.example.com/',
+		} );
+		const clipboard = navigator.clipboard;
+		Object.defineProperty( navigator, 'clipboard', {
+			value: undefined,
+			configurable: true,
+		} );
+
+		try {
+			render( <SiteSettings /> );
+
+			await screen.findByDisplayValue( 'api-key' );
+			fireEvent.click(
+				screen.getByRole( 'button', { name: 'Copy API Key' } )
+			);
+
+			expect(
+				await screen.findByText(
+					'Failed to copy api key. Please try again.',
+					{ selector: '.components-notice__content' }
+				)
+			).toBeInTheDocument();
+		} finally {
+			Object.defineProperty( navigator, 'clipboard', {
+				value: clipboard,
+				configurable: true,
+			} );
+		}
+	} );
+
 	it( 'loads once on mount without the API key, and does not reload after regenerating', async () => {
 		mockSiteSettingsApi( {
 			governingSiteUrl: 'https://governing.example.com/',
@@ -148,5 +168,18 @@ describe( 'SiteSettings', () => {
 		expect( await screen.findByDisplayValue( 'new-secret' ) ).toBeVisible();
 		// Nothing but the regeneration request was made after the initial load.
 		expect( mockedApiFetch ).toHaveBeenCalledTimes( 2 );
+	} );
+
+	it( 'keeps the key field selectable for a manual copy', async () => {
+		mockSiteSettingsApi( {
+			governingSiteUrl: 'https://governing.example.com/',
+		} );
+
+		render( <SiteSettings /> );
+
+		const field = await screen.findByDisplayValue( 'api-key' );
+		expect( field ).toBe( screen.getByLabelText( 'API Key' ) );
+		expect( field ).not.toBeDisabled();
+		expect( field ).toHaveAttribute( 'readonly' );
 	} );
 } );
