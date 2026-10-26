@@ -68,7 +68,8 @@ final class Assets implements Registrable {
 			self::$localized_data = [
 				'restUrl'      => esc_url( home_url( '/wp-json' ) ),
 				'restNonce'    => wp_create_nonce( 'wp_rest' ),
-				'apiKey'       => Settings::get_api_key(),
+				// Only brand sites use a key of their own, so governing sites don't generate one.
+				'apiKey'       => Settings::is_consumer_site() ? Settings::get_api_key() : '',
 				'settingsLink' => esc_url( admin_url( 'admin.php?page=onedesign-settings' ) ),
 				'setupUrl'     => admin_url( 'admin.php?page=onedesign-settings' ),
 				'sharedSites'  => Settings::get_shared_sites_without_keys(),
