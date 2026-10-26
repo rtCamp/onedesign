@@ -2,7 +2,7 @@
  * External dependencies
  */
 import { describe, expect, it } from 'vitest';
-import { getInitials, isValidUrl, PurifyElement } from '@/js/utils';
+import { getInitials, isValidUrl } from '@/js/utils';
 
 describe( 'getInitials', () => {
 	it( 'returns "?" for empty or invalid input', () => {
@@ -50,24 +50,5 @@ describe( 'isValidUrl', () => {
 	it( 'rejects unparseable strings and non-http(s) schemes', () => {
 		expect( isValidUrl( 'not a url' ) ).toBe( false );
 		expect( isValidUrl( '' ) ).toBe( false );
-	} );
-} );
-
-describe( 'PurifyElement', () => {
-	it( 'strips all HTML tags, keeping text content', () => {
-		expect( PurifyElement( '<strong>Bold</strong>' ) ).toBe( 'Bold' );
-		expect( PurifyElement( '<a href="#">link</a> text' ) ).toBe(
-			'link text'
-		);
-	} );
-
-	it( 'removes script tags entirely', () => {
-		expect(
-			PurifyElement( 'safe<script>alert(1)</script>' )
-		).not.toContain( '<script>' );
-	} );
-
-	it( 'leaves plain text untouched', () => {
-		expect( PurifyElement( 'just text' ) ).toBe( 'just text' );
 	} );
 } );

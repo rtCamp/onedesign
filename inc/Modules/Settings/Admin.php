@@ -35,7 +35,7 @@ final class Admin implements Registrable {
 	 * @todo Replace with actual logo.
 	 * @var string
 	 */
-	private const SVG_LOGO_PATH = '';
+	private const SVG_LOGO_PATH = 'build/images/logo.svg';
 
 	/**
 	 * {@inheritDoc}
@@ -61,7 +61,7 @@ final class Admin implements Registrable {
 			'manage_options',
 			self::MENU_SLUG,
 			'__return_null',
-			self::SVG_LOGO_PATH,
+			ONEDESIGN_URL . self::SVG_LOGO_PATH,
 			2
 		);
 	}
@@ -168,7 +168,6 @@ final class Admin implements Registrable {
 
 		// Cast to string in case it's null.
 		$classes = $this->add_body_class_for_modal( (string) $classes );
-		$classes = $this->add_body_class_for_missing_sites( (string) $classes );
 
 		return $classes;
 	}
@@ -192,7 +191,6 @@ final class Admin implements Registrable {
 		);
 
 		wp_enqueue_script( Assets::SETTINGS_SCRIPT_HANDLE );
-		wp_enqueue_style( Assets::SETTINGS_SCRIPT_HANDLE );
 
 		// only load media uploader in governing site settings page.
 		if ( ! Settings::is_governing_site() ) {
@@ -236,22 +234,6 @@ final class Admin implements Registrable {
 
 		// Add onedesign-site-selection-modal class to body.
 		$classes .= ' onedesign-site-selection-modal ';
-		return $classes;
-	}
-
-	/**
-	 * Add body class for missing sites.
-	 *
-	 * @param string $classes Existing body classes.
-	 */
-	private function add_body_class_for_missing_sites( string $classes ): string {
-		// Bail if the shared sites are already set.
-		$shared_sites = Settings::get_shared_sites();
-		if ( ! empty( $shared_sites ) ) {
-			return $classes;
-		}
-
-		$classes .= ' onedesign-missing-brand-sites ';
 		return $classes;
 	}
 

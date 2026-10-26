@@ -54,27 +54,6 @@
 	}
 }
 
-.toplevel_page_onedesign {
-	.onedesign-site-checkbox {
-		pointer-events: none;
-	}
-}
-
-body {
-	&.onedesign-missing-brand-sites,
-	&.onedesign-brand-site {
-		.wp-first-item:has(.onedesign-plugin-manager-page) {
-			display: none;
-		}
-	}
-
-	&.onedesign-governing-site-site {
-		.wp-first-item:has(.onedesign-plugin-manager-page) {
-			display: inline-block;
-		}
-	}
-}
-
 [id="onedesign-multisite-selection-modal"],
 [id="onedesign-site-selection-modal"] {
 	position: fixed;
@@ -96,11 +75,5 @@ body.onedesign-site-selection-modal {
 		height: 100%;
 		background-color: rgba(0, 0, 0, 0.5);
 		z-index: 9999;
-	}
-}
-
-[id="toplevel_page_onedesign"] {
-	.dashicons-admin-generic::before {
-		content: url(../images/logo.svg) !important;
 	}
 }

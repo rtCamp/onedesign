@@ -56,16 +56,17 @@ const styles = {
 
 const scripts = {
 	...sharedConfig,
+	output: {
+		...sharedConfig.output,
+		// Copies images that PHP references, like the menu icon.
+		copy: [
+			{
+				from: path.resolve( process.cwd(), 'assets', 'src', 'images' ),
+				to: 'images',
+			},
+		],
+	},
 	entry: {
-		admin: path.resolve( process.cwd(), 'assets', 'src', 'js', 'admin.ts' ),
-		editor: path.resolve(
-			process.cwd(),
-			'assets',
-			'src',
-			'js',
-			'editor.ts'
-		),
-		main: path.resolve( process.cwd(), 'assets', 'src', 'js', 'main.ts' ),
 		'multisite-plugin': path.resolve(
 			process.cwd(),
 			'assets',
