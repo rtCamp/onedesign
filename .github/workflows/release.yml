@@ -34,7 +34,7 @@ jobs:
     if: ${{ needs.release-please.outputs.release_created == 'true' }}
     uses: rtCamp/plugin-skeleton-d/.github/workflows/reusable-build-public.yml@72dd3643b710bd84eed7c6143312c9434a95d352 # v0.2.0
     with:
-      php-version: '8.3'
+      php-version: '8.4'
       plugin-slug: onedesign
       artifact-name: onedesign
       ref: ${{ needs.release-please.outputs.tag_name }}

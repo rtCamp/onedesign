@@ -125,7 +125,10 @@ const selectors = {
 	},
 };
 
-const store = createReduxStore( 'onedesign/site-patterns', {
+// tsc can't name the inferred type here, since @wordpress/data 10.33 doesn't export it.
+const store: ReturnType<
+	typeof createReduxStore< State, typeof actions, typeof selectors >
+> = createReduxStore( 'onedesign/site-patterns', {
 	reducer,
 	actions,
 	selectors,

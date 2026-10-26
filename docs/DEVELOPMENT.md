@@ -545,3 +545,5 @@ Releases are automated with [Release Please](https://github.com/googleapis/relea
    - [`.release-please-manifest.json`](../.release-please-manifest.json)
 3. Merge the release PR when you're ready to ship.
 4. Release Please creates the GitHub Release, which then triggers the [release workflow](../.github/workflows/release.yml) to build and upload the plugin zip asset.
+
+> **Note:** In `readme.txt` the Release Please markers are written as `<!-- x-release-please-start-version: -->` (with a colon). The WordPress.org readme parser stops reading the header at the first line without a colon, so a plain HTML comment would hide `Stable tag`, `Requires PHP` and `License`. With the colon the line is parsed as an unknown header key and ignored, and Release Please still matches the marker text.
