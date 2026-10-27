@@ -47,12 +47,7 @@ interface DeleteSiteResponse {
 	message?: string;
 }
 
-/**
- * Settings page component for OneDesign plugin.
- *
- * @return Rendered component.
- */
-const OneDesignSettingsPage = (): JSX.Element => {
+const SettingsPage = () => {
 	const [ showModal, setShowModal ] = useState( false );
 	const [ editingIndex, setEditingIndex ] = useState< EditingIndex >( null );
 	const [ sites, setSites ] = useState< BrandSite[] >(
@@ -113,8 +108,8 @@ const OneDesignSettingsPage = (): JSX.Element => {
 		}
 	};
 
-	const handleDelete = async ( index: number ): Promise< void > => {
-		const removedSite = sites[ index ];
+	const handleDelete = async ( index: number | null ): Promise< void > => {
+		const removedSite = index !== null ? sites[ index ] : undefined;
 
 		if ( ! removedSite ) {
 			return;
@@ -167,6 +162,7 @@ const OneDesignSettingsPage = (): JSX.Element => {
 			{ !! notice && notice?.message?.length > 0 && (
 				<Snackbar
 					key={ notice.id }
+					explicitDismiss={ false }
 					onRemove={ () => setNotice( null ) }
 					className={
 						notice?.type === 'error'
@@ -234,4 +230,4 @@ const OneDesignSettingsPage = (): JSX.Element => {
 	);
 };
 
-export default OneDesignSettingsPage;
+export default SettingsPage;

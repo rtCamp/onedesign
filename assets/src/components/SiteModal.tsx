@@ -1,64 +1,44 @@
-import { useState, useMemo } from '@wordpress/element';
 import {
+	BaseControl,
+	Button,
 	Modal,
+	Notice,
 	TextControl,
 	TextareaControl,
-	Button,
-	Notice,
-	BaseControl,
 } from '@wordpress/components';
-import { __ } from '@wordpress/i18n';
 import { useInstanceId } from '@wordpress/compose';
+import { __ } from '@wordpress/i18n';
+import { useMemo, useState } from '@wordpress/element';
 import type { defaultBrandSite } from '@/admin/settings/page';
 import { isValidUrl, withTrailingSlash } from '@/js/utils';
 
-interface FormErrors {
+interface ErrorsType {
 	name: string;
 	url: string;
 	api_key: string;
 	message: string;
 }
 
-// Minimal typing for the `wp.media` global used for logo selection.
-interface WpAttachmentJSON {
-	url: string;
-	id: number;
-}
-interface WpMediaSelection {
-	first: () => { toJSON: () => WpAttachmentJSON };
-	add: ( items: unknown[] ) => void;
-}
-interface WpMediaState {
-	get: ( key: string ) => WpMediaSelection;
-}
-interface WpMediaFrame {
-	on: ( event: string, callback: () => void ) => void;
-	state: () => WpMediaState;
+// The parts of wp.media the logo field uses.
+interface MediaFrame {
+	on: ( event: 'select' | 'open', callback: () => void ) => void;
+	state: () => {
+		get: ( key: 'selection' ) => {
+			first: () => { toJSON: () => { id: number; url: string } };
+			add: ( attachments: unknown[] ) => void;
+		};
+	};
 	open: () => void;
 }
-interface WpAttachmentModel {
-	fetch: () => void;
-}
-interface WpMediaConfig {
-	title: string;
-	button: { text: string };
-	multiple: boolean;
-	library: { type: string[] };
-}
-interface WpMediaFactory {
-	( config: WpMediaConfig ): WpMediaFrame;
-	attachment: ( id: number | string ) => WpAttachmentModel;
-}
 
-interface SiteModalProps {
-	formData: typeof defaultBrandSite;
-	setFormData: ( data: typeof defaultBrandSite ) => void;
-	// Resolves true on success, or false or the server's error message on failure.
-	onSubmit: () => Promise< boolean | string >;
-	onClose: () => void;
-	editing: boolean;
-	sites: ( typeof defaultBrandSite )[];
-	originalData: typeof defaultBrandSite | undefined;
+interface WpMedia {
+	( options: {
+		title: string;
+		button: { text: string };
+		multiple: boolean;
+		library: { type: string[] };
+	} ): MediaFrame;
+	attachment: ( id: number ) => { fetch: () => void };
 }
 
 /**
@@ -82,8 +62,17 @@ const SiteModal = ( {
 	editing,
 	sites,
 	originalData,
-}: SiteModalProps ): JSX.Element => {
-	const [ errors, setErrors ] = useState< FormErrors >( {
+}: {
+	formData: typeof defaultBrandSite;
+	setFormData: ( data: typeof defaultBrandSite ) => void;
+	// Resolves true on success, or false or the server's error message on failure.
+	onSubmit: () => Promise< boolean | string >;
+	onClose: () => void;
+	editing: boolean;
+	sites: ( typeof defaultBrandSite )[];
+	originalData: typeof defaultBrandSite | undefined;
+} ) => {
+	const [ errors, setErrors ] = useState< ErrorsType >( {
 		name: '',
 		url: '',
 		api_key: '',
@@ -99,6 +88,20 @@ const SiteModal = ( {
 		! editing ||
 		withTrailingSlash( formData.url.trim() ) !==
 			withTrailingSlash( originalData?.url ?? '' );
+
+	// Check if form data has changed from original data (only for editing mode)
+	const hasChanges = useMemo( () => {
+		if ( ! editing ) {
+			return true;
+		} // Always allow submission for new sites
+
+		return (
+			formData.name !== originalData?.name ||
+			formData.url !== originalData?.url ||
+			typedApiKey !== '' ||
+			formData.logo !== originalData?.logo
+		);
+	}, [ editing, formData, originalData, typedApiKey ] );
 
 	const handleSubmit = async (): Promise< void > => {
 		// Validate inputs
@@ -198,25 +201,20 @@ const SiteModal = ( {
 	};
 
 	const handleLogoSelect = () => {
-		const wpMedia = (
-			window as unknown as { wp: { media: WpMediaFactory } }
-		 ).wp.media;
+		const wpMedia = ( window as unknown as { wp: { media: WpMedia } } ).wp
+			.media;
 
 		// Create a media frame for single image selection
-		const mediaFrame = wpMedia( {
+		const frame = wpMedia( {
 			title: __( 'Select Site Logo', 'onedesign' ),
-			button: {
-				text: __( 'Select Image', 'onedesign' ),
-			},
-			multiple: false, // Restrict to single image selection
-			library: {
-				type: [ 'image' ], // Only allow images
-			},
+			button: { text: __( 'Select Image', 'onedesign' ) },
+			multiple: false,
+			library: { type: [ 'image' ] }, // Only allow images
 		} );
 
 		// When an image is selected, update the formData with the image data
-		mediaFrame.on( 'select', () => {
-			const attachment = mediaFrame
+		frame.on( 'select', () => {
+			const attachment = frame
 				.state()
 				.get( 'selection' )
 				.first()
@@ -228,40 +226,17 @@ const SiteModal = ( {
 			} );
 		} );
 
-		// If logo_id is already set, pre-select that image in the media library
+		// Open the library with the current logo already selected.
 		if ( formData.logo_id ) {
-			mediaFrame.on( 'open', () => {
-				const selection = mediaFrame.state().get( 'selection' );
-				const attachment = wpMedia.attachment(
-					formData.logo_id as number
-				);
-
-				// Fetch attachment details
-				attachment.fetch();
-
-				// Add to selection
-				if ( selection && attachment ) {
-					selection.add( [ attachment ] );
-				}
+			const current = wpMedia.attachment( formData.logo_id );
+			frame.on( 'open', () => {
+				current.fetch();
+				frame.state().get( 'selection' ).add( [ current ] );
 			} );
 		}
 
-		// Open the media modal
-		mediaFrame.open();
+		frame.open();
 	};
-
-	const hasChanges = useMemo( () => {
-		if ( ! editing ) {
-			return true;
-		} // Always allow submission for new sites
-
-		return (
-			formData.name !== originalData?.name ||
-			formData.url !== originalData?.url ||
-			typedApiKey !== '' ||
-			formData.logo !== originalData?.logo
-		);
-	}, [ editing, formData, originalData, typedApiKey ] );
 
 	// Button should be disabled if:
 	// 1. Currently processing, OR
@@ -283,6 +258,7 @@ const SiteModal = ( {
 			}
 			onRequestClose={ onClose }
 			size="medium"
+			shouldCloseOnClickOutside
 		>
 			{ showNotice && (
 				<Notice
@@ -299,7 +275,7 @@ const SiteModal = ( {
 
 			<TextControl
 				label={ __( 'Site Name*', 'onedesign' ) }
-				value={ formData.name ?? '' }
+				value={ formData.name }
 				onChange={ ( value ) =>
 					setFormData( { ...formData, name: value } )
 				}
@@ -312,7 +288,7 @@ const SiteModal = ( {
 			/>
 			<TextControl
 				label={ __( 'Site URL*', 'onedesign' ) }
-				value={ formData.url ?? '' }
+				value={ formData.url }
 				onChange={ ( value ) =>
 					setFormData( { ...formData, url: value } )
 				}
