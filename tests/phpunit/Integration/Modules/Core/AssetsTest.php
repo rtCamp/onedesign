@@ -89,14 +89,9 @@ final class AssetsTest extends TestCase {
 
 		$this->assertArrayHasKey( 'nonce', $data );
 		$this->assertArrayHasKey( 'api_key', $data );
-		$this->assertArrayHasKey( 'restNamespace', $data );
-		$this->assertArrayHasKey( 'restUrl', $data );
 		$this->assertArrayHasKey( 'setupUrl', $data );
 		$this->assertArrayHasKey( 'sharedSites', $data );
 		$this->assertArrayHasKey( 'siteType', $data );
-		$this->assertArrayHasKey( 'multisites', $data );
-		$this->assertArrayHasKey( 'isGoverningSiteSelected', $data );
-		$this->assertArrayHasKey( 'currentSiteId', $data );
 	}
 
 	/**
@@ -129,30 +124,6 @@ final class AssetsTest extends TestCase {
 
 		$this->assertNotSame( '', Assets::get_localized_data()['api_key'] );
 
-		$this->reset_localized_data();
-	}
-
-	/**
-	 * Lists the network's sites only in the network admin, where the governing site is picked.
-	 */
-	public function test_get_localized_data_lists_sites_only_in_network_admin(): void {
-		if ( ! is_multisite() ) {
-			$this->markTestSkipped( 'Requires multisite.' );
-		}
-
-		self::factory()->blog->create();
-
-		set_current_screen( 'dashboard' );
-		$this->reset_localized_data();
-
-		$this->assertSame( [], Assets::get_localized_data()['multisites'] );
-
-		set_current_screen( 'dashboard-network' );
-		$this->reset_localized_data();
-
-		$this->assertCount( 2, Assets::get_localized_data()['multisites'] );
-
-		set_current_screen( 'front' );
 		$this->reset_localized_data();
 	}
 

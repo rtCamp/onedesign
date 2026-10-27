@@ -9,6 +9,7 @@ declare(strict_types = 1);
 
 namespace OneDesign\Tests\Integration\Modules\Settings;
 
+use OneDesign\Modules\Core\Assets;
 use OneDesign\Modules\Settings\Admin;
 use OneDesign\Modules\Settings\Settings;
 use OneDesign\Tests\TestCase;
@@ -147,6 +148,59 @@ final class AdminTest extends TestCase {
 		delete_option( Settings::OPTION_SITE_TYPE );
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
 		$this->assertStringNotContainsString( 'needs to be set up', $this->get_notices() );
+	}
+
+	/**
+	 * A network admin on a network-activated governing site gets the other sites they can add, and no one else or other screen gets them.
+	 */
+	public function test_the_settings_screen_lists_the_sites_a_network_admin_can_add(): void {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		update_site_option( 'active_sitewide_plugins', [ plugin_basename( ONEDESIGN_FILE ) => time() ] );
+		update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_GOVERNING );
+
+		$new_site_id = self::factory()->blog->create();
+
+		$unconnected_brand_id = self::factory()->blog->create();
+		update_blog_option( $unconnected_brand_id, Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_CONSUMER );
+
+		$connected_brand_id = self::factory()->blog->create();
+		switch_to_blog( $connected_brand_id );
+		$this->set_up_brand_site();
+		restore_current_blog();
+
+		$governing_id = self::factory()->blog->create();
+		update_blog_option( $governing_id, Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_GOVERNING );
+
+		$this->assertArrayNotHasKey( 'multisites', $this->get_settings_screen_data() );
+
+		$network_admin_id = self::factory()->user->create();
+		grant_super_admin( $network_admin_id );
+		wp_set_current_user( $network_admin_id );
+
+		$data       = $this->get_settings_screen_data();
+		$multisites = $data['multisites'];
+
+		$this->assertSame( [ (string) $new_site_id, (string) $unconnected_brand_id ], array_column( $multisites, 'id' ) );
+		$this->assertSame( (string) get_current_blog_id(), $data['currentSiteId'] );
+		$this->assertArrayNotHasKey( 'multisites', Assets::get_localized_data() );
+	}
+
+	/**
+	 * Enqueues the settings screen and gets the data it localizes.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function get_settings_screen_data(): array {
+		( new Assets() )->register_assets();
+		wp_scripts()->add_data( Assets::SETTINGS_SCRIPT_HANDLE, 'data', '' );
+		( new Admin() )->enqueue_scripts( Admin::SETTINGS_HOOK );
+
+		preg_match( '/var OneDesignSettings = (.*);/', (string) wp_scripts()->get_data( Assets::SETTINGS_SCRIPT_HANDLE, 'data' ), $matches );
+
+		return json_decode( $matches[1], true );
 	}
 
 	/**

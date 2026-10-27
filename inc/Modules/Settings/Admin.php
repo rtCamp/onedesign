@@ -11,6 +11,7 @@ namespace OneDesign\Modules\Settings;
 
 use OneDesign\Contracts\Interfaces\Registrable;
 use OneDesign\Modules\Core\Assets;
+use OneDesign\Modules\Multisite\Utils as MU_Utils;
 
 /**
  * Class - Admin
@@ -113,7 +114,20 @@ final class Admin implements Registrable {
 			return;
 		}
 
-		wp_localize_script( Assets::SETTINGS_SCRIPT_HANDLE, 'OneDesignSettings', Assets::get_localized_data() );
+		$localized_data = Assets::get_localized_data();
+
+		// Network admins add the network's sites to a governing site from here. Listing them switches into each site, so no other site screen does.
+		if ( MU_Utils::is_network_activated() && current_user_can( 'manage_network_options' ) && Settings::is_governing_site() ) {
+			$localized_data['multisites']    = array_values(
+				array_filter(
+					MU_Utils::get_all_multisites_info(),
+					static fn ( array $site ): bool => Settings::SITE_TYPE_GOVERNING !== $site['siteType']
+				)
+			);
+			$localized_data['currentSiteId'] = (string) get_current_blog_id();
+		}
+
+		wp_localize_script( Assets::SETTINGS_SCRIPT_HANDLE, 'OneDesignSettings', $localized_data );
 		wp_enqueue_script( Assets::SETTINGS_SCRIPT_HANDLE );
 		wp_enqueue_style( Assets::ADMIN_STYLES_HANDLE );
 

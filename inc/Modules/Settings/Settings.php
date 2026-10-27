@@ -303,7 +303,6 @@ final class Settings implements Registrable {
 	 *   logo_id?: int,
 	 *   name?: string,
 	 *   url?: string,
-	 *   is_editable?: bool
 	 * }> $sites The sites to set.
 	 */
 	public static function set_shared_sites( array $sites ): bool {
@@ -402,17 +401,6 @@ final class Settings implements Registrable {
 		}
 
 		update_option( self::OPTION_CONSUMER_API_KEY, $encrypted_key, false );
-		if ( is_multisite() ) {
-			/**
-			 * Trigger action when API key is generated in multisite setup.
-			 *
-			 * @param string $secret_key The generated secret key.
-			 * @param int $blog_id The blog ID where the key is generated.
-			 *
-			 * @hook onedesign_regenerate_api_key
-			 */
-			do_action( 'onedesign_regenerate_api_key', $api_key, get_current_blog_id() );
-		}
 
 		return $api_key;
 	}

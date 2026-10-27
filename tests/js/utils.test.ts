@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-	API_NAMESPACE,
-	isValidUrl,
-	withTrailingSlash,
-	getInitials,
-} from '@/js/utils';
+import { isValidUrl, withTrailingSlash, getInitials } from '@/js/utils';
 
 describe( 'utils', () => {
 	it( 'validates well-formed urls', () => {
@@ -26,12 +21,6 @@ describe( 'utils', () => {
 		);
 		expect( withTrailingSlash( 'https://example.com/' ) ).toBe(
 			'https://example.com/'
-		);
-	} );
-
-	it( 'joins the REST url and namespace', () => {
-		expect( API_NAMESPACE ).toBe(
-			'https://example.com/wp-json/onedesign/v1'
 		);
 	} );
 } );

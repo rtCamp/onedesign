@@ -1,47 +1,47 @@
-import { Button, Modal, CheckboxControl } from '@wordpress/components';
-import { __ } from '@wordpress/i18n';
-import { useCallback, useEffect, useState } from '@wordpress/element';
-import { API_NAMESPACE, NONCE, CURRENT_SITE_ID } from '@/js/utils';
+import { Button, Modal, CheckboxControl, Notice } from '@wordpress/components';
+import { __, _n, sprintf } from '@wordpress/i18n';
+import { useState } from '@wordpress/element';
+import apiFetch from '@wordpress/api-fetch';
 import type { BrandSite, NoticeType } from '@/admin/settings/page';
-
-type SiteId = number | string;
-
-interface Site {
-	id: SiteId;
-	name?: string;
-	url?: string;
-}
+import type { OneDesignMultisite } from '@/types/global';
 
 interface MultiSitesProps {
-	setBrandSites: ( sites: BrandSite[] ) => void;
-	brandSites: BrandSite[];
+	governingSiteId: string;
+	sites: OneDesignMultisite[];
+	onAdd: ( sharedSites: BrandSite[], addedIds: string[] ) => void;
 	setNotice: ( notice: NoticeType ) => void;
 }
 
 /**
- * MultiSites component to manage brand sites from multisite network.
+ * MultiSites component to add the network's sites to a governing site's brand sites.
  *
- * @param props               - Component properties.
- * @param props.setBrandSites - Function to set brand sites in parent component.
- * @param props.brandSites    - Current list of brand sites.
- * @param props.setNotice     - Function to set notice messages.
+ * @param props                 - Component properties.
+ * @param props.governingSiteId - The governing site to add them to.
+ * @param props.sites           - The network sites that can be added.
+ * @param props.onAdd           - Gets the governing site's brand sites and the ids of the added sites.
+ * @param props.setNotice       - Function to set notice messages.
  *
  * @return Rendered component.
  */
 const MultiSites = ( {
-	setBrandSites,
-	brandSites,
+	governingSiteId,
+	sites,
+	onAdd,
 	setNotice,
 }: MultiSitesProps ): JSX.Element => {
 	const [ isOpen, setIsOpen ] = useState( false );
-	const [ selectedSites, setSelectedSites ] = useState< SiteId[] >( [] );
+	const [ selectedSites, setSelectedSites ] = useState< string[] >( [] );
 	const [ isApplying, setIsApplying ] = useState( false );
-	const [ sites, setSites ] = useState< Site[] | undefined >();
+	const [ error, setError ] = useState< string | null >( null );
 
 	const openModal = () => setIsOpen( true );
-	const closeModal = () => setIsOpen( false );
+	const closeModal = () => {
+		setIsOpen( false );
+		setSelectedSites( [] );
+		setError( null );
+	};
 
-	const toggleSiteSelection = ( siteId: SiteId ) => {
+	const toggleSiteSelection = ( siteId: string ) => {
 		setSelectedSites( ( prevSelected ) => {
 			if ( prevSelected.includes( siteId ) ) {
 				return prevSelected.filter( ( id ) => id !== siteId );
@@ -50,219 +50,92 @@ const MultiSites = ( {
 		} );
 	};
 
-	const fetchSelectedBrandSites = useCallback( async () => {
+	const handleMultiSiteAdd = async () => {
+		setIsApplying( true );
+		setError( null );
 		try {
-			const response = await fetch( `${ API_NAMESPACE }/shared-sites`, {
-				headers: {
-					'Content-Type': 'application/json',
-					'X-WP-NONCE': NONCE,
+			const data = await apiFetch< { shared_sites: BrandSite[] } >( {
+				path: '/onedesign/v1/multisite/brand-sites',
+				method: 'POST',
+				data: {
+					governing_site_id: Number( governingSiteId ),
+					site_ids: selectedSites.map( Number ),
 				},
 			} );
 
-			if ( response.ok ) {
-				const data = ( await response.json() ) as {
-					shared_sites?: BrandSite[];
-				};
-				setBrandSites( data.shared_sites || [] );
+			const addedNames = sites
+				.filter( ( site ) => selectedSites.includes( site.id ) )
+				.map( ( site ) => site.name );
 
-				// if shared_sites length is 1 meaning
-				if (
-					( data?.shared_sites?.length ?? 0 ) > 0 &&
-					brandSites?.length === 0
-				) {
-					window.location.reload();
-				}
-			} else {
-				setNotice( {
-					type: 'error',
-					message: __(
-						'Failed to fetch selected brand sites. Please try again.',
+			onAdd( data.shared_sites, selectedSites );
+			closeModal();
+			setNotice( {
+				type: 'success',
+				message: sprintf(
+					/* translators: %s: Names of the sites that were added. */
+					_n(
+						'%s is now a brand site.',
+						'%s are now brand sites.',
+						addedNames.length,
 						'onedesign'
 					),
-				} );
-			}
-		} catch {
-			setNotice( {
-				type: 'error',
-				message: __(
-					'An error occurred while fetching selected brand sites. Please try again.',
-					'onedesign'
+					addedNames.join( ', ' )
 				),
 			} );
-		}
-	}, [ brandSites, setBrandSites, setNotice ] );
-
-	const fetchBrandSites = useCallback( async () => {
-		try {
-			const response = await fetch(
-				`${ API_NAMESPACE }/multisite/sites`,
-				{
-					headers: {
-						'Content-Type': 'application/json',
-						'X-WP-NONCE': NONCE,
-					},
-				}
+		} catch ( addError ) {
+			setError(
+				( addError as { message?: string } )?.message ||
+					__(
+						"Couldn't add the selected sites. Try again.",
+						'onedesign'
+					)
 			);
-
-			if ( response.ok ) {
-				const data = ( await response.json() ) as { sites?: Site[] };
-				setSites( data.sites || [] );
-			} else {
-				setNotice( {
-					type: 'error',
-					message: __(
-						'Failed to fetch brand sites. Please try again.',
-						'onedesign'
-					),
-				} );
-			}
-		} catch {
-			setNotice( {
-				type: 'error',
-				message: __(
-					'An error occurred while fetching brand sites. Please try again.',
-					'onedesign'
-				),
-			} );
+		} finally {
+			setIsApplying( false );
 		}
-	}, [ setNotice ] );
-
-	const handleMultiSiteAdd = useCallback(
-		async ( selectedMUSites: SiteId[] ) => {
-			setIsApplying( true );
-			try {
-				const response = await fetch(
-					`${ API_NAMESPACE }/multisite/add-sites`,
-					{
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json',
-							'X-WP-NONCE': NONCE,
-						},
-						body: JSON.stringify( { site_ids: selectedMUSites } ),
-					}
-				);
-
-				if ( ! response.ok ) {
-					setNotice( {
-						type: 'error',
-						message: __(
-							'Failed to add selected sites. Please try again.',
-							'onedesign'
-						),
-					} );
-					setIsApplying( false );
-					return;
-				}
-
-				const data = ( await response.json() ) as {
-					success?: boolean;
-					message?: string;
-				};
-
-				if ( data.success ) {
-					setNotice( {
-						type: 'success',
-						message: __(
-							'Selected sites added successfully.',
-							'onedesign'
-						),
-					} );
-					fetchSelectedBrandSites();
-					setSelectedSites( [] );
-				} else {
-					setNotice( {
-						type: 'error',
-						message:
-							data.message ||
-							__(
-								'Failed to add selected sites. Please try again.',
-								'onedesign'
-							),
-					} );
-				}
-			} catch {
-				setNotice( {
-					type: 'error',
-					message: __(
-						'An error occurred while adding selected sites. Please try again.',
-						'onedesign'
-					),
-				} );
-			} finally {
-				setIsApplying( false );
-			}
-		},
-		[ setNotice, fetchSelectedBrandSites ]
-	);
-
-	useEffect( () => {
-		fetchBrandSites();
-	}, [ fetchBrandSites ] );
-
-	const availableSites =
-		sites?.filter(
-			( site ) =>
-				String( site.id ) !== String( CURRENT_SITE_ID ) &&
-				! brandSites?.some(
-					( brandSite ) =>
-						String( brandSite.id ) === String( site.id )
-				)
-		) ?? [];
+	};
 
 	return (
 		<>
 			<Button variant="secondary" onClick={ openModal }>
-				{ __( 'Add Brand Sites From Current MU', 'onedesign' ) }
+				{ __( 'Add Brand Sites From This Network', 'onedesign' ) }
 			</Button>
 
 			{ isOpen && (
 				<Modal
-					title={ __( 'Multi-Sites Information', 'onedesign' ) }
+					title={ __(
+						'Select Sites From This Network',
+						'onedesign'
+					) }
 					onRequestClose={ closeModal }
+					shouldCloseOnClickOutside={ ! isApplying }
+					shouldCloseOnEsc={ ! isApplying }
 					size="medium"
 				>
-					{ /* create multi select checkbox list of sites excluding current site */ }
-					{ ( sites?.length ?? 0 ) > 0 ? (
-						<div
-							style={ {
-								maxHeight: '400px',
-								overflowY: 'auto',
-								padding: '4px 4px',
-							} }
-						>
-							{ availableSites.map( ( site ) => (
-								<CheckboxControl
-									key={ site.id }
-									label={ `${ site.name } ( ${ site?.url } )` }
-									checked={ selectedSites.includes(
-										site.id
-									) }
-									onChange={ () =>
-										toggleSiteSelection( site.id )
-									}
-									__nextHasNoMarginBottom
-								/>
-							) ) }
-						</div>
-					) : (
-						<p>
-							{ __(
-								'No other sites available in this multisite network.',
-								'onedesign'
-							) }
-						</p>
+					{ error && (
+						<Notice status="error" isDismissible={ false }>
+							{ error }
+						</Notice>
 					) }
-
-					{ ( sites?.length ?? 0 ) > 0 &&
-						availableSites.length === 0 && (
-							<p>
-								{ __(
-									'All sites in this multisite network have already been added as brand sites.',
-									'onedesign'
-								) }
-							</p>
-						) }
+					<div
+						style={ {
+							maxHeight: '400px',
+							overflowY: 'auto',
+							padding: '4px 4px',
+						} }
+					>
+						{ sites.map( ( site ) => (
+							<CheckboxControl
+								key={ site.id }
+								label={ `${ site.name } ( ${ site.url } )` }
+								checked={ selectedSites.includes( site.id ) }
+								onChange={ () =>
+									toggleSiteSelection( site.id )
+								}
+								__nextHasNoMarginBottom
+							/>
+						) ) }
+					</div>
 
 					<div
 						style={ {
@@ -272,16 +145,19 @@ const MultiSites = ( {
 							gap: '10px',
 						} }
 					>
-						<Button variant="secondary" onClick={ closeModal }>
+						<Button
+							variant="secondary"
+							onClick={ closeModal }
+							disabled={ isApplying }
+						>
 							{ __( 'Cancel', 'onedesign' ) }
 						</Button>
 						<Button
 							variant="primary"
-							onClick={ () => {
-								handleMultiSiteAdd( selectedSites );
-								closeModal();
-							} }
-							disabled={ selectedSites.length === 0 }
+							onClick={ handleMultiSiteAdd }
+							disabled={
+								selectedSites.length === 0 || isApplying
+							}
 							isBusy={ isApplying }
 						>
 							{ __( 'Add Selected Sites', 'onedesign' ) }

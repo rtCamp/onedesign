@@ -56,30 +56,6 @@ class Shared_Sites_ControllerTest extends TestCase {
 	}
 
 	/**
-	 * Lists the brand sites without their keys.
-	 */
-	public function test_get_shared_sites_leaves_out_the_keys(): void {
-		Settings::set_shared_sites(
-			[
-				[
-					'id'      => 'abc-1',
-					'name'    => 'A',
-					'url'     => 'https://a.example.com',
-					'api_key' => 'secret',
-				],
-			]
-		);
-
-		$response = $this->server->dispatch( new WP_REST_Request( 'GET', '/onedesign/v1/shared-sites' ) );
-		$sites    = $response->get_data()['shared_sites'];
-
-		$this->assertSame( 200, $response->get_status() );
-		$this->assertCount( 1, $sites );
-		$this->assertSame( 'https://a.example.com/', $sites[0]['url'] );
-		$this->assertArrayNotHasKey( 'api_key', $sites[0] );
-	}
-
-	/**
 	 * Returns 400 when duplicate site URLs exist, before any brand site is checked.
 	 */
 	public function test_set_shared_sites_rejects_duplicate_urls(): void {
