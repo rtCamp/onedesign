@@ -31,7 +31,6 @@ final class Main {
 		Modules\Library\Patterns::class,
 		Modules\Library\Templates::class,
 		Modules\Multisite\Admin::class,
-		Modules\Multisite\Settings::class,
 		Modules\Rest\Brand_Site_Controller::class,
 		Modules\Rest\Governing_Site_Controller::class,
 		Modules\Rest\Multisite_Controller::class,

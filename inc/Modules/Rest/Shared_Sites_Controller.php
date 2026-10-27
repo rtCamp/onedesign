@@ -31,11 +31,6 @@ class Shared_Sites_Controller extends Abstract_REST_Controller {
 			'/shared-sites',
 			[
 				[
-					'methods'             => WP_REST_Server::READABLE,
-					'callback'            => [ $this, 'get_shared_sites' ],
-					'permission_callback' => static fn () => current_user_can( 'manage_options' ),
-				],
-				[
 					'methods'             => WP_REST_Server::CREATABLE,
 					'callback'            => [ $this, 'set_shared_sites' ],
 					'permission_callback' => static fn () => current_user_can( 'manage_options' ),
@@ -60,20 +55,6 @@ class Shared_Sites_Controller extends Abstract_REST_Controller {
 				'methods'             => WP_REST_Server::DELETABLE,
 				'callback'            => [ $this, 'delete_shared_site' ],
 				'permission_callback' => static fn () => current_user_can( 'manage_options' ),
-			]
-		);
-	}
-
-	/**
-	 * Get shared sites data.
-	 *
-	 * @return \WP_REST_Response|\WP_Error
-	 */
-	public function get_shared_sites(): WP_REST_Response|\WP_Error {
-		return rest_ensure_response(
-			[
-				'success'      => true,
-				'shared_sites' => Settings::get_shared_sites_without_keys(),
 			]
 		);
 	}

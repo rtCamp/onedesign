@@ -12,7 +12,7 @@ import type {
 	EditingIndex,
 	NoticeType,
 } from '@/admin/settings/page';
-import { IS_GOVERNING_SITE_SELECTED, getInitials } from '@/js/utils';
+import { CURRENT_SITE_ID, MULTISITES, getInitials } from '@/js/utils';
 import MultiSites from './MultiSites';
 
 const SiteTable = ( {
@@ -24,7 +24,7 @@ const SiteTable = ( {
 	setSites,
 	setNotice,
 }: {
-	sites: ( BrandSite & { is_editable?: boolean } )[];
+	sites: BrandSite[];
 	onEdit: ( index: number ) => void;
 	onDelete: ( index: number | null ) => void;
 	setFormData: ( data: BrandSite ) => void;
@@ -34,6 +34,11 @@ const SiteTable = ( {
 } ) => {
 	const [ showDeleteModal, setShowDeleteModal ] = useState( false );
 	const [ deleteIndex, setDeleteIndex ] = useState< EditingIndex >( null );
+
+	// Only network admins get the network's sites to add. They're listed when the page loads, so leave out the ones added since.
+	const networkSites = MULTISITES.filter(
+		( site ) => ! sites.some( ( brandSite ) => brandSite.id === site.id )
+	);
 
 	const handleDeleteClick = ( index: number ) => {
 		setDeleteIndex( index );
@@ -56,10 +61,11 @@ const SiteTable = ( {
 			<CardHeader>
 				<h3>{ __( 'Brand Sites', 'onedesign' ) }</h3>
 				<div style={ { display: 'flex', gap: '16px' } }>
-					{ IS_GOVERNING_SITE_SELECTED && (
+					{ networkSites.length > 0 && (
 						<MultiSites
-							brandSites={ sites }
-							setBrandSites={ setSites }
+							governingSiteId={ CURRENT_SITE_ID }
+							sites={ networkSites }
+							onAdd={ setSites }
 							setNotice={ setNotice }
 						/>
 					) }
@@ -138,7 +144,6 @@ const SiteTable = ( {
 											onEdit( index );
 											setShowModal( true );
 										} }
-										disabled={ site?.is_editable === false }
 										style={ { marginRight: '8px' } }
 									>
 										{ __( 'Edit', 'onedesign' ) }

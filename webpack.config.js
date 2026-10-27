@@ -67,12 +67,12 @@ const scripts = {
 		],
 	},
 	entry: {
-		'multisite-plugin': path.resolve(
+		'network-settings': path.resolve(
 			process.cwd(),
 			'assets',
 			'src',
 			'admin',
-			'multisite-plugin',
+			'network-settings',
 			'index.tsx'
 		),
 		'patterns-library': path.resolve(
