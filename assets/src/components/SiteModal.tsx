@@ -9,7 +9,6 @@ import {
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useInstanceId } from '@wordpress/compose';
-import type { SyntheticEvent } from 'react';
 import type { defaultBrandSite } from '@/admin/settings/page';
 import { isValidUrl, withTrailingSlash } from '@/js/utils';
 
@@ -50,55 +49,6 @@ interface WpMediaFactory {
 	( config: WpMediaConfig ): WpMediaFrame;
 	attachment: ( id: number | string ) => WpAttachmentModel;
 }
-
-interface DeleteConfirmationModalProps {
-	// Used as both Button onClick and Modal onRequestClose, so the event is a
-	// broad, optional SyntheticEvent.
-	onConfirm: ( event?: SyntheticEvent ) => void;
-	onCancel: ( event?: SyntheticEvent ) => void;
-}
-
-/**
- * Delete Confirmation Modal component.
- *
- * @param props           - Component properties.
- * @param props.onConfirm - Function to call on confirm.
- * @param props.onCancel  - Function to call on cancel.
- * @return Rendered component.
- */
-const DeleteConfirmationModal = ( {
-	onConfirm,
-	onCancel,
-}: DeleteConfirmationModalProps ): JSX.Element => (
-	<Modal
-		title={ __( 'Remove Site Logo', 'onedesign' ) }
-		onRequestClose={ onCancel }
-		isDismissible={ false }
-		className="onedesign-delete-confirmation-modal"
-	>
-		<p>
-			{ __(
-				'Are you sure you want to remove this logo? This action cannot be undone.',
-				'onedesign'
-			) }
-		</p>
-		<div
-			style={ {
-				display: 'flex',
-				justifyContent: 'flex-end',
-				marginTop: '20px',
-				gap: '16px',
-			} }
-		>
-			<Button variant="secondary" onClick={ onCancel }>
-				{ __( 'Cancel', 'onedesign' ) }
-			</Button>
-			<Button variant="primary" isDestructive onClick={ onConfirm }>
-				{ __( 'Remove', 'onedesign' ) }
-			</Button>
-		</div>
-	</Modal>
-);
 
 interface SiteModalProps {
 	formData: typeof defaultBrandSite;
@@ -141,7 +91,6 @@ const SiteModal = ( {
 	} );
 	const [ showNotice, setShowNotice ] = useState( false );
 	const [ isProcessing, setIsProcessing ] = useState( false );
-	const [ showDeleteConfirm, setShowDeleteConfirm ] = useState( false );
 	const logoControlId = useInstanceId( SiteModal, 'onedesign-site-logo' );
 
 	// A blank API key means the user hasn't typed one yet.
@@ -301,35 +250,6 @@ const SiteModal = ( {
 		mediaFrame.open();
 	};
 
-	const handleLogoRemove = ( e?: SyntheticEvent ) => {
-		e?.preventDefault();
-		e?.stopPropagation();
-		setShowDeleteConfirm( true );
-	};
-
-	const confirmLogoRemove = ( e?: SyntheticEvent ) => {
-		e?.preventDefault();
-		e?.stopPropagation();
-		setFormData( {
-			...formData,
-			logo: '',
-			logo_id: null,
-		} );
-		setShowDeleteConfirm( false );
-	};
-
-	const cancelLogoRemove = ( e?: SyntheticEvent ) => {
-		e?.preventDefault();
-		e?.stopPropagation();
-		setShowDeleteConfirm( false );
-	};
-
-	const handleMainModalClose = () => {
-		if ( ! showDeleteConfirm ) {
-			onClose();
-		}
-	};
-
 	const hasChanges = useMemo( () => {
 		if ( ! editing ) {
 			return true;
@@ -355,172 +275,134 @@ const SiteModal = ( {
 		( editing && ! hasChanges );
 
 	return (
-		<>
-			{ ! showDeleteConfirm && (
-				<Modal
-					title={
-						editing
-							? __( 'Edit Brand Site', 'onedesign' )
-							: __( 'Add Brand Site', 'onedesign' )
-					}
-					onRequestClose={ handleMainModalClose }
-					size="medium"
+		<Modal
+			title={
+				editing
+					? __( 'Edit Brand Site', 'onedesign' )
+					: __( 'Add Brand Site', 'onedesign' )
+			}
+			onRequestClose={ onClose }
+			size="medium"
+		>
+			{ showNotice && (
+				<Notice
+					status="error"
+					isDismissible
+					onRemove={ () => setShowNotice( false ) }
 				>
-					{ showNotice && (
-						<Notice
-							status="error"
-							isDismissible
-							onRemove={ () => setShowNotice( false ) }
-						>
-							{ errors.message ||
-								errors.name ||
-								errors.url ||
-								errors.api_key }
-						</Notice>
-					) }
+					{ errors.message ||
+						errors.name ||
+						errors.url ||
+						errors.api_key }
+				</Notice>
+			) }
 
-					<TextControl
-						label={ __( 'Site Name*', 'onedesign' ) }
-						value={ formData.name ?? '' }
-						onChange={ ( value ) =>
-							setFormData( { ...formData, name: value } )
-						}
-						help={ __(
-							'This is the name of the site that will be registered.',
-							'onedesign'
-						) }
-						__next40pxDefaultSize
-						__nextHasNoMarginBottom
+			<TextControl
+				label={ __( 'Site Name*', 'onedesign' ) }
+				value={ formData.name ?? '' }
+				onChange={ ( value ) =>
+					setFormData( { ...formData, name: value } )
+				}
+				help={ __(
+					'This is the name of the site that will be registered.',
+					'onedesign'
+				) }
+				__next40pxDefaultSize
+				__nextHasNoMarginBottom
+			/>
+			<TextControl
+				label={ __( 'Site URL*', 'onedesign' ) }
+				value={ formData.url ?? '' }
+				onChange={ ( value ) =>
+					setFormData( { ...formData, url: value } )
+				}
+				help={ __(
+					'Starts with http:// or https://, like https://rtcamp.com.',
+					'onedesign'
+				) }
+				__next40pxDefaultSize
+				__nextHasNoMarginBottom
+			/>
+			<BaseControl
+				id={ logoControlId }
+				label={ __( 'Site Logo', 'onedesign' ) }
+				help={ __(
+					"Shown in the brand site list and on this site's card in the pattern and template libraries. Without a logo, the site's initials are shown instead.",
+					'onedesign'
+				) }
+				__nextHasNoMarginBottom
+			>
+				{ formData.logo && (
+					<img
+						src={ formData.logo }
+						alt={ __( 'Site Logo', 'onedesign' ) }
+						style={ {
+							display: 'block',
+							maxWidth: '150px',
+							maxHeight: '100px',
+							margin: '8px 0',
+						} }
 					/>
-					<TextControl
-						label={ __( 'Site URL*', 'onedesign' ) }
-						value={ formData.url ?? '' }
-						onChange={ ( value ) =>
-							setFormData( { ...formData, url: value } )
-						}
-						help={ __(
-							'Starts with http:// or https://, like https://rtcamp.com.',
-							'onedesign'
-						) }
-						__next40pxDefaultSize
-						__nextHasNoMarginBottom
-					/>
-
-					{ /* Logo Media Selection */ }
-					<BaseControl
-						id={ logoControlId }
-						label={ __( 'Site Logo', 'onedesign' ) }
-						help={ __(
-							'Select a logo for this brand site.',
-							'onedesign'
-						) }
-						__nextHasNoMarginBottom
-					>
-						<div style={ { marginTop: '8px' } }>
-							{ formData.logo && (
-								<div
-									style={ {
-										marginBottom: '12px',
-										padding: '12px',
-										border: '1px solid #ddd',
-										borderRadius: '4px',
-										backgroundColor: '#f9f9f9',
-									} }
-								>
-									<img
-										src={ formData.logo }
-										alt={ __( 'Site Logo', 'onedesign' ) }
-										style={ {
-											maxWidth: '150px',
-											maxHeight: '100px',
-											display: 'block',
-											marginBottom: '8px',
-										} }
-									/>
-									<div
-										style={ {
-											display: 'flex',
-											gap: '8px',
-										} }
-									>
-										<Button
-											variant="secondary"
-											onClick={ handleLogoSelect }
-											size="small"
-										>
-											{ __(
-												'Replace Logo',
-												'onedesign'
-											) }
-										</Button>
-										<Button
-											variant="secondary"
-											onClick={ handleLogoRemove }
-											size="small"
-											isDestructive
-										>
-											{ __( 'Remove Logo', 'onedesign' ) }
-										</Button>
-									</div>
-								</div>
-							) }
-
-							{ ! formData.logo && (
-								<Button
-									variant="secondary"
-									onClick={ handleLogoSelect }
-								>
-									{ __( 'Select Logo', 'onedesign' ) }
-								</Button>
-							) }
-						</div>
-					</BaseControl>
-
-					<TextareaControl
-						label={
-							needsApiKey
-								? __( 'API Key*', 'onedesign' )
-								: __( 'API Key', 'onedesign' )
-						}
-						value={ formData.api_key ?? '' }
-						onChange={ ( value ) =>
-							setFormData( { ...formData, api_key: value } )
-						}
-						help={
-							needsApiKey
-								? __(
-										'This is the API key that will be used to authenticate the site for OneDesign.',
-										'onedesign'
-									)
-								: __(
-										'Leave blank to keep the current key.',
-										'onedesign'
-									)
-						}
-						__nextHasNoMarginBottom
-					/>
-
-					<Button
-						variant="primary"
-						onClick={ handleSubmit }
-						className={ isProcessing ? 'is-busy' : '' }
-						disabled={ isButtonDisabled }
-						style={ { marginTop: '12px' } }
-					>
-						{ editing
-							? __( 'Update Site', 'onedesign' )
-							: __( 'Add Site', 'onedesign' ) }
+				) }
+				<div style={ { display: 'flex', gap: '8px' } }>
+					<Button variant="secondary" onClick={ handleLogoSelect }>
+						{ formData.logo
+							? __( 'Replace Logo', 'onedesign' )
+							: __( 'Select Logo', 'onedesign' ) }
 					</Button>
-				</Modal>
-			) }
+					{ formData.logo && (
+						<Button
+							variant="secondary"
+							isDestructive
+							onClick={ () =>
+								setFormData( {
+									...formData,
+									logo: '',
+									logo_id: null,
+								} )
+							}
+						>
+							{ __( 'Remove Logo', 'onedesign' ) }
+						</Button>
+					) }
+				</div>
+			</BaseControl>
+			<TextareaControl
+				label={
+					needsApiKey
+						? __( 'API Key*', 'onedesign' )
+						: __( 'API Key', 'onedesign' )
+				}
+				value={ formData.api_key ?? '' }
+				onChange={ ( value ) =>
+					setFormData( { ...formData, api_key: value } )
+				}
+				help={
+					needsApiKey
+						? __(
+								'This is the API key that will be used to authenticate the site for OneDesign.',
+								'onedesign'
+							)
+						: __(
+								'Leave blank to keep the current key.',
+								'onedesign'
+							)
+				}
+				__nextHasNoMarginBottom
+			/>
 
-			{ showDeleteConfirm && (
-				<DeleteConfirmationModal
-					onConfirm={ confirmLogoRemove }
-					onCancel={ cancelLogoRemove }
-				/>
-			) }
-		</>
+			<Button
+				variant="primary"
+				onClick={ handleSubmit }
+				className={ isProcessing ? 'is-busy' : '' }
+				disabled={ isButtonDisabled }
+				style={ { marginTop: '12px' } }
+			>
+				{ editing
+					? __( 'Update Site', 'onedesign' )
+					: __( 'Add Site', 'onedesign' ) }
+			</Button>
+		</Modal>
 	);
 };
 
