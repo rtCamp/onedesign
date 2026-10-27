@@ -146,7 +146,10 @@ const SiteModal = ( {
 
 	// A blank API key means the user hasn't typed one yet.
 	const typedApiKey = ( formData.api_key ?? '' ).trim();
-	const needsApiKey = ! editing || formData.url !== originalData?.url;
+	const needsApiKey =
+		! editing ||
+		withTrailingSlash( formData.url.trim() ) !==
+			withTrailingSlash( originalData?.url ?? '' );
 
 	const handleSubmit = async (): Promise< void > => {
 		// Validate inputs
