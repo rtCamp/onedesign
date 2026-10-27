@@ -14,6 +14,9 @@ vi.hoisted( () => {
 			name: 'Network Brand',
 			url: 'https://example.com/network-brand/',
 			siteType: '',
+			canAddAsBrandSite: true,
+			manageUrl:
+				'https://example.com/network-brand/wp-admin/admin.php?page=onedesign-settings',
 		},
 	];
 	window.OneDesignSettings.currentSiteId = '1';

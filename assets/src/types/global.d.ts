@@ -19,6 +19,8 @@ export interface OneDesignMultisite {
 	name: string;
 	url: string;
 	siteType: SiteType;
+	canAddAsBrandSite: boolean;
+	manageUrl: string;
 }
 
 export interface OneDesignSettings {

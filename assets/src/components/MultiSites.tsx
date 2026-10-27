@@ -1,5 +1,6 @@
 import { Button, Modal, CheckboxControl, Notice } from '@wordpress/components';
 import { __, _n, sprintf } from '@wordpress/i18n';
+import type { ReactNode } from 'react';
 import { useState } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
 import type { BrandSite, NoticeType } from '@/admin/settings/page';
@@ -10,6 +11,9 @@ interface MultiSitesProps {
 	sites: OneDesignMultisite[];
 	onAdd: ( sharedSites: BrandSite[], addedIds: string[] ) => void;
 	setNotice: ( notice: NoticeType ) => void;
+	label?: string;
+	disabled?: boolean;
+	children?: ReactNode;
 }
 
 /**
@@ -20,6 +24,9 @@ interface MultiSitesProps {
  * @param props.sites           - The network sites that can be added.
  * @param props.onAdd           - Gets the governing site's brand sites and the ids of the added sites.
  * @param props.setNotice       - Function to set notice messages.
+ * @param props.label           - The label of the button that opens the picker.
+ * @param props.disabled        - Whether the button that opens the picker is disabled.
+ * @param props.children        - Shown in the picker above the sites.
  *
  * @return Rendered component.
  */
@@ -28,6 +35,9 @@ const MultiSites = ( {
 	sites,
 	onAdd,
 	setNotice,
+	label = __( 'Add Brand Sites From This Network', 'onedesign' ),
+	disabled = false,
+	children,
 }: MultiSitesProps ): JSX.Element => {
 	const [ isOpen, setIsOpen ] = useState( false );
 	const [ selectedSites, setSelectedSites ] = useState< string[] >( [] );
@@ -97,8 +107,12 @@ const MultiSites = ( {
 
 	return (
 		<>
-			<Button variant="secondary" onClick={ openModal }>
-				{ __( 'Add Brand Sites From This Network', 'onedesign' ) }
+			<Button
+				variant="secondary"
+				onClick={ openModal }
+				disabled={ disabled }
+			>
+				{ label }
 			</Button>
 
 			{ isOpen && (
@@ -113,10 +127,15 @@ const MultiSites = ( {
 					size="medium"
 				>
 					{ error && (
-						<Notice status="error" isDismissible={ false }>
+						<Notice
+							status="error"
+							isDismissible={ false }
+							className="onedesign-form-error"
+						>
 							{ error }
 						</Notice>
 					) }
+					{ children }
 					<div
 						style={ {
 							maxHeight: '400px',
@@ -156,7 +175,9 @@ const MultiSites = ( {
 							variant="primary"
 							onClick={ handleMultiSiteAdd }
 							disabled={
-								selectedSites.length === 0 || isApplying
+								! governingSiteId ||
+								selectedSites.length === 0 ||
+								isApplying
 							}
 							isBusy={ isApplying }
 						>

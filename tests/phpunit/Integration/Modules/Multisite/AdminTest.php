@@ -70,7 +70,7 @@ final class AdminTest extends TestCase {
 	}
 
 	/**
-	 * The screen lists every governing site and every site that can be added as a brand site, the current one included.
+	 * The screen lists every site on the network, with whether it can be added as a brand site and where to manage it.
 	 */
 	public function test_the_network_screen_lists_the_network_sites(): void {
 		update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_GOVERNING );
@@ -96,19 +96,31 @@ final class AdminTest extends TestCase {
 		$this->assertSame(
 			[
 				[
-					'id'       => (string) get_current_blog_id(),
-					'siteType' => Settings::SITE_TYPE_GOVERNING,
+					'id'                => (string) get_current_blog_id(),
+					'siteType'          => Settings::SITE_TYPE_GOVERNING,
+					'canAddAsBrandSite' => false,
+					'manageUrl'         => get_admin_url( get_current_blog_id(), 'admin.php?page=onedesign-settings' ),
 				],
 				[
-					'id'       => (string) $new_site_id,
-					'siteType' => '',
+					'id'                => (string) $new_site_id,
+					'siteType'          => '',
+					'canAddAsBrandSite' => true,
+					'manageUrl'         => get_admin_url( $new_site_id, 'admin.php?page=onedesign-settings' ),
 				],
 				[
-					'id'       => (string) $unconnected_brand_id,
-					'siteType' => Settings::SITE_TYPE_CONSUMER,
+					'id'                => (string) $unconnected_brand_id,
+					'siteType'          => Settings::SITE_TYPE_CONSUMER,
+					'canAddAsBrandSite' => true,
+					'manageUrl'         => get_admin_url( $unconnected_brand_id, 'admin.php?page=onedesign-settings' ),
+				],
+				[
+					'id'                => (string) $connected_brand_id,
+					'siteType'          => Settings::SITE_TYPE_CONSUMER,
+					'canAddAsBrandSite' => false,
+					'manageUrl'         => get_admin_url( $connected_brand_id, 'admin.php?page=onedesign-settings' ),
 				],
 			],
-			array_map( static fn ( array $site ): array => array_intersect_key( $site, array_flip( [ 'id', 'siteType' ] ) ), $multisites )
+			array_map( static fn ( array $site ): array => array_intersect_key( $site, array_flip( [ 'id', 'siteType', 'canAddAsBrandSite', 'manageUrl' ] ) ), $multisites )
 		);
 		$this->assertSame( 'Sales & Marketing', $multisites[1]['name'] );
 		$this->assertSame( trailingslashit( get_blog_option( $new_site_id, 'home' ) ), $multisites[1]['url'] );

@@ -54,7 +54,7 @@ Code contributions, bug reports, and feature requests are welcome! The following
 ├── assets
 │   └── src            # TypeScript (.ts/.tsx) sources.
 │       ├── admin
-│       │   ├── network-settings # Network Admin > Settings > OneDesign, which makes governing sites and adds the network's sites to them.
+│       │   ├── network-settings # Network Admin > Settings > OneDesign, which lists the network's sites, makes them governing sites and adds brand sites to them.
 │       │   │   ├── index.tsx
 │       │   │   └── page.tsx
 │       │   ├── patterns # The Pattern Library, which shares patterns with brand sites.
