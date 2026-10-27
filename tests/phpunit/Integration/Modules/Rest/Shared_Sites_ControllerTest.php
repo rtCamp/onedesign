@@ -56,6 +56,30 @@ class Shared_Sites_ControllerTest extends TestCase {
 	}
 
 	/**
+	 * Lists the brand sites without their keys.
+	 */
+	public function test_get_shared_sites_leaves_out_the_keys(): void {
+		Settings::set_shared_sites(
+			[
+				[
+					'id'      => 'abc-1',
+					'name'    => 'A',
+					'url'     => 'https://a.example.com',
+					'api_key' => 'secret',
+				],
+			]
+		);
+
+		$response = $this->server->dispatch( new WP_REST_Request( 'GET', '/onedesign/v1/shared-sites' ) );
+		$sites    = $response->get_data()['shared_sites'];
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertCount( 1, $sites );
+		$this->assertSame( 'https://a.example.com/', $sites[0]['url'] );
+		$this->assertArrayNotHasKey( 'api_key', $sites[0] );
+	}
+
+	/**
 	 * Returns 400 when duplicate site URLs exist, before any brand site is checked.
 	 */
 	public function test_set_shared_sites_rejects_duplicate_urls(): void {
@@ -94,6 +118,40 @@ class Shared_Sites_ControllerTest extends TestCase {
 		$this->assertSame( 400, $response->get_status() );
 		$this->assertSame( 'duplicate_site_url', $response->get_data()['code'] );
 		$this->assertSame( [], $requested_urls );
+	}
+
+	/**
+	 * URLs that differ only by a trailing slash are the same site, so they're rejected and nothing is saved or checked.
+	 */
+	public function test_set_shared_sites_rejects_urls_that_differ_by_a_trailing_slash(): void {
+		$requested_urls = [];
+		$filter         = static function ( $preempt, $args, $url ) use ( &$requested_urls ) { // phpcs:ignore SlevomatCodingStandard.Functions.UnusedParameter.UnusedParameter
+			$requested_urls[] = $url;
+			return new \WP_Error( 'blocked', 'Intercepted' );
+		};
+		add_filter( 'pre_http_request', $filter, 10, 3 );
+
+		$response = $this->set_shared_sites(
+			[
+				[
+					'url'     => 'https://dup.example.com',
+					'name'    => 'Dup 1',
+					'api_key' => 'k1',
+				],
+				[
+					'url'     => 'https://dup.example.com/',
+					'name'    => 'Dup 2',
+					'api_key' => 'k2',
+				],
+			]
+		);
+
+		remove_filter( 'pre_http_request', $filter );
+
+		$this->assertSame( 400, $response->get_status() );
+		$this->assertSame( 'duplicate_site_url', $response->get_data()['code'] );
+		$this->assertSame( [], $requested_urls );
+		$this->assertSame( [], Settings::get_shared_sites() );
 	}
 
 	/**

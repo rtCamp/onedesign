@@ -150,6 +150,32 @@ describe( 'SiteModal', () => {
 		expect( screen.getByText( 'API Key*' ) ).toBeInTheDocument();
 	} );
 
+	it( "doesn't need the key again when an edit only adds or drops the trailing slash", () => {
+		const stored = {
+			...baseFormData,
+			id: 'one',
+			url: 'https://brand.example.com/',
+			api_key: '',
+		};
+
+		render(
+			<SiteModalHarness
+				editing
+				initialData={ {
+					...stored,
+					url: 'https://brand.example.com',
+				} }
+				originalData={ stored }
+				sites={ [ stored ] }
+			/>
+		);
+
+		expect(
+			screen.getByRole( 'button', { name: 'Update Site' } )
+		).toBeEnabled();
+		expect( screen.queryByText( 'API Key*' ) ).not.toBeInTheDocument();
+	} );
+
 	it( 'shows the server message when saving fails', async () => {
 		const onSubmit = vi.fn().mockResolvedValue( 'Invalid site data.' );
 
