@@ -38,6 +38,12 @@
 	}
 }
 
-#onedesign-settings-page .wp-list-table td {
+#onedesign-settings-page .wp-list-table td,
+#onedesign-network-settings .wp-list-table td {
 	vertical-align: middle;
+}
+
+// Modals render outside the page's root.
+.onedesign-form-error {
+	margin-bottom: 16px;
 }

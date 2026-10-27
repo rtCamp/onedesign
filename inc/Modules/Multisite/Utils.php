@@ -9,6 +9,7 @@ declare(strict_types = 1);
 
 namespace OneDesign\Modules\Multisite;
 
+use OneDesign\Modules\Settings\Admin as Settings_Admin;
 use OneDesign\Modules\Settings\Settings as AdminSettings;
 use OneDesign\Utils as Plugin_Utils;
 
@@ -24,13 +25,15 @@ final class Utils {
 	}
 
 	/**
-	 * Get information of the network's governing sites and of the sites that can be added to one as brand sites.
+	 * Get information of the network's sites.
 	 *
 	 * @return array{
 	 *   id: string,
 	 *   name: string,
 	 *   url: string,
-	 *   siteType: string
+	 *   siteType: string,
+	 *   canAddAsBrandSite: bool,
+	 *   manageUrl: string
 	 * }[]
 	 */
 	public static function get_all_multisites_info(): array {
@@ -45,14 +48,14 @@ final class Utils {
 		foreach ( $sites as $site_id ) {
 			switch_to_blog( (int) $site_id ); // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.switch_to_blog_switch_to_blog -- Only site options are read while switched.
 
-			if ( AdminSettings::is_governing_site() || self::can_add_as_brand_site() ) {
-				$sites_info[] = [
-					'id'       => (string) $site_id,
-					'name'     => wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ),
-					'url'      => Plugin_Utils::get_current_site_url(),
-					'siteType' => (string) AdminSettings::get_site_type(),
-				];
-			}
+			$sites_info[] = [
+				'id'                => (string) $site_id,
+				'name'              => wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ),
+				'url'               => Plugin_Utils::get_current_site_url(),
+				'siteType'          => (string) AdminSettings::get_site_type(),
+				'canAddAsBrandSite' => self::can_add_as_brand_site(),
+				'manageUrl'         => admin_url( 'admin.php?page=' . Settings_Admin::SCREEN_ID ),
+			];
 
 			restore_current_blog();
 		}

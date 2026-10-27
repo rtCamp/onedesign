@@ -3,6 +3,7 @@ import {
 	Card,
 	CardBody,
 	CardHeader,
+	Modal,
 	Notice,
 	SelectControl,
 } from '@wordpress/components';
@@ -11,10 +12,10 @@ import { useState } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
 import MultiSites from '@/components/MultiSites';
 import type { NoticeType } from '@/admin/settings/page';
-import type { OneDesignMultisite } from '@/types/global';
+import type { OneDesignMultisite, SiteType } from '@/types/global';
 
 /**
- * Network Admin > Settings > OneDesign, where network admins make the network's sites governing sites and add brand sites to them.
+ * Network Admin > Settings > OneDesign, where network admins see the network's sites, make them governing sites and add brand sites to them.
  *
  * @return Rendered component.
  */
@@ -25,18 +26,35 @@ const NetworkSettingsPage = (): JSX.Element => {
 	const [ newGoverningSite, setNewGoverningSite ] = useState( '' );
 	const [ governingSite, setGoverningSite ] = useState( '' );
 	const [ isApplying, setIsApplying ] = useState( false );
+	const [ governingSiteError, setGoverningSiteError ] = useState<
+		string | null
+	>( null );
+	const [ isGoverningSiteModalOpen, setIsGoverningSiteModalOpen ] =
+		useState( false );
 	const [ notice, setNotice ] = useState< NoticeType | null >( null );
 
 	const governingSites = sites.filter(
 		( site ) => site.siteType === 'governing-site'
 	);
 	const typelessSites = sites.filter( ( site ) => ! site.siteType );
-	const availableSites = sites.filter(
-		( site ) => site.siteType !== 'governing-site'
-	);
+	const hasSiteWithType = typelessSites.length < sites.length;
+	const availableSites = sites.filter( ( site ) => site.canAddAsBrandSite );
+
+	const siteTypeLabels: Record< SiteType, string > = {
+		'governing-site': __( 'Governing Site', 'onedesign' ),
+		'brand-site': __( 'Brand Site', 'onedesign' ),
+		'': __( 'Not set', 'onedesign' ),
+	};
+
+	const closeGoverningSiteModal = () => {
+		setIsGoverningSiteModalOpen( false );
+		setNewGoverningSite( '' );
+		setGoverningSiteError( null );
+	};
 
 	const handleMakeGoverning = async () => {
 		setIsApplying( true );
+		setGoverningSiteError( null );
 		setNotice( null );
 		try {
 			await apiFetch( {
@@ -52,13 +70,17 @@ const NetworkSettingsPage = (): JSX.Element => {
 			setSites( ( current ) =>
 				current.map( ( site ) =>
 					site.id === newGoverningSite
-						? { ...site, siteType: 'governing-site' }
+						? {
+								...site,
+								siteType: 'governing-site',
+								canAddAsBrandSite: false,
+							}
 						: site
 				)
 			);
 			// Picked so brand sites can be added to it right away.
 			setGoverningSite( newGoverningSite );
-			setNewGoverningSite( '' );
+			closeGoverningSiteModal();
 			setNotice( {
 				type: 'success',
 				message: sprintf(
@@ -68,19 +90,61 @@ const NetworkSettingsPage = (): JSX.Element => {
 				),
 			} );
 		} catch ( error ) {
-			setNotice( {
-				type: 'error',
-				message:
-					( error as { message?: string } )?.message ||
+			setGoverningSiteError(
+				( error as { message?: string } )?.message ||
 					__(
 						"Couldn't make the site a governing site. Try again.",
 						'onedesign'
-					),
-			} );
+					)
+			);
 		} finally {
 			setIsApplying( false );
 		}
 	};
+
+	const governingSiteForm = (
+		<>
+			{ governingSiteError && (
+				<Notice
+					status="error"
+					isDismissible={ false }
+					className="onedesign-form-error"
+				>
+					{ governingSiteError }
+				</Notice>
+			) }
+			<SelectControl
+				__next40pxDefaultSize
+				__nextHasNoMarginBottom
+				label={ __( 'Site', 'onedesign' ) }
+				value={ newGoverningSite }
+				help={ __(
+					"A governing site shares its patterns and templates with its brand sites. A site's type can't be changed once it's set.",
+					'onedesign'
+				) }
+				onChange={ setNewGoverningSite }
+				options={ [
+					{
+						label: __( 'Select…', 'onedesign' ),
+						value: '',
+					},
+					...typelessSites.map( ( site ) => ( {
+						label: site.name,
+						value: site.id,
+					} ) ),
+				] }
+			/>
+			<Button
+				variant="primary"
+				onClick={ handleMakeGoverning }
+				disabled={ ! newGoverningSite || isApplying }
+				isBusy={ isApplying }
+				style={ { marginTop: '16px' } }
+			>
+				{ __( 'Make Governing Site', 'onedesign' ) }
+			</Button>
+		</>
+	);
 
 	return (
 		<>
@@ -93,106 +157,122 @@ const NetworkSettingsPage = (): JSX.Element => {
 				</Notice>
 			) }
 
-			{ availableSites.length === 0 && (
-				<p>
-					{ __(
-						'Every site on this network is already set up.',
-						'onedesign'
-					) }
-				</p>
-			) }
-
-			{ governingSites.length > 0 && availableSites.length > 0 && (
-				<Card style={ { marginTop: '16px' } }>
-					<CardHeader>
-						<h2>{ __( 'Add Brand Sites', 'onedesign' ) }</h2>
-					</CardHeader>
-					<CardBody>
-						<SelectControl
-							__next40pxDefaultSize
-							__nextHasNoMarginBottom
-							label={ __( 'Governing Site', 'onedesign' ) }
-							value={ governingSite }
-							onChange={ setGoverningSite }
-							options={ [
-								{
-									label: __( 'Select…', 'onedesign' ),
-									value: '',
-								},
-								...governingSites.map( ( site ) => ( {
-									label: site.name,
-									value: site.id,
-								} ) ),
-							] }
-						/>
-
-						{ governingSite && (
-							<div style={ { marginTop: '16px' } }>
-								<MultiSites
-									governingSiteId={ governingSite }
-									sites={ availableSites }
-									onAdd={ ( _sharedSites, addedIds ) => {
-										// Brand sites with a governing site can't be added again.
-										setSites( ( current ) =>
-											current.filter(
-												( site ) =>
-													! addedIds.includes(
-														site.id
-													)
-											)
-										);
-										setNewGoverningSite( ( current ) =>
-											addedIds.includes( current )
-												? ''
-												: current
-										);
-									} }
-									setNotice={ setNotice }
-								/>
-							</div>
-						) }
-					</CardBody>
-				</Card>
-			) }
-
-			{ typelessSites.length > 0 && (
+			{ ! hasSiteWithType && (
 				<Card style={ { marginTop: '16px' } }>
 					<CardHeader>
 						<h2>{ __( 'Add a Governing Site', 'onedesign' ) }</h2>
 					</CardHeader>
+					<CardBody>{ governingSiteForm }</CardBody>
+				</Card>
+			) }
+
+			{ hasSiteWithType && (
+				<Card style={ { marginTop: '16px' } }>
+					<CardHeader>
+						<h2>{ __( 'Sites', 'onedesign' ) }</h2>
+						<div style={ { display: 'flex', gap: '16px' } }>
+							<Button
+								variant="secondary"
+								onClick={ () =>
+									setIsGoverningSiteModalOpen( true )
+								}
+								disabled={ typelessSites.length === 0 }
+							>
+								{ __( 'Add a Governing Site', 'onedesign' ) }
+							</Button>
+							<MultiSites
+								label={ __( 'Add Brand Sites', 'onedesign' ) }
+								disabled={
+									governingSites.length === 0 ||
+									availableSites.length === 0
+								}
+								governingSiteId={ governingSite }
+								sites={ availableSites }
+								onAdd={ ( _sharedSites, addedIds ) =>
+									setSites( ( current ) =>
+										current.map( ( site ) =>
+											addedIds.includes( site.id )
+												? {
+														...site,
+														siteType: 'brand-site',
+														canAddAsBrandSite: false,
+													}
+												: site
+										)
+									)
+								}
+								setNotice={ setNotice }
+							>
+								<SelectControl
+									__next40pxDefaultSize
+									__nextHasNoMarginBottom
+									label={ __(
+										'Governing Site',
+										'onedesign'
+									) }
+									value={ governingSite }
+									onChange={ setGoverningSite }
+									options={ [
+										{
+											label: __( 'Select…', 'onedesign' ),
+											value: '',
+										},
+										...governingSites.map( ( site ) => ( {
+											label: site.name,
+											value: site.id,
+										} ) ),
+									] }
+								/>
+							</MultiSites>
+						</div>
+					</CardHeader>
 					<CardBody>
-						<SelectControl
-							__next40pxDefaultSize
-							__nextHasNoMarginBottom
-							label={ __( 'Site', 'onedesign' ) }
-							value={ newGoverningSite }
-							help={ __(
-								"A governing site shares its patterns and templates with its brand sites. A site's type can't be changed once it's set.",
-								'onedesign'
-							) }
-							onChange={ setNewGoverningSite }
-							options={ [
-								{
-									label: __( 'Select…', 'onedesign' ),
-									value: '',
-								},
-								...typelessSites.map( ( site ) => ( {
-									label: site.name,
-									value: site.id,
-								} ) ),
-							] }
-						/>
-						<Button
-							variant="primary"
-							onClick={ handleMakeGoverning }
-							disabled={ ! newGoverningSite || isApplying }
-							isBusy={ isApplying }
-							style={ { marginTop: '16px' } }
-						>
-							{ __( 'Make Governing Site', 'onedesign' ) }
-						</Button>
+						<table className="wp-list-table widefat fixed striped">
+							<thead>
+								<tr>
+									<th>{ __( 'Site Name', 'onedesign' ) }</th>
+									<th>{ __( 'Site URL', 'onedesign' ) }</th>
+									<th>{ __( 'Site Type', 'onedesign' ) }</th>
+									<th>{ __( 'Actions', 'onedesign' ) }</th>
+								</tr>
+							</thead>
+							<tbody>
+								{ sites.map( ( site ) => (
+									<tr key={ site.id }>
+										<td>{ site.name }</td>
+										<td>{ site.url }</td>
+										<td>
+											{ siteTypeLabels[ site.siteType ] }
+										</td>
+										<td>
+											<Button
+												variant="secondary"
+												href={ site.manageUrl }
+											>
+												{ __(
+													'Manage Site',
+													'onedesign'
+												) }
+											</Button>
+										</td>
+									</tr>
+								) ) }
+							</tbody>
+						</table>
 					</CardBody>
 				</Card>
+			) }
+
+			{ isGoverningSiteModalOpen && (
+				<Modal
+					title={ __( 'Add a Governing Site', 'onedesign' ) }
+					onRequestClose={ closeGoverningSiteModal }
+					shouldCloseOnClickOutside={ ! isApplying }
+					shouldCloseOnEsc={ ! isApplying }
+					size="medium"
+				>
+					{ governingSiteForm }
+				</Modal>
 			) }
 		</>
 	);

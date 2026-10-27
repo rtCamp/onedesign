@@ -121,7 +121,7 @@ final class Admin implements Registrable {
 			$localized_data['multisites']    = array_values(
 				array_filter(
 					MU_Utils::get_all_multisites_info(),
-					static fn ( array $site ): bool => Settings::SITE_TYPE_GOVERNING !== $site['siteType']
+					static fn ( array $site ): bool => $site['canAddAsBrandSite']
 				)
 			);
 			$localized_data['currentSiteId'] = (string) get_current_blog_id();
