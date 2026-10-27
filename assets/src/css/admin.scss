@@ -1,27 +1,11 @@
 /* stylelint-disable selector-class-pattern */
 
 #onedesign-settings-page {
-	&:has(.components-snackbar-list) {
-		.components-snackbar-list {
-			position: fixed;
-			bottom: 20px;
-			right: 20px;
-			z-index: 1000000;
-			align-items: flex-end;
-			justify-content: flex-end;
-			display: flex;
-			flex-direction: column;
-		}
-	}
-
-	&:not(:has(.components-snackbar-list)) {
-		.components-snackbar {
-			position: fixed;
-			bottom: 20px;
-			right: 20px;
-			z-index: 1000000;
-			width: auto;
-		}
+	.components-snackbar {
+		position: fixed;
+		bottom: 20px;
+		right: 20px;
+		z-index: 1000000;
 	}
 
 	.components-notice__content {
@@ -29,7 +13,7 @@
 	}
 
 	.onedesign-success-notice {
-		background-color: #16a32d;
+		background-color: #007017;
 		color: #fff;
 	}
 
