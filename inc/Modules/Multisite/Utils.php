@@ -122,4 +122,18 @@ final class Utils {
 
 		restore_current_blog();
 	}
+
+	/**
+	 * Whether a URL is the home URL of a site on this network.
+	 *
+	 * @param string $url The URL.
+	 */
+	public static function is_network_site_url( string $url ): bool {
+		$network_site_urls = array_map(
+			static fn ( \WP_Site $site ): string => Plugin_Utils::normalize_url( (string) $site->home ),
+			is_multisite() ? get_sites( [ 'number' => 0 ] ) : []
+		);
+
+		return in_array( Plugin_Utils::normalize_url( $url ), $network_site_urls, true );
+	}
 }
