@@ -48,8 +48,6 @@ function run_uninstaller(): void {
  * The (site-specific) uninstall function.
  */
 function uninstall(): void {
-	delete_posts();
-
 	delete_options();
 }
 
@@ -64,16 +62,6 @@ function delete_network_plugin_data(): void {
 
 	foreach ( $options as $option ) {
 		delete_site_option( $option );
-	}
-}
-
-/**
- * Delete posts from brand sites.
- */
-function delete_posts(): void {
-	$brand_site_post_ids = (array) get_option( PLUGIN_PREFIX . 'brand_site_post_ids', [] );
-	foreach ( $brand_site_post_ids as $post_id ) {
-		wp_delete_post( (int) $post_id, true );
 	}
 }
 
