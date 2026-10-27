@@ -371,7 +371,8 @@ final class Templates implements Registrable {
 		$post_ids = get_option( self::POST_IDS_OPTION_KEY, [] );
 		$error    = null;
 		foreach ( array_diff( $post_ids, $used_post_ids ) as $original_id => $post_id ) {
-			if ( ! wp_delete_post( $post_id, true ) ) {
+			// False means the post couldn't be deleted (vs null for not found).
+			if ( false === wp_delete_post( $post_id, true ) ) {
 				/* translators: 1: "Templates saved.", "Templates removed.", "Patterns saved." or "Patterns removed.", 2: template part or synced pattern title. */
 				$error = new \WP_Error( 'onedesign_post_not_deleted', sprintf( __( '%1$s The brand site couldn\'t delete "%2$s" along with them. Nothing else uses it, so you can delete that synced pattern or template part there yourself.', 'onedesign' ), $message, get_the_title( $post_id ) ), [ 'status' => 500 ] );
 				continue;
@@ -452,25 +453,59 @@ final class Templates implements Registrable {
 	}
 
 	/**
-	 * Gets a brand site's own copies of synced patterns, named for it, to send with what uses them.
+	 * Gets a brand site's references to the template parts, and patterns, named for it.
 	 *
-	 * @param array<int,\WP_Post> $posts     The synced patterns, keyed by id.
-	 * @param string              $site_name The brand site's name.
+	 * @param array  $references What get_references() returned.
+	 * @param string $site_name  The brand site's name.
+	 * @phpstan-param References $references
 	 *
-	 * @return array<int,array{original_id: int, slug: string, title: string, content: string}> Synced patterns that match SYNCED_PATTERN_SCHEMA.
+	 * @return array{
+	 *   patterns: array<string,
+	 *   array<string,mixed>>,
+	 *   template_parts: array<int,array<string,mixed>>,
+	 *   synced_patterns: array<int,array<string,mixed>>
+	 * } Patterns keyed by this site's name.
 	 */
-	public static function get_brand_synced_patterns( array $posts, string $site_name ): array {
+	public static function get_brand_references( array $references, string $site_name ): array {
+		$rename = static fn ( string $content ): string => self::rename_references( $content, $site_name, array_keys( $references['synced_patterns'] ) );
+
+		// Keyed by this site's name for each, so the brand site replaces its copy when either site is renamed.
+		$pattern_fields = array_flip( array_keys( Patterns::PATTERN_SCHEMA['properties'] ) );
+		$patterns       = [];
+		foreach ( Patterns::add_category_labels( $references['patterns'] ) as $name => $pattern ) {
+			$patterns[ $name ] = [
+				'name'    => self::get_brand_slug( $name, $site_name ),
+				'content' => $rename( (string) $pattern['content'] ),
+			] + array_intersect_key( $pattern, $pattern_fields );
+		}
+
+		$template_parts = [];
+		foreach ( $references['template_parts'] as $template_part ) {
+			$template_parts[] = [
+				'original_id' => $template_part->id,
+				'slug'        => self::get_brand_slug( $template_part->slug, $site_name ),
+				'title'       => $template_part->title,
+				'description' => $template_part->description,
+				'content'     => $rename( $template_part->content ),
+				'area'        => $template_part->area,
+			];
+		}
+
 		$synced_patterns = [];
-		foreach ( $posts as $post ) {
+		foreach ( $references['synced_patterns'] as $post ) {
 			$synced_patterns[] = [
 				'original_id' => $post->ID,
 				'slug'        => self::get_brand_slug( $post->post_name, $site_name ),
 				'title'       => $post->post_title,
-				'content'     => self::rename_references( $post->post_content, $site_name, array_keys( $posts ) ),
+				'content'     => $rename( $post->post_content ),
 			];
 		}
 
-		return $synced_patterns;
+		return [
+			'patterns'        => $patterns,
+			'template_parts'  => $template_parts,
+			'synced_patterns' => $synced_patterns,
+		];
 	}
 
 	/**

@@ -357,7 +357,6 @@ class Templates_Controller extends Abstract_REST_Controller {
 	 */
 	private static function share_with_brand_site( array $site, array $shared ): true|\WP_Error {
 		$synced_pattern_ids = array_keys( $shared['synced_patterns'] );
-		$rename             = static fn ( string $content ): string => Templates::rename_references( $content, $site['name'], $synced_pattern_ids );
 
 		$templates = [];
 		foreach ( $shared['templates'] as $template ) {
@@ -367,46 +366,14 @@ class Templates_Controller extends Abstract_REST_Controller {
 					'original_id' => $template->id,
 					'title'       => $template->title,
 					'description' => $template->description,
-					'content'     => $rename( $template->content ),
+					'content'     => Templates::rename_references( $template->content, $site['name'], $synced_pattern_ids ),
 					'post_types'  => $template->post_types,
 				],
 				static fn ( $value ): bool => null !== $value
 			);
 		}
 
-		// Keyed by this site's name for each, so the brand site replaces its copy when either site is renamed.
-		$pattern_fields = array_flip( array_keys( Patterns::PATTERN_SCHEMA['properties'] ) );
-		$patterns       = [];
-		foreach ( Patterns::add_category_labels( $shared['patterns'] ) as $name => $pattern ) {
-			$patterns[ $name ] = [
-				'name'    => Templates::get_brand_slug( $name, $site['name'] ),
-				'content' => $rename( (string) $pattern['content'] ),
-			] + array_intersect_key( $pattern, $pattern_fields );
-		}
-
-		$template_parts = [];
-		foreach ( $shared['template_parts'] as $template_part ) {
-			$template_parts[] = [
-				'original_id' => $template_part->id,
-				'slug'        => Templates::get_brand_slug( $template_part->slug, $site['name'] ),
-				'title'       => $template_part->title,
-				'description' => $template_part->description,
-				'content'     => $rename( $template_part->content ),
-				'area'        => $template_part->area,
-			];
-		}
-
-		$response = Remote_Client::request_brand_site(
-			$site,
-			'templates',
-			WP_REST_Server::CREATABLE,
-			[
-				'templates'       => $templates,
-				'patterns'        => $patterns,
-				'template_parts'  => $template_parts,
-				'synced_patterns' => Templates::get_brand_synced_patterns( $shared['synced_patterns'], $site['name'] ),
-			]
-		);
+		$response = Remote_Client::request_brand_site( $site, 'templates', WP_REST_Server::CREATABLE, [ 'templates' => $templates ] + Templates::get_brand_references( $shared, $site['name'] ) );
 
 		return is_wp_error( $response ) ? $response : true;
 	}

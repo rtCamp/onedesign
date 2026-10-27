@@ -76,14 +76,27 @@ class Patterns_Controller extends Abstract_REST_Controller {
 						'callback'            => [ $this, 'save_received_patterns' ],
 						'permission_callback' => [ $this, 'is_governing_request' ],
 						'args'                => [
-							'patterns'        => [
+							'patterns'          => [
 								'required'          => true,
 								'type'              => 'array',
 								'minItems'          => 1,
 								'items'             => Patterns::PATTERN_SCHEMA,
 								'validate_callback' => 'rest_validate_request_arg',
 							],
-							'synced_patterns' => [
+							// The patterns the synced patterns use, keyed by the governing site's name for each.
+							'template_patterns' => [
+								'type'                 => 'object',
+								'additionalProperties' => Patterns::PATTERN_SCHEMA,
+								'default'              => [],
+								'validate_callback'    => 'rest_validate_request_arg',
+							],
+							'template_parts'    => [
+								'type'              => 'array',
+								'items'             => Templates::TEMPLATE_PART_SCHEMA,
+								'default'           => [],
+								'validate_callback' => 'rest_validate_request_arg',
+							],
+							'synced_patterns'   => [
 								'type'              => 'array',
 								'items'             => Templates::SYNCED_PATTERN_SCHEMA,
 								'default'           => [],
@@ -159,15 +172,18 @@ class Patterns_Controller extends Abstract_REST_Controller {
 			return new \WP_Error( 'onedesign_patterns_not_found', __( 'None of these patterns exist on this site.', 'onedesign' ), [ 'status' => 400 ] );
 		}
 
-		$references         = Templates::get_references( ...array_column( $patterns, 'content' ) );
-		$synced_pattern_ids = array_keys( $references['synced_patterns'] );
-		$shared             = Remote_Client::request_brand_site(
+		$synced_patterns = Templates::get_references( ...array_column( $patterns, 'content' ) )['synced_patterns'];
+
+		$references = Templates::get_brand_references( [ 'synced_patterns' => $synced_patterns ] + Templates::get_references( ...array_column( $synced_patterns, 'post_content' ) ), $site['name'] );
+		$shared     = Remote_Client::request_brand_site(
 			$site,
 			'patterns',
 			WP_REST_Server::CREATABLE,
 			[
-				'patterns'        => array_map( static fn ( array $pattern ): array => [ 'content' => Templates::drop_unsent_refs( (string) $pattern['content'], $synced_pattern_ids ) ] + $pattern, $patterns ),
-				'synced_patterns' => Templates::get_brand_synced_patterns( $references['synced_patterns'], $site['name'] ),
+				'patterns'          => array_map( static fn ( array $pattern ): array => [ 'content' => Templates::drop_unsent_refs( (string) $pattern['content'], array_keys( $synced_patterns ) ) ] + $pattern, $patterns ),
+				'template_patterns' => $references['patterns'],
+				'template_parts'    => $references['template_parts'],
+				'synced_patterns'   => $references['synced_patterns'],
 			]
 		);
 		if ( is_wp_error( $shared ) ) {
@@ -218,11 +234,29 @@ class Patterns_Controller extends Abstract_REST_Controller {
 	 * Adds the patterns the governing site sent, with the synced patterns they use, or updates the ones this site has.
 	 *
 	 * @param \WP_REST_Request $request The request object.
-	 * @phpstan-param \WP_REST_Request<array{patterns: array<int,array<string,mixed>>, synced_patterns: array<int,array{original_id: int, slug: string, title?: string, content: string}>}> $request
+	 * @phpstan-param \WP_REST_Request<array{
+	 *   patterns: array<int,array<string,mixed>>,
+	 *   template_patterns: array<string,array<string,mixed>>,
+	 *   template_parts: array<int,array{
+	 *     original_id: string,
+	 *     slug: string,
+	 *     title?: string,
+	 *     description?: string,
+	 *     content: string,
+	 *     area?: string
+	 *   }>,
+	 *   synced_patterns: array<int,array{original_id: int, slug: string, title?: string, content: string}>
+	 * }> $request
 	 */
 	public function save_received_patterns( WP_REST_Request $request ): WP_REST_Response|\WP_Error {
 		// The patterns point at this site's copies of the synced patterns, so those are saved first.
-		$saved = Templates::add_received_synced_patterns( (array) $request['synced_patterns'] );
+		$synced_pattern_ids = Templates::add_received_synced_patterns( (array) $request['synced_patterns'] );
+		if ( is_wp_error( $synced_pattern_ids ) ) {
+			return $synced_pattern_ids;
+		}
+
+		// Saved as a template's are, so the synced patterns point at the names this site has them under.
+		$saved = Templates::add_received_templates( [], (array) $request['template_patterns'], (array) $request['template_parts'], $synced_pattern_ids );
 		if ( is_wp_error( $saved ) ) {
 			return $saved;
 		}

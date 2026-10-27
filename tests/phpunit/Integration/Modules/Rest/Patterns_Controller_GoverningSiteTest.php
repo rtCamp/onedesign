@@ -271,6 +271,53 @@ class Patterns_Controller_GoverningSiteTest extends TestCase {
 	}
 
 	/**
+	 * Sharing a pattern sends the template parts its synced patterns use, so the brand site's copy renders one of its own under the name the brand site gives it.
+	 */
+	public function test_share_patterns_sends_the_template_parts_its_synced_patterns_use(): void {
+		$this->connect_brand_one();
+		$part = self::factory()->post->create(
+			[
+				'post_type'    => 'wp_template_part',
+				'post_name'    => 'lab-header',
+				'post_title'   => 'Lab Header',
+				'post_content' => '<!-- wp:paragraph --><p>Header</p><!-- /wp:paragraph -->',
+			]
+		);
+		wp_set_object_terms( $part, get_stylesheet(), 'wp_theme' );
+		wp_set_object_terms( $part, 'header', 'wp_template_part_area' );
+		$nested = self::factory()->post->create(
+			[
+				'post_type'    => 'wp_block',
+				'post_title'   => 'Lab Ready',
+				'post_content' => '<!-- wp:template-part {"slug":"lab-header"} /-->',
+			]
+		);
+		$hero   = self::factory()->post->create(
+			[
+				'post_type'    => 'wp_block',
+				'post_title'   => 'Lab Hero',
+				'post_content' => '<!-- wp:block {"ref":' . $nested . '} /-->',
+			]
+		);
+
+		$response = $this->dispatch(
+			'POST',
+			'/patterns',
+			[
+				'site'  => 'brand-1',
+				'names' => [ 'user-pattern-' . $hero ],
+			]
+		);
+
+		$this->assertSame( 200, $response->get_status() );
+		$post_ids = get_option( Templates::POST_IDS_OPTION_KEY );
+		$copy     = get_post( $post_ids[ get_stylesheet() . '//lab-header' ] ?? 0 );
+		$this->assertInstanceOf( \WP_Post::class, $copy );
+		$this->assertNotSame( $part, $copy->ID );
+		$this->assertStringContainsString( '<!-- wp:template-part {"slug":"' . $copy->post_name . '"} /-->', get_post( $post_ids[ $nested ] )->post_content );
+	}
+
+	/**
 	 * Sharing a pattern again after a synced pattern it nests is unpublished drops that synced pattern from the brand site's copy, and the copy only it used.
 	 */
 	public function test_share_patterns_again_drops_a_synced_pattern_that_is_no_longer_published(): void {

@@ -189,6 +189,37 @@ class Templates_Controller_BrandSiteTest extends TestCase {
 	}
 
 	/**
+	 * Sharing a pattern that uses a synced pattern a template also uses leaves that synced pattern rendering the template part this site saved under another slug.
+	 */
+	public function test_sharing_a_pattern_leaves_a_synced_pattern_on_the_template_part_saved_under_another_slug(): void {
+		$this->create_own_header();
+		$header = $this->template_part( 'header', '<!-- wp:paragraph --><p>Governing header</p><!-- /wp:paragraph -->' );
+		$hero   = $this->synced_pattern( 12, 'hero', '<!-- wp:template-part {"slug":"gov-brand-header"} /-->' );
+		$this->send_templates( [ $this->template( 'landing', '<!-- wp:block {"ref":12} /-->' ) ], [ $header ], [], [ $hero ] );
+
+		$response = $this->send(
+			'POST',
+			'patterns',
+			[
+				'patterns'        => [
+					[
+						'name'    => 'user-pattern-7',
+						'title'   => 'Hero',
+						'content' => '<!-- wp:block {"ref":12} /-->',
+					],
+				],
+				'template_parts'  => [ $header ],
+				'synced_patterns' => [ $hero ],
+			]
+		);
+
+		$this->assertSame( 200, $response->get_status() );
+		$rendered = $this->render_template( 'gov-brand//landing' );
+		$this->assertStringContainsString( '>Governing header</p>', $rendered );
+		$this->assertStringNotContainsString( 'Our own header', $rendered );
+	}
+
+	/**
 	 * A template part sent later under the name an earlier one got here leaves the synced pattern and template part that nest the earlier one rendering it.
 	 */
 	public function test_a_template_part_sent_under_a_name_an_earlier_one_got_here_leaves_what_nests_that_one(): void {
@@ -688,6 +719,18 @@ class Templates_Controller_BrandSiteTest extends TestCase {
 
 		$this->assertNull( get_post( $post_ids[12] ) );
 		$this->assertInstanceOf( \WP_Post::class, get_post( $post_ids['theme//header'] ) );
+	}
+
+	/**
+	 * A copy this site's admin deleted is forgotten the next time templates are saved, instead of failing that save and every one after.
+	 */
+	public function test_a_copy_deleted_here_is_forgotten_when_templates_are_saved(): void {
+		$this->send_templates( [ $this->template( 'landing', '<!-- wp:block {"ref":12} /-->' ) ], [], [], [ $this->synced_pattern( 12, 'hero', '<!-- wp:paragraph --><p>Hero</p><!-- /wp:paragraph -->' ) ] );
+		wp_delete_post( get_option( Templates::POST_IDS_OPTION_KEY )[12], true );
+
+		$this->send_templates( [ $this->template( 'landing', '<!-- wp:paragraph --><p>Landing</p><!-- /wp:paragraph -->' ) ] );
+
+		$this->assertSame( [], get_option( Templates::POST_IDS_OPTION_KEY ) );
 	}
 
 	/**
