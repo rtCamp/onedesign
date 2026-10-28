@@ -392,6 +392,23 @@ class Templates_Controller_GoverningSiteTest extends TestCase {
 	}
 
 	/**
+	 * Re-syncing a brand site after this site switches themes updates its copy of a template with the new theme's template of that slug.
+	 */
+	public function test_resync_templates_after_a_theme_switch_updates_the_brand_site_copies(): void {
+		$this->connect_brand_one();
+		$this->apply( [ $this->template_id ], 'brand-1' );
+		switch_theme( 'twentytwentyfive' );
+		$this->add_template( 'lab-landing', '<!-- wp:paragraph --><p>Landing, new theme</p><!-- /wp:paragraph -->' );
+
+		$response = $this->dispatch( 'PUT', '/templates', [ 'site' => 'brand-1' ] );
+
+		$this->assertSame( 200, $response->get_status() );
+		$templates = get_option( Templates::TEMPLATES_OPTION_KEY );
+		$this->assertSame( [ $this->template_id ], array_keys( $templates ) );
+		$this->assertStringContainsString( 'Landing, new theme', $templates[ $this->template_id ]['content'] );
+	}
+
+	/**
 	 * Applying templates again after this site is renamed updates the brand site's copies, and the patterns they use, instead of adding more, and they keep the names they got first.
 	 */
 	public function test_apply_templates_again_after_a_rename_updates_the_brand_site_copies(): void {
