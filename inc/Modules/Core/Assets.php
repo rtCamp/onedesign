@@ -10,7 +10,6 @@ declare( strict_types = 1 );
 namespace OneDesign\Modules\Core;
 
 use OneDesign\Contracts\Interfaces\Registrable;
-use OneDesign\Modules\Post_Types\Pattern;
 use OneDesign\Modules\Post_Types\Template;
 use OneDesign\Modules\Settings\Settings;
 
@@ -33,7 +32,7 @@ final class Assets implements Registrable {
 	 * Asset handles
 	 */
 	public const ADMIN_STYLES_HANDLE            = self::PREFIX . 'admin';
-	public const EDITOR_STYLES_HANDLE           = self::PREFIX . 'editor';
+	public const LIBRARY_STYLES_HANDLE          = self::PREFIX . 'library';
 	public const MULTISITE_SETUP_SCRIPT_HANDLE  = self::PREFIX . 'multisite-setup';
 	public const PATTERN_LIBRARY_SCRIPT_HANDLE  = self::PREFIX . 'patterns-library';
 	public const SETTINGS_SCRIPT_HANDLE         = self::PREFIX . 'settings';
@@ -72,6 +71,8 @@ final class Assets implements Registrable {
 				'restNonce'    => wp_create_nonce( 'wp_rest' ),
 				'apiKey'       => Settings::get_api_key(),
 				'settingsLink' => esc_url( admin_url( 'admin.php?page=onedesign-settings' ) ),
+				'setupUrl'     => admin_url( 'admin.php?page=onedesign-settings' ),
+				'sharedSites'  => Settings::get_shared_sites_without_keys(),
 			];
 		}
 
@@ -108,10 +109,21 @@ final class Assets implements Registrable {
 
 		$this->register_script( self::MULTISITE_SETUP_SCRIPT_HANDLE, 'multisite-plugin' );
 
+		$this->register_script(
+			self::PATTERN_LIBRARY_SCRIPT_HANDLE,
+			'patterns-library',
+		);
+
 		$this->register_style(
 			self::ADMIN_STYLES_HANDLE,
 			'admin',
 			[ 'wp-components' ],
+		);
+
+		$this->register_style(
+			self::LIBRARY_STYLES_HANDLE,
+			'library',
+			[ 'wp-components', 'wp-block-editor' ],
 		);
 
 		wp_enqueue_style( self::ADMIN_STYLES_HANDLE );
@@ -123,24 +135,6 @@ final class Assets implements Registrable {
 	public function enqueue_scripts(): void {
 
 		$current_screen = get_current_screen();
-
-		if ( $current_screen instanceof \WP_Screen && Pattern::get_slug() === $current_screen->id ) {
-			$this->register_script(
-				self::PATTERN_LIBRARY_SCRIPT_HANDLE,
-				'patterns-library'
-			);
-
-			wp_localize_script(
-				self::PATTERN_LIBRARY_SCRIPT_HANDLE,
-				'patternSyncData',
-				self::get_localized_data(),
-			);
-
-			wp_enqueue_script( self::PATTERN_LIBRARY_SCRIPT_HANDLE );
-
-			$this->register_style( self::EDITOR_STYLES_HANDLE, 'editor' );
-			wp_enqueue_style( self::EDITOR_STYLES_HANDLE );
-		}
 
 		if ( ! $current_screen instanceof \WP_Screen || Template::get_slug() !== $current_screen->id ) {
 			return;

@@ -79,9 +79,8 @@ const scripts = {
 			process.cwd(),
 			'assets',
 			'src',
-			'admin',
-			'patterns',
-			'index.ts'
+			'admin/patterns',
+			'index.tsx'
 		),
 		settings: path.resolve(
 			process.cwd(),

@@ -21,7 +21,6 @@ interface OneDesignSettingsData {
 // key is also declared, differently, by the onboarding entry).
 const globalSettings = window as unknown as {
 	OneDesignSettings?: OneDesignSettingsData;
-	patternSyncData?: OneDesignSettingsData;
 	TemplateLibraryData?: OneDesignSettingsData;
 	OneDesignMultiSiteSettings?: OneDesignSettingsData;
 };
@@ -30,8 +29,6 @@ let settings: OneDesignSettingsData = {};
 
 if ( typeof globalSettings.OneDesignSettings !== 'undefined' ) {
 	settings = globalSettings.OneDesignSettings;
-} else if ( typeof globalSettings.patternSyncData !== 'undefined' ) {
-	settings = globalSettings.patternSyncData;
 } else if ( typeof globalSettings.TemplateLibraryData !== 'undefined' ) {
 	settings = globalSettings.TemplateLibraryData;
 } else if ( typeof globalSettings.OneDesignMultiSiteSettings !== 'undefined' ) {
