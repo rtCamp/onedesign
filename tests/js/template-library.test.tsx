@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import {
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+	within,
+} from '@testing-library/react';
 import apiFetch from '@wordpress/api-fetch';
 import TemplateLibrary from '@/admin/templates/page';
 import { findNotice, restError, routes, type Handler } from './library-routes';
@@ -112,6 +118,85 @@ describe( 'template library', () => {
 		expect(
 			screen.queryByRole( 'tab', { name: 'Current Site Templates' } )
 		).not.toBeInTheDocument();
+	} );
+
+	it( 'finds templates by title, and says when none match', async () => {
+		templateRoutes( {
+			'GET /onedesign/v1/templates': () => [ home, about ],
+		} );
+
+		render( <TemplateLibrary /> );
+		await screen.findByRole( 'checkbox', { name: 'Home' } );
+
+		const search = screen.getByPlaceholderText( 'Search templates…' );
+		fireEvent.change( search, { target: { value: 'abo' } } );
+		expect( screen.getAllByRole( 'checkbox' ) ).toEqual( [
+			screen.getByRole( 'checkbox', { name: 'About' } ),
+		] );
+
+		fireEvent.change( search, { target: { value: 'nothing like it' } } );
+		expect( screen.queryAllByRole( 'checkbox' ) ).toEqual( [] );
+		expect( screen.getByText( 'No templates found.' ) ).toBeInTheDocument();
+	} );
+
+	it( 'counts the selected templates, and applies only once one is picked', async () => {
+		templateRoutes( {
+			'GET /onedesign/v1/templates': () => [ home, about ],
+		} );
+
+		render( <TemplateLibrary /> );
+		const homeCard = await screen.findByRole( 'checkbox', {
+			name: 'Home',
+		} );
+		const apply = screen.getByRole( 'button', { name: 'Apply to Sites' } );
+		expect( apply ).toBeDisabled();
+
+		fireEvent.click( homeCard );
+		expect( screen.getByText( '1 template selected' ) ).toBeInTheDocument();
+		await waitFor( () => expect( apply ).toBeEnabled() );
+
+		fireEvent.click( screen.getByRole( 'checkbox', { name: 'About' } ) );
+		expect(
+			screen.getByText( '2 templates selected' )
+		).toBeInTheDocument();
+
+		fireEvent.click( homeCard );
+		fireEvent.click( screen.getByRole( 'checkbox', { name: 'About' } ) );
+		expect( screen.queryByText( /selected$/ ) ).not.toBeInTheDocument();
+		expect( apply ).toBeDisabled();
+	} );
+
+	it( 'leaves the brand site as it was when the admin cancels removing', async () => {
+		templateRoutes();
+
+		render( <TemplateLibrary /> );
+		fireEvent.click(
+			await screen.findByRole( 'tab', { name: 'Brand One' } )
+		);
+		fireEvent.click(
+			await screen.findByRole( 'checkbox', { name: 'Home' } )
+		);
+		fireEvent.click(
+			screen.getByRole( 'button', { name: 'Remove Templates' } )
+		);
+		fireEvent.click(
+			within(
+				screen.getByRole( 'dialog', { name: 'Remove Templates' } )
+			).getByRole( 'button', { name: 'Cancel' } )
+		);
+
+		expect( screen.queryByRole( 'dialog' ) ).not.toBeInTheDocument();
+		expect(
+			screen.getByRole( 'checkbox', { name: 'Home' } )
+		).toBeChecked();
+		expect(
+			vi
+				.mocked( apiFetch )
+				.mock.calls.filter(
+					( [ options ] ) =>
+						( options as { method?: string } ).method === 'DELETE'
+				)
+		).toEqual( [] );
 	} );
 
 	it( "disables a brand site that couldn't answer for applying, with its own message", async () => {

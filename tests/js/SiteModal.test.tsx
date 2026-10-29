@@ -1,3 +1,8 @@
+import { defaultBrandSite } from '@/admin/settings/page';
+import SiteModal from '@/components/SiteModal';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import apiFetch from '@wordpress/api-fetch';
+import { useState } from '@wordpress/element';
 import {
 	describe,
 	expect,
@@ -6,11 +11,7 @@ import {
 	type MockedFunction,
 	vi,
 } from 'vitest';
-import { useState } from '@wordpress/element';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import apiFetch from '@wordpress/api-fetch';
-import SiteModal from '@/components/SiteModal';
-import { defaultBrandSite } from '@/admin/settings/page';
+import { findNotice } from './library-routes';
 
 const mockedApiFetch = apiFetch as MockedFunction< typeof apiFetch >;
 
@@ -89,6 +90,82 @@ describe( 'SiteModal', () => {
 		expect( matches.length ).toBeGreaterThan( 0 );
 		expect( baseProps.onSubmit ).not.toHaveBeenCalled();
 	} );
+
+	it.each( [ 'abc', 'ftp://test.com' ] )(
+		'refuses %s as the site URL',
+		async ( url ) => {
+			const onSubmit = vi.fn().mockResolvedValue( true );
+
+			render(
+				<SiteModalHarness
+					onSubmit={ onSubmit }
+					initialData={ { ...baseFormData, url } }
+				/>
+			);
+
+			fireEvent.click(
+				screen.getByRole( 'button', { name: 'Add Site' } )
+			);
+
+			expect(
+				await findNotice(
+					'Enter a valid URL (must start with http or https).'
+				)
+			).toBeInTheDocument();
+			expect( onSubmit ).not.toHaveBeenCalled();
+		}
+	);
+
+	it.each( [ 'name', 'url', 'api_key' ] )(
+		"can't add a site without its %s",
+		( field ) => {
+			render(
+				<SiteModalHarness
+					initialData={ { ...baseFormData, [ field ]: '' } }
+				/>
+			);
+
+			expect(
+				screen.getByRole( 'button', { name: 'Add Site' } )
+			).toBeDisabled();
+		}
+	);
+
+	it( "can't add a site with a key of only spaces", () => {
+		render(
+			<SiteModalHarness
+				initialData={ { ...baseFormData, api_key: '   ' } }
+			/>
+		);
+
+		expect(
+			screen.getByRole( 'button', { name: 'Add Site' } )
+		).toBeDisabled();
+	} );
+
+	it.each( [
+		[ 'name', 'Site Name is required.' ],
+		[ 'url', 'Site URL is required.' ],
+	] )(
+		'refuses a %s of only spaces, and says it is required',
+		async ( field, message ) => {
+			const onSubmit = vi.fn().mockResolvedValue( true );
+
+			render(
+				<SiteModalHarness
+					onSubmit={ onSubmit }
+					initialData={ { ...baseFormData, [ field ]: '   ' } }
+				/>
+			);
+
+			fireEvent.click(
+				screen.getByRole( 'button', { name: 'Add Site' } )
+			);
+
+			expect( await findNotice( message ) ).toBeInTheDocument();
+			expect( onSubmit ).not.toHaveBeenCalled();
+		}
+	);
 
 	it( 'submits without calling the brand site, which the server checks on save', async () => {
 		const onSubmit = vi.fn().mockResolvedValue( true );

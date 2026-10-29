@@ -62,6 +62,21 @@ describe( 'SiteSettings', () => {
 		).toBeInTheDocument();
 	} );
 
+	it( "can't disconnect before a governing site connects", async () => {
+		mockSiteSettingsApi( {} );
+
+		render( <SiteSettings /> );
+
+		expect(
+			await screen.findByRole( 'button', {
+				name: 'Disconnect Governing Site',
+			} )
+		).toBeDisabled();
+		expect( screen.getByLabelText( 'Governing Site URL' ) ).toHaveValue(
+			''
+		);
+	} );
+
 	it( 'regenerates the api key and reports success', async () => {
 		mockSiteSettingsApi( {
 			governingSiteUrl: 'https://governing.example.com/',

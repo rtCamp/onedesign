@@ -1,4 +1,5 @@
 import {
+	afterEach,
 	beforeEach,
 	describe,
 	expect,
@@ -6,7 +7,13 @@ import {
 	type MockedFunction,
 	vi,
 } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+	act,
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from '@testing-library/react';
 import apiFetch from '@wordpress/api-fetch';
 
 // Mock child components to isolate SettingsPage behavior
@@ -108,6 +115,10 @@ describe( 'SettingsPage', () => {
 		};
 		document.body.className = '';
 		mockSubmitResults.length = 0;
+	} );
+
+	afterEach( () => {
+		vi.useRealTimers();
 	} );
 
 	it( 'loads shared sites and renders the page structure', async () => {
@@ -341,7 +352,70 @@ describe( 'SettingsPage', () => {
 		).not.toBeInTheDocument();
 	} );
 
+	it( 'gives each snackbar its own timeout', async () => {
+		vi.useFakeTimers();
+		const site = {
+			id: 'one',
+			name: 'Brand Site',
+			url: 'https://brand.example.com/',
+			logo: '',
+			logo_id: 0,
+		};
+		setSharedSites( [ site ] );
+		mockedApiFetch
+			.mockResolvedValueOnce( { shared_sites: [ site ] } )
+			.mockResolvedValueOnce( {
+				governing_site_notified: true,
+				message: 'Brand site removed successfully.',
+			} );
+		const snackbar = ( text: string ) =>
+			screen.queryByText( text, {
+				selector: '.components-snackbar__content',
+			} );
+
+		render( <SettingsPage /> );
+		fireEvent.click(
+			await screen.findByRole( 'button', { name: 'Open Modal' } )
+		);
+		fireEvent.click(
+			screen.getByRole( 'button', { name: 'Submit Modal' } )
+		);
+		await waitFor( () =>
+			expect(
+				snackbar( 'Brand Site saved successfully.' )
+			).toBeInTheDocument()
+		);
+
+		act( () => {
+			vi.advanceTimersByTime( 6000 );
+		} );
+		fireEvent.click(
+			screen.getByRole( 'button', { name: 'Delete Site' } )
+		);
+		await waitFor( () =>
+			expect(
+				snackbar( 'Brand site removed successfully.' )
+			).toBeInTheDocument()
+		);
+
+		// Past the first snackbar's timeout, the second one still shows.
+		act( () => {
+			vi.advanceTimersByTime( 6000 );
+		} );
+		expect(
+			snackbar( 'Brand site removed successfully.' )
+		).toBeInTheDocument();
+
+		act( () => {
+			vi.advanceTimersByTime( 4000 );
+		} );
+		expect(
+			snackbar( 'Brand site removed successfully.' )
+		).not.toBeInTheDocument();
+	} );
+
 	it( 'warns when a deleted brand site could not be notified', async () => {
+		vi.useFakeTimers();
 		setSharedSites( [
 			{
 				id: 'one',
@@ -369,7 +443,15 @@ describe( 'SettingsPage', () => {
 			} )
 		).toBeInTheDocument();
 
-		// The admin can dismiss it once they have acted on it.
+		// It outlasts a snackbar's timeout, and the admin dismisses it once they have acted on it.
+		act( () => {
+			vi.advanceTimersByTime( 20000 );
+		} );
+		expect(
+			screen.getByText( message, {
+				selector: '.components-notice__content',
+			} )
+		).toBeInTheDocument();
 		fireEvent.click( screen.getByRole( 'button', { name: 'Close' } ) );
 		expect(
 			screen.queryByText( message, {
