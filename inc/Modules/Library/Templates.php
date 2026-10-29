@@ -487,7 +487,7 @@ final class Templates implements Registrable {
 				'title'       => $template_part->title,
 				'description' => $template_part->description,
 				'content'     => $rename( $template_part->content ),
-				'area'        => $template_part->area,
+				'area'        => $template_part->area ?? 'uncategorized',
 			];
 		}
 

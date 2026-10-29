@@ -330,6 +330,20 @@ class Templates_Controller_GoverningSiteTest extends TestCase {
 	}
 
 	/**
+	 * A template part without an area, which core leaves null, reaches the brand site as uncategorized.
+	 */
+	public function test_apply_templates_sends_a_template_part_without_an_area_as_uncategorized(): void {
+		$this->connect_brand_one();
+		$this->add_template_part( 'lab-header', '<!-- wp:site-title /-->', null );
+		$this->set_template_content( '<!-- wp:template-part {"slug":"lab-header"} /-->' );
+
+		$this->apply( [ $this->template_id ], 'brand-1' );
+
+		$post_id = get_option( Templates::POST_IDS_OPTION_KEY )[ get_stylesheet() . '//lab-header' ];
+		$this->assertSame( [ 'uncategorized' ], wp_get_object_terms( $post_id, 'wp_template_part_area', [ 'fields' => 'slugs' ] ) );
+	}
+
+	/**
 	 * Re-syncing a brand site works out which templates it has, and brings those to their current version without adding the ones other brand sites have.
 	 */
 	public function test_resync_templates_brings_only_the_brand_site_templates_up_to_date(): void {
@@ -548,10 +562,11 @@ class Templates_Controller_GoverningSiteTest extends TestCase {
 	/**
 	 * Adds a template part to this site's theme.
 	 *
-	 * @param string $slug    The slug.
-	 * @param string $content The content.
+	 * @param string      $slug    The slug.
+	 * @param string      $content The content.
+	 * @param string|null $area    The area, or null for none.
 	 */
-	private function add_template_part( string $slug, string $content ): void {
+	private function add_template_part( string $slug, string $content, ?string $area = 'header' ): void {
 		$post_id = self::factory()->post->create(
 			[
 				'post_type'    => 'wp_template_part',
@@ -561,7 +576,9 @@ class Templates_Controller_GoverningSiteTest extends TestCase {
 			]
 		);
 		wp_set_object_terms( $post_id, get_stylesheet(), 'wp_theme' );
-		wp_set_object_terms( $post_id, 'header', 'wp_template_part_area' );
+		if ( null !== $area ) {
+			wp_set_object_terms( $post_id, $area, 'wp_template_part_area' );
+		}
 	}
 
 	/**
