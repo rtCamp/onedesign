@@ -146,6 +146,24 @@ class Patterns_Controller_BrandSiteTest extends TestCase {
 	}
 
 	/**
+	 * Once this site regenerates its key, the governing site's old key is refused until it's given the new one.
+	 */
+	public function test_save_patterns_refuses_the_old_key_after_regeneration(): void {
+		$old_key = Settings::get_api_key();
+		$new_key = Settings::regenerate_api_key();
+
+		$response = $this->send( 'POST', $this->patterns_body(), self::GOVERNING_SITE_URL, $old_key );
+
+		$this->assertContains( $response->get_status(), [ 401, 403 ] );
+		$this->assertFalse( get_option( Patterns::PATTERNS_OPTION_KEY ) );
+
+		$response = $this->send( 'POST', $this->patterns_body(), self::GOVERNING_SITE_URL, $new_key );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertArrayHasKey( 'hero', get_option( Patterns::PATTERNS_OPTION_KEY ) );
+	}
+
+	/**
 	 * Scripts and event handlers in a pattern never reach the stored pattern, or the pattern this site registers from it.
 	 */
 	public function test_saved_patterns_have_no_scripts(): void {
