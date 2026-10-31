@@ -106,8 +106,7 @@ Code contributions, bug reports, and feature requests are welcome! The following
 │   │       └── Singleton.php
 │   ├── Modules/
 │   │   ├── Core/
-│   │   │   ├── Assets.php
-│   │   │   └── Rest.php
+│   │   │   └── Assets.php
 │   │   ├── Library/
 │   │   │   ├── Admin.php # Registers the Pattern Library and Template Library screens.
 │   │   │   ├── Patterns.php # Lists a site's patterns, and keeps and registers the ones a brand site received.
@@ -117,10 +116,13 @@ Code contributions, bug reports, and feature requests are welcome! The following
 │   │   │   └── Settings.php
 │   │   ├── Rest/
 │   │   │   ├── Abstract_REST_Controller.php
-│   │   │   ├── Basic_Options_Controller.php
+│   │   │   ├── Brand_Site_Controller.php
+│   │   │   ├── Governing_Site_Controller.php
 │   │   │   ├── Multisite_Controller.php
 │   │   │   ├── Patterns_Controller.php # Lists, adds and removes the patterns in a site's library.
 │   │   │   ├── Remote_Client.php # Sends the requests between the governing and brand sites.
+│   │   │   ├── Secret_Key_Controller.php
+│   │   │   ├── Shared_Sites_Controller.php
 │   │   │   └── Templates_Controller.php # Lists, applies, re-syncs and removes the templates in a site's library.
 │   │   └── Settings/
 │   │       ├── Admin.php

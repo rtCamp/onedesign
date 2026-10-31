@@ -11,6 +11,7 @@ namespace OneDesign\Modules\Settings;
 
 use OneDesign\Contracts\Interfaces\Registrable;
 use OneDesign\Encryptor;
+use OneDesign\Utils;
 
 /**
  * Class - Settings
@@ -204,7 +205,7 @@ final class Settings implements Registrable {
 	 */
 
 	/**
-	 * Get brand sites configured for this governing site.
+	 * Get brand sites configured for this governing site, keyed by the (trailing-slash) URL.
 	 *
 	 * @return array<string,array{
 	 *  api_key: string,
@@ -226,13 +227,16 @@ final class Settings implements Registrable {
 
 			$decrypted_api_key = ! empty( $brand['api_key'] ) ? Encryptor::decrypt( $brand['api_key'] ) : '';
 
-			$brands_to_return[ $brand['url'] ] = [
+			// Always use a trailing-slash URL.
+			$url = trailingslashit( $brand['url'] );
+
+			$brands_to_return[ $url ] = [
 				'api_key' => $decrypted_api_key ?: '',
 				'id'      => $brand['id'] ?? '',
 				'logo'    => $brand['logo'] ?? '',
 				'logo_id' => $brand['logo_id'] ?? 0,
 				'name'    => $brand['name'] ?? '',
-				'url'     => $brand['url'] ?? '',
+				'url'     => $url,
 			];
 		}
 
@@ -304,9 +308,11 @@ final class Settings implements Registrable {
 	 */
 	public static function set_shared_sites( array $sites ): bool {
 		foreach ( $sites as &$site ) {
-			if ( empty( $site['api_key'] ) ) {
+			if ( empty( $site['api_key'] ) || empty( $site['url'] ) ) {
 				continue;
 			}
+			// Ensure URLs are trailing-slashed.
+			$site['url'] = trailingslashit( $site['url'] );
 
 			$encrypted_key = Encryptor::encrypt( $site['api_key'] );
 
@@ -318,6 +324,31 @@ final class Settings implements Registrable {
 		}
 
 		return update_option( self::OPTION_GOVERNING_SHARED_SITES, array_values( $sites ), false );
+	}
+
+	/**
+	 * Remove a single brand site by URL.
+	 *
+	 * @param string $site_url The site URL.
+	 *
+	 * @return bool Whether the site was removed.
+	 */
+	public static function remove_shared_site( string $site_url ): bool {
+		$sites = get_option( self::OPTION_GOVERNING_SHARED_SITES, [] );
+		$sites = is_array( $sites ) ? $sites : [];
+
+		$normalized_url = Utils::normalize_url( $site_url );
+
+		$remaining_sites = array_filter(
+			$sites,
+			static fn ( $site ): bool => empty( $site['url'] ) || Utils::normalize_url( $site['url'] ) !== $normalized_url
+		);
+
+		if ( count( $remaining_sites ) === count( $sites ) ) {
+			return false;
+		}
+
+		return update_option( self::OPTION_GOVERNING_SHARED_SITES, array_values( $remaining_sites ), false );
 	}
 
 	/**
