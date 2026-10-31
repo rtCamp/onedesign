@@ -1,8 +1,5 @@
-/**
- * External dependencies
- */
 import { describe, expect, it } from 'vitest';
-import { getInitials, isValidUrl } from '@/js/utils';
+import { API_NAMESPACE, isValidUrl, getInitials } from '@/js/utils';
 
 describe( 'utils', () => {
 	it( 'validates well-formed urls', () => {
@@ -15,6 +12,12 @@ describe( 'utils', () => {
 		expect( isValidUrl( 'ftp://example.com' ) ).toBe( false );
 		expect( isValidUrl( 'javascript:alert(1)' ) ).toBe( false );
 		expect( isValidUrl( 'mailto:a@b.c' ) ).toBe( false );
+	} );
+
+	it( 'joins the REST url and namespace', () => {
+		expect( API_NAMESPACE ).toBe(
+			'https://example.com/wp-json/onedesign/v1'
+		);
 	} );
 } );
 

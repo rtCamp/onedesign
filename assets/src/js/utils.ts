@@ -56,3 +56,36 @@ export const isValidUrl = ( url: string ): boolean => {
 		return false;
 	}
 };
+
+/**
+ * WordPress REST API base URL for OneDesign plugin requests.
+ *
+ * @constant
+ * @type {string}
+ */
+export const API_NAMESPACE =
+	window.OneDesignSettings.restUrl + window.OneDesignSettings.restNamespace;
+
+/**
+ * WordPress REST API nonce for authenticated requests.
+ *
+ * @constant
+ * @type {string}
+ */
+export const NONCE = window.OneDesignSettings.nonce as string;
+
+/**
+ * Sites on this multisite network, for picking the governing site and adding brand sites.
+ */
+export const MULTISITES = window.OneDesignSettings.multisites;
+
+/**
+ * Whether the network has picked its governing site.
+ */
+export const IS_GOVERNING_SITE_SELECTED =
+	window.OneDesignSettings.isGoverningSiteSelected;
+
+/**
+ * Current site's blog ID on the network.
+ */
+export const CURRENT_SITE_ID = window.OneDesignSettings.currentSiteId;

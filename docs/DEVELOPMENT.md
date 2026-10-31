@@ -81,7 +81,6 @@ Code contributions, bug reports, and feature requests are welcome! The following
 │       ├── images
 │       │   └── logo.svg
 │       ├── js
-│       │   ├── constants.ts
 │       │   └── utils.ts
 │       └── types
 │           ├── global.d.ts # The window globals the PHP side localizes.
