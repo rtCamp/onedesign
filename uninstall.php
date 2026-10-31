@@ -87,13 +87,16 @@ function delete_options(): void {
 		PLUGIN_PREFIX . 'shared_sites',
 
 		PLUGIN_PREFIX . 'brand_site_patterns',
+		PLUGIN_PREFIX . 'template_patterns',
 		PLUGIN_PREFIX . 'child_site_public_key',
 		PLUGIN_PREFIX . 'shared_templates',
 		PLUGIN_PREFIX . 'brand_site_post_ids',
+		PLUGIN_PREFIX . 'multisite_governing_site',
+
+		// 1.1.x and earlier: options the plugin no longer uses.
 		PLUGIN_PREFIX . 'shared_patterns',
 		PLUGIN_PREFIX . 'shared_template_parts',
 		PLUGIN_PREFIX . 'shared_synced_patterns',
-		PLUGIN_PREFIX . 'multisite_governing_site',
 	];
 
 	foreach ( $options as $option ) {

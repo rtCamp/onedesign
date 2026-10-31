@@ -21,7 +21,6 @@ interface OneDesignSettingsData {
 // key is also declared, differently, by the onboarding entry).
 const globalSettings = window as unknown as {
 	OneDesignSettings?: OneDesignSettingsData;
-	TemplateLibraryData?: OneDesignSettingsData;
 	OneDesignMultiSiteSettings?: OneDesignSettingsData;
 };
 
@@ -29,8 +28,6 @@ let settings: OneDesignSettingsData = {};
 
 if ( typeof globalSettings.OneDesignSettings !== 'undefined' ) {
 	settings = globalSettings.OneDesignSettings;
-} else if ( typeof globalSettings.TemplateLibraryData !== 'undefined' ) {
-	settings = globalSettings.TemplateLibraryData;
 } else if ( typeof globalSettings.OneDesignMultiSiteSettings !== 'undefined' ) {
 	settings = globalSettings.OneDesignMultiSiteSettings;
 }
@@ -44,7 +41,6 @@ const API_NAMESPACE = settings.restUrl
 const NONCE = settings.restNonce ? settings.restNonce : '';
 const API_KEY = settings.apiKey ? settings.apiKey : '';
 const SETTINGS_LINK = settings.settingsLink ? settings.settingsLink : '';
-const PER_PAGE = 9;
 const MULTISITES = settings.multisites || [];
 const IS_MULTISITE = settings.isMultisite || false;
 const IS_GOVERNING_SITE_SELECTED = settings.isGoverningSiteSelected || false;
@@ -61,6 +57,5 @@ export {
 	IS_MULTISITE,
 	MULTISITES,
 	NONCE,
-	PER_PAGE,
 	SETTINGS_LINK,
 };

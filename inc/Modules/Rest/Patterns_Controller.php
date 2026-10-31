@@ -10,6 +10,7 @@ declare(strict_types = 1);
 namespace OneDesign\Modules\Rest;
 
 use OneDesign\Modules\Library\Patterns;
+use OneDesign\Modules\Library\Templates;
 use OneDesign\Modules\Settings\Settings;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -75,11 +76,30 @@ class Patterns_Controller extends Abstract_REST_Controller {
 						'callback'            => [ $this, 'save_received_patterns' ],
 						'permission_callback' => [ $this, 'is_governing_request' ],
 						'args'                => [
-							'patterns' => [
+							'patterns'          => [
 								'required'          => true,
 								'type'              => 'array',
 								'minItems'          => 1,
 								'items'             => Patterns::PATTERN_SCHEMA,
+								'validate_callback' => 'rest_validate_request_arg',
+							],
+							// The patterns the synced patterns use, keyed by the governing site's name for each.
+							'template_patterns' => [
+								'type'                 => 'object',
+								'additionalProperties' => Patterns::PATTERN_SCHEMA,
+								'default'              => [],
+								'validate_callback'    => 'rest_validate_request_arg',
+							],
+							'template_parts'    => [
+								'type'              => 'array',
+								'items'             => Templates::TEMPLATE_PART_SCHEMA,
+								'default'           => [],
+								'validate_callback' => 'rest_validate_request_arg',
+							],
+							'synced_patterns'   => [
+								'type'              => 'array',
+								'items'             => Templates::SYNCED_PATTERN_SCHEMA,
+								'default'           => [],
 								'validate_callback' => 'rest_validate_request_arg',
 							],
 						],
@@ -95,19 +115,6 @@ class Patterns_Controller extends Abstract_REST_Controller {
 				]
 			);
 		}
-
-		/**
-		 * Get configured child sites.
-		 */
-		register_rest_route(
-			self::NAMESPACE,
-			'/configured-sites',
-			[
-				'methods'             => WP_REST_Server::READABLE,
-				'callback'            => [ $this, 'get_configured_child_sites' ],
-				'permission_callback' => [ Basic_Options_Controller::class, 'permission_callback' ],
-			]
-		);
 	}
 
 	/**
@@ -149,7 +156,7 @@ class Patterns_Controller extends Abstract_REST_Controller {
 	}
 
 	/**
-	 * Sends this site's patterns to a brand site, which adds them or updates the ones it has.
+	 * Sends this site's patterns, with the synced patterns they use, to a brand site, which adds them or updates the ones it has.
 	 *
 	 * @param \WP_REST_Request $request The request object.
 	 * @phpstan-param \WP_REST_Request<array{site: string, names: string[]}> $request
@@ -165,7 +172,20 @@ class Patterns_Controller extends Abstract_REST_Controller {
 			return new \WP_Error( 'onedesign_patterns_not_found', __( 'None of these patterns exist on this site.', 'onedesign' ), [ 'status' => 400 ] );
 		}
 
-		$shared = Remote_Client::request_brand_site( $site, 'patterns', WP_REST_Server::CREATABLE, [ 'patterns' => $patterns ] );
+		$synced_patterns = Templates::get_references( ...array_column( $patterns, 'content' ) )['synced_patterns'];
+
+		$references = Templates::get_brand_references( [ 'synced_patterns' => $synced_patterns ] + Templates::get_references( ...array_column( $synced_patterns, 'post_content' ) ), $site['name'] );
+		$shared     = Remote_Client::request_brand_site(
+			$site,
+			'patterns',
+			WP_REST_Server::CREATABLE,
+			[
+				'patterns'          => array_map( static fn ( array $pattern ): array => [ 'content' => Templates::drop_unsent_refs( (string) $pattern['content'], array_keys( $synced_patterns ) ) ] + $pattern, $patterns ),
+				'template_patterns' => $references['patterns'],
+				'template_parts'    => $references['template_parts'],
+				'synced_patterns'   => $references['synced_patterns'],
+			]
+		);
 		if ( is_wp_error( $shared ) ) {
 			return $shared;
 		}
@@ -204,49 +224,63 @@ class Patterns_Controller extends Abstract_REST_Controller {
 	}
 
 	/**
-	 * Lists the patterns this brand site received, with the labels it gives their categories.
+	 * Lists the patterns this brand site was sent from the Pattern Library, with the labels it gives their categories.
 	 */
 	public function get_received_patterns(): WP_REST_Response {
 		return rest_ensure_response( array_values( Patterns::add_category_labels( Patterns::get_received_patterns() ) ) );
 	}
 
 	/**
-	 * Adds the patterns the governing site sent, or updates the ones this site has.
+	 * Adds the patterns the governing site sent, with the synced patterns they use, or updates the ones this site has.
 	 *
 	 * @param \WP_REST_Request $request The request object.
-	 * @phpstan-param \WP_REST_Request<array{patterns: array<int,array<string,mixed>>}> $request
+	 * @phpstan-param \WP_REST_Request<array{
+	 *   patterns: array<int,array<string,mixed>>,
+	 *   template_patterns: array<string,array<string,mixed>>,
+	 *   template_parts: array<int,array{
+	 *     original_id: string,
+	 *     slug: string,
+	 *     title?: string,
+	 *     description?: string,
+	 *     content: string,
+	 *     area?: string
+	 *   }>,
+	 *   synced_patterns: array<int,array{original_id: int, slug: string, title?: string, content: string}>
+	 * }> $request
 	 */
-	public function save_received_patterns( WP_REST_Request $request ): WP_REST_Response {
+	public function save_received_patterns( WP_REST_Request $request ): WP_REST_Response|\WP_Error {
+		// The patterns point at this site's copies of the synced patterns, so those are saved first.
+		$synced_pattern_ids = Templates::add_received_synced_patterns( (array) $request['synced_patterns'] );
+		if ( is_wp_error( $synced_pattern_ids ) ) {
+			return $synced_pattern_ids;
+		}
+
+		// Saved as a template's are, so the synced patterns point at the names this site has them under.
+		$saved = Templates::add_received_templates( [], (array) $request['template_patterns'], (array) $request['template_parts'], $synced_pattern_ids );
+		if ( is_wp_error( $saved ) ) {
+			return $saved;
+		}
+
 		Patterns::add_received_patterns( (array) $request['patterns'] );
 
-		return rest_ensure_response( [ 'message' => __( 'Patterns saved.', 'onedesign' ) ] );
+		// What the old versions used and the new ones don't is removed.
+		$message = __( 'Patterns saved.', 'onedesign' );
+		$removed = Templates::remove_unused( $message );
+
+		return is_wp_error( $removed ) ? $removed : rest_ensure_response( [ 'message' => $message ] );
 	}
 
 	/**
-	 * Removes patterns this brand site received.
+	 * Removes patterns this brand site received, with the synced patterns that neither the other patterns nor the templates use.
 	 *
 	 * @param \WP_REST_Request $request The request object.
 	 * @phpstan-param \WP_REST_Request<array{names: string[]}> $request
 	 */
-	public function delete_received_patterns( WP_REST_Request $request ): WP_REST_Response {
-		Patterns::remove_received_patterns( (array) $request['names'] );
+	public function delete_received_patterns( WP_REST_Request $request ): WP_REST_Response|\WP_Error {
+		$message = __( 'Patterns removed.', 'onedesign' );
+		$removed = Patterns::remove_received_patterns( (array) $request['names'], $message );
 
-		return rest_ensure_response( [ 'message' => __( 'Patterns removed.', 'onedesign' ) ] );
-	}
-
-	/**
-	 * Get configured child sites (for a parent site type).
-	 */
-	public function get_configured_child_sites(): WP_REST_Response {
-
-		if ( ! Settings::is_governing_site() ) {
-			return new WP_REST_Response( [], 200 ); // Return empty if not a parent site.
-		}
-
-		// Use the option name from your settings class.
-		$child_sites = Settings::get_shared_sites();
-
-		return new WP_REST_Response( array_values( $child_sites ), 200 );
+		return is_wp_error( $removed ) ? $removed : rest_ensure_response( [ 'message' => $message ] );
 	}
 
 	/**
@@ -272,16 +306,5 @@ class Patterns_Controller extends Abstract_REST_Controller {
 				'validate_callback' => 'rest_validate_request_arg',
 			],
 		];
-	}
-
-	/**
-	 * Gets one of this site's brand sites.
-	 *
-	 * @param string $site_id The brand site's ID.
-	 *
-	 * @return array{api_key: string, id: string, logo: string, logo_id: int, name: string, url: string}|\WP_Error The brand site, or an error if it isn't one of this site's.
-	 */
-	private static function get_site( string $site_id ): array|\WP_Error {
-		return Settings::get_shared_site_by_id( $site_id ) ?? new \WP_Error( 'onedesign_site_not_found', __( 'The brand site was not found.', 'onedesign' ), [ 'status' => 404 ] );
 	}
 }

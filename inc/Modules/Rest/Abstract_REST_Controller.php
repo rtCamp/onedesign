@@ -130,16 +130,14 @@ abstract class Abstract_REST_Controller extends WP_REST_Controller implements Re
 	}
 
 	/**
-	 * Build API endpoint URL.
+	 * Gets one of this site's brand sites.
 	 *
-	 * @param string $site_url       The base URL of the site.
-	 * @param string $endpoint       The specific endpoint path.
-	 * @param string $rest_namespace The REST namespace. Default: onedesign/v1).
+	 * @param string $site_id The brand site's ID.
 	 *
-	 * @return string Full API endpoint URL.
+	 * @return array{api_key: string, id: string, logo: string, logo_id: int, name: string, url: string}|\WP_Error The brand site, or an error if it isn't one of this site's.
 	 */
-	protected function build_api_endpoint( string $site_url, string $endpoint, string $rest_namespace = self::NAMESPACE ): string {
-		return esc_url_raw( trailingslashit( $site_url ) ) . '/wp-json/' . $rest_namespace . '/' . ltrim( $endpoint, '/' );
+	protected static function get_site( string $site_id ): array|\WP_Error {
+		return Settings::get_shared_site_by_id( $site_id ) ?? new \WP_Error( 'onedesign_site_not_found', __( 'The brand site was not found.', 'onedesign' ), [ 'status' => 404 ] );
 	}
 
 	/**

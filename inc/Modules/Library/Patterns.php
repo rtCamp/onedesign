@@ -122,6 +122,7 @@ final class Patterns implements Registrable {
 			[
 				'post_type'        => 'wp_block',
 				'post_status'      => 'publish',
+				'has_password'     => false,
 				'posts_per_page'   => -1, // phpcs:ignore WordPressVIPMinimum.Performance.NoPaging.posts_per_page_posts_per_page -- The library needs every user pattern.
 				'orderby'          => 'title',
 				'order'            => 'ASC',
@@ -163,9 +164,7 @@ final class Patterns implements Registrable {
 	}
 
 	/**
-	 * Adds patterns the governing site sent, or updates the ones this site has, with the pattern categories they're in.
-	 *
-	 * A category this site doesn't have is named with the governing site's label.
+	 * Adds patterns the governing site sent, or updates the ones this site has.
 	 *
 	 * @param array<int,array<string,mixed>> $patterns Patterns that match PATTERN_SCHEMA.
 	 */
@@ -174,27 +173,52 @@ final class Patterns implements Registrable {
 
 		// Each pattern is stored under its sanitized name, which is the name it's listed and removed by.
 		foreach ( $patterns as $pattern ) {
-			$labels                    = self::sanitize_category_labels( $pattern );
-			$pattern                   = self::sanitize_pattern( $pattern );
+			$pattern                   = self::receive_pattern( $pattern );
 			$saved[ $pattern['name'] ] = $pattern;
-
-			foreach ( $pattern['categories'] as $category ) {
-				if ( ! term_exists( $category, 'wp_pattern_category' ) ) {
-					wp_insert_term( $labels[ $category ] ?? $category, 'wp_pattern_category', [ 'slug' => $category ] );
-				}
-			}
 		}
 
 		update_option( self::PATTERNS_OPTION_KEY, $saved, false );
 	}
 
 	/**
-	 * Removes patterns this brand site received. Patterns it no longer has count as removed.
+	 * Sanitizes a pattern the governing site sent and adds the pattern categories it's in. It points at this site's copies of the synced patterns it uses.
 	 *
-	 * @param string[] $names The pattern names.
+	 * A category this site doesn't have is named with the governing site's label.
+	 *
+	 * @param array<string,mixed> $pattern A pattern that matches PATTERN_SCHEMA.
+	 *
+	 * @return array<string,mixed> The pattern.
 	 */
-	public static function remove_received_patterns( array $names ): void {
-		update_option( self::PATTERNS_OPTION_KEY, array_diff_key( self::get_received_patterns(), array_flip( $names ) ), false );
+	public static function receive_pattern( array $pattern ): array {
+		$labels  = self::sanitize_category_labels( $pattern );
+		$pattern = self::sanitize_pattern( [ 'content' => Templates::replace_refs( (string) $pattern['content'] ) ] + $pattern );
+
+		foreach ( $pattern['categories'] as $category ) {
+			if ( ! term_exists( $category, 'wp_pattern_category' ) ) {
+				wp_insert_term( $labels[ $category ] ?? $category, 'wp_pattern_category', [ 'slug' => $category ] );
+			}
+		}
+
+		return $pattern;
+	}
+
+	/**
+	 * Removes patterns this brand site received.
+	 *
+	 * Patterns it no longer has count as removed.
+	 *
+	 * @param string[] $names   The pattern names.
+	 * @param string   $message What the governing site is told was removed.
+	 *
+	 * @return true|\WP_Error True if every copy only they used was deleted.
+	 */
+	public static function remove_received_patterns( array $names, string $message ): true|\WP_Error {
+		$patterns = self::get_received_patterns();
+		$removed  = array_intersect_key( $patterns, array_flip( $names ) );
+
+		update_option( self::PATTERNS_OPTION_KEY, array_diff_key( $patterns, $removed ), false );
+
+		return Templates::remove_unused( $message );
 	}
 
 	/**
@@ -244,9 +268,11 @@ final class Patterns implements Registrable {
 	/**
 	 * Adds the label this site gives each of the patterns' categories, keyed by slug. A category this site doesn't have keeps its slug as its label.
 	 *
-	 * @param array<string,array<string,mixed>> $patterns Patterns with their category slugs.
+	 * @template TKey of int|string
 	 *
-	 * @return array<string,array<string,mixed>> The patterns, each with its category_labels.
+	 * @param array<TKey,array<string,mixed>> $patterns Patterns with their category slugs.
+	 *
+	 * @return array<TKey,array<string,mixed>> The patterns, each with its category_labels.
 	 */
 	public static function add_category_labels( array $patterns ): array {
 		$labels = self::get_category_labels();

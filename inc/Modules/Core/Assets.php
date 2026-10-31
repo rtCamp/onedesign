@@ -10,7 +10,6 @@ declare( strict_types = 1 );
 namespace OneDesign\Modules\Core;
 
 use OneDesign\Contracts\Interfaces\Registrable;
-use OneDesign\Modules\Post_Types\Template;
 use OneDesign\Modules\Settings\Settings;
 
 /**
@@ -91,7 +90,6 @@ final class Assets implements Registrable {
 	 * {@inheritDoc}
 	 */
 	public function register_hooks(): void {
-		add_action( 'enqueue_block_editor_assets', [ $this, 'enqueue_scripts' ] );
 		add_action( 'admin_enqueue_scripts', [ $this, 'register_assets' ] );
 
 		// Add defer attribute to certain plugin bundles to improve admin load performance.
@@ -114,6 +112,11 @@ final class Assets implements Registrable {
 			'patterns-library',
 		);
 
+		$this->register_script(
+			self::TEMPLATE_LIBRARY_SCRIPT_HANDLE,
+			'templates-library',
+		);
+
 		$this->register_style(
 			self::ADMIN_STYLES_HANDLE,
 			'admin',
@@ -127,34 +130,6 @@ final class Assets implements Registrable {
 		);
 
 		wp_enqueue_style( self::ADMIN_STYLES_HANDLE );
-	}
-
-	/**
-	 * Add scripts and styles to the page.
-	 */
-	public function enqueue_scripts(): void {
-
-		$current_screen = get_current_screen();
-
-		if ( ! $current_screen instanceof \WP_Screen || Template::get_slug() !== $current_screen->id ) {
-			return;
-		}
-
-		$this->register_script(
-			self::TEMPLATE_LIBRARY_SCRIPT_HANDLE,
-			'templates-library'
-		);
-
-		wp_localize_script(
-			self::TEMPLATE_LIBRARY_SCRIPT_HANDLE,
-			'TemplateLibraryData',
-			self::get_localized_data(),
-		);
-
-		wp_enqueue_script( self::TEMPLATE_LIBRARY_SCRIPT_HANDLE );
-
-		$this->register_style( self::TEMPLATE_LIBRARY_SCRIPT_HANDLE, 'template' );
-		wp_enqueue_style( self::TEMPLATE_LIBRARY_SCRIPT_HANDLE );
 	}
 
 	/**

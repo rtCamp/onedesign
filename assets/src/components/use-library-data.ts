@@ -4,11 +4,11 @@ import { __ } from '@wordpress/i18n';
 import type { LibraryItem, SiteError } from './library';
 
 interface LibraryDataOptions< T > {
+	path: string;
+	keyParam: string;
 	toItem: ( item: T ) => LibraryItem;
 	loadError: { items: string; brandItems: string };
 }
-
-const path = '/onedesign/v1/patterns';
 
 const errorMessage = ( error: unknown, fallback: string ) =>
 	( error as { message?: string } )?.message || fallback;
@@ -16,13 +16,17 @@ const errorMessage = ( error: unknown, fallback: string ) =>
 /**
  * Loads this site's items and each brand site's copies, and shares and removes them.
  *
- * @param options           - How the library shows an item, and its strings.
+ * @param options           - The library's route, how it shows an item, and its strings.
+ * @param options.path      - The REST route.
+ * @param options.keyParam  - What the request bodies call the item keys.
  * @param options.toItem    - Turns an item from the server into a library item.
  * @param options.loadError - What to say when the items couldn't be loaded.
  *
- * @return The props the library needs.
+ * @return The props the library needs, and a function to reload a brand site's copies.
  */
 const useLibraryData = < T >( {
+	path,
+	keyParam,
 	toItem,
 	loadError: loadErrorCopy,
 }: LibraryDataOptions< T > ) => {
@@ -62,7 +66,7 @@ const useLibraryData = < T >( {
 				} ) );
 			}
 		},
-		[ loadErrorCopy.brandItems ]
+		[ path, loadErrorCopy.brandItems ]
 	);
 
 	useEffect( () => {
@@ -73,19 +77,29 @@ const useLibraryData = < T >( {
 				setLoadError( errorMessage( error, loadErrorCopy.items ) );
 			} );
 		sites.forEach( ( site ) => loadSite( site.id ) );
-	}, [ sites, loadErrorCopy.items, loadSite ] );
+	}, [ path, sites, loadErrorCopy.items, loadSite ] );
 
 	const items = useMemo( () => list && list.map( toItem ), [ list, toItem ] );
 
+	// A brand site's copy points at its own synced patterns, which don't render here, so it previews as this site's item it came from, when this site still has it.
 	const brandItems = useMemo(
 		() =>
 			Object.fromEntries(
 				Object.entries( brandLists ).map( ( [ siteId, copies ] ) => [
 					siteId,
-					copies.map( toItem ),
+					copies.map( ( copy ) => {
+						const item = toItem( copy );
+						const source = items?.find(
+							( { key } ) => key === item.key
+						);
+						return {
+							...item,
+							content: source?.content ?? item.content,
+						};
+					} ),
 				] )
 			),
-		[ brandLists, toItem ]
+		[ brandLists, items, toItem ]
 	);
 
 	// Each site gets its own request, so one that fails doesn't stop the others.
@@ -98,7 +112,7 @@ const useLibraryData = < T >( {
 				apiFetch( {
 					path,
 					method: 'POST',
-					data: { site, names: keys },
+					data: { site, [ keyParam ]: keys },
 				} )
 			)
 		);
@@ -127,7 +141,7 @@ const useLibraryData = < T >( {
 		const { message } = await apiFetch< { message: string } >( {
 			path,
 			method: 'DELETE',
-			data: { site: siteId, names: keys },
+			data: { site: siteId, [ keyParam ]: keys },
 		} );
 		await loadSite( siteId );
 		return message;
@@ -141,6 +155,7 @@ const useLibraryData = < T >( {
 		loadError,
 		onApply,
 		onRemove,
+		loadSite,
 	};
 };
 

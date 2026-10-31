@@ -87,6 +87,8 @@ const copy: LibraryCopy = {
  */
 const PatternLibrary = () => {
 	const library = useLibraryData( {
+		path: '/onedesign/v1/patterns',
+		keyParam: 'names',
 		toItem,
 		loadError,
 	} );

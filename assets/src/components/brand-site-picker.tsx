@@ -37,7 +37,7 @@ interface BrandSitePickerProps {
 }
 
 /**
- * Picks the brand sites to apply the selected patterns to, and applies them.
+ * Picks the brand sites to apply the selected patterns or templates to, and applies them.
  *
  * @param props               - Component properties.
  * @param props.sites         - The brand sites.

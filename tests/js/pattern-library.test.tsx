@@ -1,13 +1,37 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import apiFetch from '@wordpress/api-fetch';
+import { registerBlockType } from '@wordpress/blocks';
 import PatternLibrary from '@/admin/patterns/page';
 import { findNotice, restError, routes, type Handler } from './library-routes';
 
-// The block editor's own packages don't load in jsdom, so a card renders no preview.
+// The block editor's own packages don't load in jsdom, so a card's preview lists the blocks it was given.
 vi.mock( '@wordpress/block-editor', () => ( {
-	BlockPreview: () => null,
+	BlockPreview: ( {
+		blocks,
+	}: {
+		blocks: Array< { name: string; attributes: object } >;
+	} ) => (
+		<div data-testid="preview">
+			{ blocks
+				.map(
+					( block ) =>
+						`${ block.name } ${ JSON.stringify( block.attributes ) }`
+				)
+				.join( ',' ) }
+		</div>
+	),
 } ) );
+
+// Core's synced pattern block, so a card's preview keeps its ref.
+registerBlockType( 'core/block', {
+	apiVersion: 3,
+	title: 'Pattern',
+	category: 'reusable',
+	attributes: { ref: { type: 'number' } },
+	edit: () => null,
+	save: () => null,
+} );
 
 const localizedSettings = window.OneDesignSettings;
 
@@ -154,6 +178,37 @@ describe( 'pattern library', () => {
 
 		fireEvent.click( screen.getByRole( 'tab', { name: 'Brand One' } ) );
 		expect( screen.getByText( 'Loading patterns…' ) ).toBeInTheDocument();
+	} );
+
+	it( "previews a brand site's copy as this site's pattern of the same name, while this site still has it", async () => {
+		patternRoutes( {
+			'GET /onedesign/v1/patterns': () => [
+				{ ...hero, content: '<!-- wp:block {"ref":6} /-->' },
+			],
+			// The brand site's copies point at its own synced patterns.
+			'GET /onedesign/v1/patterns?site=brand-1': () => [
+				{ ...hero, content: '<!-- wp:block {"ref":14} /-->' },
+				{ ...footer, content: '<!-- wp:block {"ref":25} /-->' },
+			],
+		} );
+
+		render( <PatternLibrary /> );
+		fireEvent.click(
+			await screen.findByRole( 'tab', { name: 'Brand One' } )
+		);
+		const preview = async ( title: string ) =>
+			within(
+				(
+					await screen.findByRole( 'checkbox', { name: title } )
+				).closest( '.onedesign-preview-card' ) as HTMLElement
+			).getByTestId( 'preview' );
+
+		expect( await preview( 'Hero' ) ).toHaveTextContent(
+			'core/block {"ref":6}'
+		);
+		expect( await preview( 'Footer' ) ).toHaveTextContent(
+			'core/block {"ref":25}'
+		);
 	} );
 
 	it( 'shows only the patterns in the picked category', async () => {

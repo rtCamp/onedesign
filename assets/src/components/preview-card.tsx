@@ -23,7 +23,7 @@ interface PreviewCardProps {
  * A library item's block preview, with a checkbox to select it.
  *
  * @param props            - Component properties.
- * @param props.item       - The pattern.
+ * @param props.item       - The pattern or template.
  * @param props.isSelected - Whether it's selected.
  * @param props.onToggle   - Selects or deselects it.
  *
