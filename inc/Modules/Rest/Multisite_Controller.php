@@ -1,6 +1,6 @@
 <?php
 /**
- * This file will contain routes for OneDesign Multisite handling.
+ * The /multisite routes, which make a network's sites governing sites and add the network's sites to them as brand sites.
  *
  * @package OneDesign
  */
@@ -9,8 +9,9 @@ declare(strict_types = 1);
 
 namespace OneDesign\Modules\Rest;
 
-use OneDesign\Modules\Multisite\Settings as MU_Settings;
+use OneDesign\Modules\Multisite\Utils as MU_Utils;
 use OneDesign\Modules\Settings\Settings;
+use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
 
@@ -22,7 +23,7 @@ class Multisite_Controller extends Abstract_REST_Controller {
 	 * {@inheritDoc}
 	 */
 	public function register_hooks(): void {
-		if ( ! is_multisite() ) {
+		if ( ! MU_Utils::is_network_activated() ) {
 			return;
 		}
 
@@ -33,247 +34,151 @@ class Multisite_Controller extends Abstract_REST_Controller {
 	 * {@inheritDoc}
 	 */
 	public function register_routes(): void {
-		/**
-		 * Register a route to store governing site in multisite setup.
-		 */
+		// The routes change other sites on the network, so they're for network admins only.
 		register_rest_route(
 			self::NAMESPACE,
-			'/multisite/governing-site',
+			'/multisite/governing-sites',
 			[
-				[
-					'methods'             => WP_REST_Server::READABLE,
-					'callback'            => [ $this, 'get_multisite_governing_site' ],
-					'permission_callback' => static fn () => current_user_can( 'manage_options' ),
-				],
-				[
-					'methods'             => WP_REST_Server::CREATABLE,
-					'callback'            => [ $this, 'set_governing_site' ],
-					'permission_callback' => static fn () => current_user_can( 'manage_options' ),
-					'args'                => [
-						'governing_site_id' => [
-							'required'          => true,
-							'type'              => 'integer',
-							'sanitize_callback' => 'absint',
-						],
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => [ $this, 'add_governing_site' ],
+				'permission_callback' => static fn () => current_user_can( 'manage_network_options' ),
+				'args'                => [
+					'site_id' => [
+						'required'          => true,
+						'type'              => 'integer',
+						'validate_callback' => 'rest_validate_request_arg',
 					],
 				],
 			]
 		);
 
-		/**
-		 * Register a route to add-sites.
-		 */
 		register_rest_route(
 			self::NAMESPACE,
-			'/multisite/add-sites',
+			'/multisite/brand-sites',
 			[
-				[
-					'methods'             => WP_REST_Server::CREATABLE,
-					'callback'            => [ $this, 'add_sites' ],
-					'permission_callback' => static fn () => current_user_can( 'manage_options' ),
-					'args'                => [
-						'site_ids' => [
-							'required' => true,
-							'type'     => 'array',
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => [ $this, 'add_brand_sites' ],
+				'permission_callback' => static fn () => current_user_can( 'manage_network_options' ),
+				'args'                => [
+					'governing_site_id' => [
+						'required'          => true,
+						'type'              => 'integer',
+						'validate_callback' => 'rest_validate_request_arg',
+					],
+					'site_ids'          => [
+						'required'          => true,
+						'type'              => 'array',
+						'items'             => [
+							'type' => 'integer',
 						],
+						'validate_callback' => 'rest_validate_request_arg',
 					],
 				],
 			]
 		);
-
-		/**
-		 * Register a route to get all sites from current multisite setup.
-		 */
-		register_rest_route(
-			self::NAMESPACE,
-			'/multisite/sites',
-			[
-				[
-					'methods'             => WP_REST_Server::READABLE,
-					'callback'            => [ $this, 'get_all_multisite_sites' ],
-					'permission_callback' => static fn () => current_user_can( 'manage_options' ),
-				],
-			]
-		);
 	}
 
 	/**
-	 * Get the governing site for multisite setup.
-	 */
-	public function get_multisite_governing_site(): WP_REST_Response {
-
-		// get site wide option of onedesign_multisite_governing_site.
-		$governing_site = MU_Settings::get_multisite_governing_site_id();
-
-		return new WP_REST_Response(
-			[
-				'success'        => true,
-				'governing_site' => (int) $governing_site,
-			]
-		);
-	}
-
-	/**
-	 * Set the governing site for multisite setup.
+	 * Makes a site on the network with no OneDesign type a governing site.
 	 *
 	 * @param \WP_REST_Request $request The REST request.
-	 *
-	 * @return \WP_REST_Response|\WP_Error
+	 * @phpstan-param \WP_REST_Request<array{site_id: int}> $request
 	 */
-	public function set_governing_site( \WP_REST_Request $request ): WP_REST_Response|\WP_Error {
+	public function add_governing_site( WP_REST_Request $request ): WP_REST_Response|\WP_Error {
+		$site_id = (int) $request['site_id'];
 
-		$governing_site_id = filter_var( $request->get_param( 'governing_site_id' ), FILTER_SANITIZE_NUMBER_INT );
-
-		if ( empty( $governing_site_id ) || ! is_numeric( $governing_site_id ) ) {
+		if ( ! get_site( $site_id ) ) {
 			return new \WP_Error(
-				'invalid_governing_site_id',
-				__( 'Invalid site info provided.', 'onedesign' ),
+				'onedesign_site_not_found',
+				sprintf(
+					/* translators: %d: site ID. */
+					__( 'There\'s no site with ID %d on this network.', 'onedesign' ),
+					$site_id
+				),
 				[ 'status' => 400 ]
 			);
 		}
 
-		// update site wide option of onedesign_multisite_governing_site.
-		$is_updated = MU_Settings::set_multisite_governing_site_id( (int) $governing_site_id );
-
-		if ( ! $is_updated ) {
+		// A site's type never changes once it's set.
+		if ( get_blog_option( $site_id, Settings::OPTION_SITE_TYPE ) ) {
 			return new \WP_Error(
-				'update_failed',
-				__( 'Failed to update governing site.', 'onedesign' ),
-				[ 'status' => 500 ]
+				'onedesign_site_has_type',
+				sprintf(
+					/* translators: %d: site ID. */
+					__( 'Site %d already has a OneDesign site type.', 'onedesign' ),
+					$site_id
+				),
+				[ 'status' => 400 ]
 			);
 		}
 
-		// set all existing sites site-type as brand-site and current site as governing-site.
-		$multisite_info = MU_Settings::get_all_multisites_info();
+		update_blog_option( $site_id, Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_GOVERNING );
 
-		foreach ( $multisite_info as $site ) {
-			if ( ! switch_to_blog( (int) $site['id'] ) ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.switch_to_blog_switch_to_blog -- Only site options are read/written while switched.
-				continue;
-			}
-
-			if ( intval( $site['id'] ) === intval( $governing_site_id ) ) {
-				update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_GOVERNING, false );
-				delete_option( Settings::OPTION_CONSUMER_PARENT_SITE_URL );
-				delete_option( Settings::OPTION_GOVERNING_SHARED_SITES );
-			} else {
-				update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_CONSUMER, false );
-				Settings::regenerate_api_key();
-				delete_option( Settings::OPTION_CONSUMER_PARENT_SITE_URL );
-				delete_option( Settings::OPTION_GOVERNING_SHARED_SITES );
-			}
-
-			restore_current_blog();
-		}
-
-		return new WP_REST_Response(
-			[
-				'success'        => true,
-				'governing_site' => $governing_site_id,
-			]
-		);
+		return new WP_REST_Response( null, 204 );
 	}
 
 	/**
-	 * Add sites to multisite setup.
+	 * Adds sites on the network to a governing site's brand sites.
 	 *
 	 * @param \WP_REST_Request $request The REST request.
-	 *
-	 * @return \WP_REST_Response|\WP_Error
+	 * @phpstan-param \WP_REST_Request<array{governing_site_id: int, site_ids: int[]}> $request
 	 */
-	public function add_sites( \WP_REST_Request $request ): WP_REST_Response|\WP_Error {
+	public function add_brand_sites( WP_REST_Request $request ): WP_REST_Response|\WP_Error {
+		$governing_site_id = (int) $request['governing_site_id'];
 
-		$site_ids = array_map( 'absint', (array) $request->get_param( 'site_ids' ) );
-
-		if ( empty( $site_ids ) ) {
+		if ( ! get_site( $governing_site_id ) || Settings::SITE_TYPE_GOVERNING !== get_blog_option( $governing_site_id, Settings::OPTION_SITE_TYPE ) ) {
 			return new \WP_Error(
-				'invalid_site_ids',
-				__( 'Invalid site info provided.', 'onedesign' ),
+				'onedesign_not_governing_site',
+				sprintf(
+					/* translators: %d: site ID. */
+					__( 'Site %d isn\'t a governing site on this network.', 'onedesign' ),
+					$governing_site_id
+				),
 				[ 'status' => 400 ]
 			);
 		}
 
-		// get governing site id.
-		$governing_site_id = MU_Settings::get_multisite_governing_site_id();
-
-		if ( ! $governing_site_id ) {
-			return new \WP_Error(
-				'no_governing_site',
-				__( 'No governing site set. Please set a governing site first.', 'onedesign' ),
-				[ 'status' => 400 ]
-			);
-		}
-
-		// get governing site details.
-		$governing_site_details = get_blog_details( $governing_site_id );
-		if ( ! $governing_site_details || empty( $governing_site_details->siteurl ) ) {
-			return new \WP_Error(
-				'invalid_governing_site',
-				__( 'The governing site could not be found.', 'onedesign' ),
-				[ 'status' => 400 ]
-			);
-		}
-		$governing_site_url = $governing_site_details->siteurl;
-
-		$shared_sites = Settings::get_shared_sites();
+		$site_ids = (array) $request['site_ids'];
 
 		foreach ( $site_ids as $site_id ) {
-
-			// switch to each site and update option of onedesign_site_type as brand-site.
-			if ( ! switch_to_blog( (int) $site_id ) ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.switch_to_blog_switch_to_blog -- Only site options are read/written while switched.
-				continue;
+			if ( ! get_site( $site_id ) ) {
+				return new \WP_Error(
+					'onedesign_site_not_found',
+					sprintf(
+						/* translators: %d: site ID. */
+						__( 'There\'s no site with ID %d on this network.', 'onedesign' ),
+						$site_id
+					),
+					[ 'status' => 400 ]
+				);
 			}
 
-			$site_url                  = trailingslashit( get_bloginfo( 'url' ) );
-			$shared_sites[ $site_url ] = [
-				'id'          => (string) $site_id,
-				'name'        => get_bloginfo( 'name' ),
-				'url'         => $site_url,
-				'api_key'     => Settings::get_api_key(),
-				'is_editable' => false,
-			];
-
-			update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_CONSUMER, false );
-			Settings::set_parent_site_url( $governing_site_url );
-
-			// remove shared sites options if exists to avoid conflicts.
-			delete_option( Settings::OPTION_GOVERNING_SHARED_SITES );
-
+			switch_to_blog( $site_id ); // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.switch_to_blog_switch_to_blog -- Only site options are read while switched.
+			$can_add_as_brand_site = MU_Utils::can_add_as_brand_site();
 			restore_current_blog();
+
+			if ( ! $can_add_as_brand_site ) {
+				return new \WP_Error(
+					'onedesign_site_cannot_be_brand',
+					sprintf(
+						/* translators: %d: site ID. */
+						__( 'Site %d can\'t be added as a brand site.', 'onedesign' ),
+						$site_id
+					),
+					[ 'status' => 400 ]
+				);
+			}
 		}
 
-		// update shared sites in governing site.
-		if ( ! switch_to_blog( (int) $governing_site_id ) ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.switch_to_blog_switch_to_blog -- Only site options are read/written while switched.
-			return new \WP_Error(
-				sprintf( 'failed_to_switch_blog_%d', $governing_site_id ),
-				__( 'Failed to switch to governing site blog.', 'onedesign' ),
-				[ 'status' => 500 ]
-			);
+		foreach ( $site_ids as $site_id ) {
+			MU_Utils::add_brand_site( $governing_site_id, $site_id );
 		}
 
-		Settings::set_shared_sites( $shared_sites );
-
+		// The governing site's settings screen shows its brand sites from the response.
+		switch_to_blog( $governing_site_id ); // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.switch_to_blog_switch_to_blog -- Only site options are read while switched.
+		$shared_sites = Settings::get_shared_sites_without_keys();
 		restore_current_blog();
 
-		return new WP_REST_Response(
-			[
-				'success'     => true,
-				'added_sites' => $site_ids,
-			]
-		);
-	}
-
-	/**
-	 * Get all sites from current multisite setup.
-	 */
-	public function get_all_multisite_sites(): WP_REST_Response {
-
-		$all_multisites = MU_Settings::get_all_multisites_info();
-
-		return new WP_REST_Response(
-			[
-				'success' => true,
-				'sites'   => $all_multisites,
-			]
-		);
+		return rest_ensure_response( [ 'shared_sites' => $shared_sites ] );
 	}
 }

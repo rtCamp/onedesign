@@ -58,6 +58,7 @@ function uninstall(): void {
  */
 function delete_network_plugin_data(): void {
 	$options = [
+		// 1.1.x and earlier.
 		PLUGIN_PREFIX . 'multisite_governing_site',
 	];
 
@@ -91,7 +92,6 @@ function delete_options(): void {
 		PLUGIN_PREFIX . 'child_site_public_key',
 		PLUGIN_PREFIX . 'shared_templates',
 		PLUGIN_PREFIX . 'brand_site_post_ids',
-		PLUGIN_PREFIX . 'multisite_governing_site',
 
 		// 1.1.x and earlier: options the plugin no longer uses.
 		PLUGIN_PREFIX . 'shared_patterns',

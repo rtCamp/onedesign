@@ -30,4 +30,25 @@ describe( 'SiteTable on a network', () => {
 			'https://example.com/brand-a/logo.png'
 		);
 	} );
+
+	it( 'hides the picker when the network has no sites to add', () => {
+		// The server sends none to site admins or when no site can be added.
+		render(
+			<SiteTable
+				sites={ [] }
+				onEdit={ vi.fn() }
+				onDelete={ vi.fn() }
+				setFormData={ vi.fn() }
+				setShowModal={ vi.fn() }
+				setSites={ vi.fn() }
+				setNotice={ vi.fn() }
+			/>
+		);
+
+		expect(
+			screen.queryByRole( 'button', {
+				name: 'Add Brand Sites From This Network',
+			} )
+		).not.toBeInTheDocument();
+	} );
 } );
