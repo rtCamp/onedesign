@@ -1,4 +1,5 @@
 import {
+	afterEach,
 	beforeEach,
 	describe,
 	expect,
@@ -6,7 +7,13 @@ import {
 	type MockedFunction,
 	vi,
 } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+	act,
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from '@testing-library/react';
 import apiFetch from '@wordpress/api-fetch';
 
 // Mock child components to isolate SettingsPage behavior
@@ -99,6 +106,11 @@ const setSharedSites = ( sharedSites: OneDesignSharedSite[] ) => {
 };
 
 describe( 'SettingsPage', () => {
+	// A test that fails while on fake timers would leave them on for the next ones.
+	afterEach( () => {
+		vi.useRealTimers();
+	} );
+
 	beforeEach( () => {
 		mockedApiFetch.mockReset();
 		window.OneDesignSettings = {
@@ -199,6 +211,56 @@ describe( 'SettingsPage', () => {
 			expect( mockSubmitResults ).toEqual( [ false ] );
 		} );
 		expect( screen.getByTestId( 'site-modal' ) ).toBeInTheDocument();
+	} );
+
+	it( 'gives each notice its own snackbar timer', async () => {
+		vi.useFakeTimers();
+		setSharedSites( [
+			{
+				id: 'one',
+				name: 'Brand Site',
+				url: 'https://brand.example.com/',
+				logo: '',
+				logo_id: 0,
+			},
+		] );
+		mockedApiFetch
+			.mockResolvedValueOnce( {
+				governing_site_notified: true,
+				message: 'Brand site removed successfully.',
+			} )
+			.mockResolvedValueOnce( {
+				shared_sites: [
+					{
+						name: 'Brand Site',
+						url: 'https://brand.example.com/',
+					},
+				],
+			} );
+
+		render( <SettingsPage /> );
+		fireEvent.click(
+			screen.getByRole( 'button', { name: 'Delete Site' } )
+		);
+		await screen.findAllByText( 'Brand site removed successfully.' );
+
+		// The second notice arrives just before the first one's timer ends.
+		act( () => {
+			vi.advanceTimersByTime( 9000 );
+		} );
+		fireEvent.click( screen.getByRole( 'button', { name: 'Open Modal' } ) );
+		fireEvent.click(
+			screen.getByRole( 'button', { name: 'Submit Modal' } )
+		);
+		await screen.findAllByText( 'Brand Site saved successfully.' );
+
+		act( () => {
+			vi.advanceTimersByTime( 2000 );
+		} );
+
+		expect(
+			document.querySelector( '.components-snackbar' )
+		).toHaveTextContent( 'Brand Site saved successfully.' );
 	} );
 
 	it( 'submits edit changes correctly', async () => {

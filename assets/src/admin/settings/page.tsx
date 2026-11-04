@@ -1,4 +1,4 @@
-import { useState } from '@wordpress/element';
+import { useState, useRef, useCallback } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { Notice, Snackbar } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
@@ -9,6 +9,8 @@ import SiteTypeSettings from '@/components/SiteTypeSettings';
 import type { SiteType } from '@/types/global';
 
 export interface NoticeType {
+	// Set by the settings page, so each notice gets its own Snackbar.
+	id?: number;
 	type: 'success' | 'error' | 'warning' | 'info';
 	message: string;
 }
@@ -45,19 +47,21 @@ interface DeleteSiteResponse {
 	message?: string;
 }
 
-/**
- * Settings page component for OneDesign plugin.
- *
- * @return Rendered component.
- */
-const OneDesignSettingsPage = (): JSX.Element => {
+const SettingsPage = () => {
 	const [ showModal, setShowModal ] = useState( false );
 	const [ editingIndex, setEditingIndex ] = useState< EditingIndex >( null );
 	const [ sites, setSites ] = useState< BrandSite[] >(
 		window.OneDesignSettings.sharedSites ?? []
 	);
 	const [ formData, setFormData ] = useState< BrandSite >( defaultBrandSite );
-	const [ notice, setNotice ] = useState< NoticeType | null >( null );
+	const [ notice, setNoticeState ] = useState< NoticeType | null >( null );
+	const noticeId = useRef( 0 );
+
+	// A new id remounts the Snackbar, which restarts its timer for the new notice.
+	const setNotice = useCallback( ( next: NoticeType | null ) => {
+		noticeId.current += 1;
+		setNoticeState( next ? { ...next, id: noticeId.current } : null );
+	}, [] );
 
 	// Kept until dismissed, since each one asks the admin to finish disconnecting a brand site.
 	const [ disconnectNotices, setDisconnectNotices ] = useState<
@@ -104,8 +108,8 @@ const OneDesignSettingsPage = (): JSX.Element => {
 		}
 	};
 
-	const handleDelete = async ( index: number ): Promise< void > => {
-		const removedSite = sites[ index ];
+	const handleDelete = async ( index: number | null ): Promise< void > => {
+		const removedSite = index !== null ? sites[ index ] : undefined;
 
 		if ( ! removedSite ) {
 			return;
@@ -155,8 +159,10 @@ const OneDesignSettingsPage = (): JSX.Element => {
 
 	return (
 		<>
-			{ ( notice?.message?.length ?? 0 ) > 0 && (
+			{ !! notice && notice?.message?.length > 0 && (
 				<Snackbar
+					key={ notice.id }
+					explicitDismiss={ false }
 					onRemove={ () => setNotice( null ) }
 					className={
 						notice?.type === 'error'
@@ -224,4 +230,4 @@ const OneDesignSettingsPage = (): JSX.Element => {
 	);
 };
 
-export default OneDesignSettingsPage;
+export default SettingsPage;

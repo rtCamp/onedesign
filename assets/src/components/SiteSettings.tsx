@@ -150,10 +150,7 @@ const SiteSettings = (): JSX.Element => {
 				</Notice>
 			) }
 
-			<Card
-				className="brand-site-settings"
-				style={ { marginTop: '30px' } }
-			>
+			<Card style={ { marginTop: '30px' } }>
 				<CardHeader>
 					<h2>{ __( 'API Key', 'onedesign' ) }</h2>
 					<div>
@@ -207,12 +204,12 @@ const SiteSettings = (): JSX.Element => {
 							hideLabelFromVision
 							value={ apiKey }
 							readOnly
-							onChange={ () => {} }
 							help={ __(
 								'This key is used for secure communication with the Governing site.',
 								'onedesign'
 							) }
 							__nextHasNoMarginBottom
+							onChange={ () => {} } // to avoid ts warning
 						/>
 					</div>
 				</CardBody>
@@ -228,7 +225,7 @@ const SiteSettings = (): JSX.Element => {
 						isDestructive
 						onClick={ handleDisconnectGoverningSite }
 						disabled={
-							governingSite?.trim().length === 0 || isLoading
+							governingSite.trim().length === 0 || isLoading
 						}
 					>
 						{ __( 'Disconnect Governing Site', 'onedesign' ) }
@@ -239,13 +236,13 @@ const SiteSettings = (): JSX.Element => {
 						label={ __( 'Governing Site URL', 'onedesign' ) }
 						value={ governingSite }
 						disabled
-						onChange={ () => {} }
 						help={ __(
 							'This is the URL of the Governing site this Brand site is connected to.',
 							'onedesign'
 						) }
 						__next40pxDefaultSize
 						__nextHasNoMarginBottom
+						onChange={ () => {} } // to avoid ts warning
 					/>
 				</CardBody>
 			</Card>

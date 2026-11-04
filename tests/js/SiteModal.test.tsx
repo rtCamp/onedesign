@@ -21,14 +21,6 @@ const baseFormData = {
 	api_key: 'secret-key',
 };
 
-const baseProps = {
-	setFormData: vi.fn(),
-	onSubmit: vi.fn().mockResolvedValue( true ),
-	onClose: vi.fn(),
-	sites: [],
-	originalData: undefined,
-};
-
 function SiteModalHarness( {
 	initialData = baseFormData,
 	editing = false,
@@ -58,36 +50,85 @@ function SiteModalHarness( {
 }
 
 describe( 'SiteModal', () => {
-	it( 'renders the add-site action when not editing', () => {
+	it( 'disables submit when editing without changes', () => {
+		// The key field starts empty when editing.
+		const stored = { ...baseFormData, api_key: '' };
+
 		render(
-			<SiteModal
-				formData={ {
-					name: 'X',
-					url: 'https://x.example',
-					api_key: 'k',
-				} }
-				editing={ false }
-				{ ...baseProps }
+			<SiteModalHarness
+				editing
+				initialData={ stored }
+				originalData={ stored }
 			/>
 		);
+
 		expect(
-			screen.getByRole( 'button', { name: /add site/i } )
-		).toBeInTheDocument();
+			screen.getByRole( 'button', { name: 'Update Site' } )
+		).toBeDisabled();
 	} );
 
-	it( 'validates the URL before submitting', async () => {
+	it( 'shows validation feedback for invalid input', async () => {
 		render(
-			<SiteModal
-				formData={ { name: 'X', url: 'not a url', api_key: 'k' } }
-				editing={ false }
-				{ ...baseProps }
+			<SiteModalHarness
+				initialData={ {
+					name: 'A very long site name beyond',
+					url: 'invalid-url',
+					api_key: 'secret-key',
+				} }
 			/>
 		);
-		fireEvent.click( screen.getByRole( 'button', { name: /add site/i } ) );
-		// The message renders both in the Notice and WP's a11y live-region.
-		const matches = await screen.findAllByText( /enter a valid url/i );
-		expect( matches.length ).toBeGreaterThan( 0 );
-		expect( baseProps.onSubmit ).not.toHaveBeenCalled();
+
+		fireEvent.click( screen.getByRole( 'button', { name: 'Add Site' } ) );
+
+		// WordPress renders notices in both accessibility region and visible content
+		expect(
+			await screen.findAllByText(
+				'Site Name must be under 20 characters.'
+			)
+		).toHaveLength( 2 );
+	} );
+
+	it( 'prevents duplicate site urls', async () => {
+		const onSubmit = vi.fn().mockResolvedValue( true );
+
+		render(
+			<SiteModalHarness
+				onSubmit={ onSubmit }
+				sites={ [
+					{
+						name: 'Existing',
+						url: 'https://brand.example.com/',
+						api_key: 'existing-key',
+					},
+				] }
+			/>
+		);
+
+		fireEvent.click( screen.getByRole( 'button', { name: 'Add Site' } ) );
+
+		// WordPress renders notices in both accessibility region and visible content
+		expect(
+			await screen.findAllByText(
+				'Site URL already exists. Please use a different URL.'
+			)
+		).toHaveLength( 2 );
+		expect( onSubmit ).not.toHaveBeenCalled();
+	} );
+
+	it( 'shows an error when saving the site fails', async () => {
+		const onSubmit = vi.fn().mockResolvedValue( false );
+
+		render( <SiteModalHarness onSubmit={ onSubmit } /> );
+
+		fireEvent.click( screen.getByRole( 'button', { name: 'Add Site' } ) );
+
+		// WordPress renders notices in both accessibility region and visible content
+		expect(
+			await screen.findAllByText(
+				'An error occurred while saving the site. Please try again.'
+			)
+		).toHaveLength( 2 );
+		expect( onSubmit ).toHaveBeenCalled();
 	} );
 
 	it( 'submits without calling the brand site, which the server checks on save', async () => {

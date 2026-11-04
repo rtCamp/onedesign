@@ -7,34 +7,14 @@ import {
 	Modal,
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
-import MultiSites from './MultiSites';
-import type { BrandSite, NoticeType } from '@/admin/settings/page';
+import type {
+	BrandSite,
+	EditingIndex,
+	NoticeType,
+} from '@/admin/settings/page';
 import { IS_GOVERNING_SITE_SELECTED, getInitials } from '@/js/utils';
+import MultiSites from './MultiSites';
 
-interface SiteTableProps {
-	sites: ( BrandSite & { is_editable?: boolean } )[];
-	onEdit: ( index: number ) => void;
-	onDelete: ( index: number ) => void;
-	setFormData: ( data: BrandSite ) => void;
-	setShowModal: ( show: boolean ) => void;
-	setSites: ( sites: BrandSite[] ) => void;
-	setNotice: ( notice: NoticeType ) => void;
-}
-
-/**
- * SiteTable component to display and manage brand sites.
- *
- * @param props              - Component properties.
- * @param props.sites        - List of brand sites.
- * @param props.onEdit       - Function to handle editing a site.
- * @param props.onDelete     - Function to handle deleting a site.
- * @param props.setFormData  - Function to set form data for editing.
- * @param props.setShowModal - Function to show/hide the modal for adding/editing a site.
- * @param props.setSites     - Function to update the list of sites.
- * @param props.setNotice    - Function to set notice messages.
- *
- * @return Rendered component.
- */
 const SiteTable = ( {
 	sites,
 	onEdit,
@@ -43,9 +23,17 @@ const SiteTable = ( {
 	setShowModal,
 	setSites,
 	setNotice,
-}: SiteTableProps ): JSX.Element => {
+}: {
+	sites: ( BrandSite & { is_editable?: boolean } )[];
+	onEdit: ( index: number ) => void;
+	onDelete: ( index: number | null ) => void;
+	setFormData: ( data: BrandSite ) => void;
+	setShowModal: ( show: boolean ) => void;
+	setSites: ( sites: BrandSite[] ) => void;
+	setNotice: ( notice: NoticeType ) => void;
+} ) => {
 	const [ showDeleteModal, setShowDeleteModal ] = useState( false );
-	const [ deleteIndex, setDeleteIndex ] = useState< number | null >( null );
+	const [ deleteIndex, setDeleteIndex ] = useState< EditingIndex >( null );
 
 	const handleDeleteClick = ( index: number ) => {
 		setDeleteIndex( index );
@@ -53,9 +41,7 @@ const SiteTable = ( {
 	};
 
 	const handleDeleteConfirm = () => {
-		if ( deleteIndex !== null ) {
-			onDelete( deleteIndex );
-		}
+		onDelete( deleteIndex );
 		setShowDeleteModal( false );
 		setDeleteIndex( null );
 	};
@@ -72,8 +58,8 @@ const SiteTable = ( {
 				<div style={ { display: 'flex', gap: '16px' } }>
 					{ IS_GOVERNING_SITE_SELECTED && (
 						<MultiSites
-							setBrandSites={ setSites }
 							brandSites={ sites }
+							setBrandSites={ setSites }
 							setNotice={ setNotice }
 						/>
 					) }
@@ -87,7 +73,10 @@ const SiteTable = ( {
 				</div>
 			</CardHeader>
 			<CardBody>
-				<table className="wp-list-table widefat fixed striped">
+				<table
+					className="wp-list-table widefat fixed striped "
+					style={ { marginTop: '16px' } }
+				>
 					<thead>
 						<tr>
 							<th>{ __( 'Site Name', 'onedesign' ) }</th>
@@ -116,7 +105,7 @@ const SiteTable = ( {
 								<td>{ site?.name }</td>
 								<td>{ site?.url }</td>
 								<td>
-									{ site?.logo ? (
+									{ site.logo ? (
 										<img
 											src={ site.logo }
 											alt=""
@@ -129,7 +118,7 @@ const SiteTable = ( {
 										/>
 									) : (
 										<span className="onedesign-site-initials">
-											{ getInitials( site?.name ?? '' ) }
+											{ getInitials( site.name ) }
 										</span>
 									) }
 								</td>
@@ -179,27 +168,18 @@ const SiteTable = ( {
 	);
 };
 
-interface DeleteConfirmationModalProps {
-	onConfirm: () => void;
-	onCancel: () => void;
-}
-
-/**
- * DeleteConfirmationModal component for confirming site deletion.
- *
- * @param props           - Component properties.
- * @param props.onConfirm - Function to call on confirmation.
- * @param props.onCancel  - Function to call on cancellation.
- * @return Rendered component.
- */
 const DeleteConfirmationModal = ( {
 	onConfirm,
 	onCancel,
-}: DeleteConfirmationModalProps ): JSX.Element => (
+}: {
+	onConfirm: () => void;
+	onCancel: () => void;
+} ) => (
 	<Modal
 		title={ __( 'Delete Brand Site', 'onedesign' ) }
 		onRequestClose={ onCancel }
 		isDismissible
+		shouldCloseOnClickOutside
 	>
 		<p>
 			{ __(
