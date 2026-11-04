@@ -9,8 +9,7 @@ import {
 import { __ } from '@wordpress/i18n';
 import MultiSites from './MultiSites';
 import type { BrandSite, NoticeType } from '@/admin/settings/page';
-import { IS_MULTISITE, IS_GOVERNING_SITE_SELECTED } from '@/js/constants';
-import { getInitials } from '@/js/utils';
+import { IS_GOVERNING_SITE_SELECTED, getInitials } from '@/js/utils';
 
 interface SiteTableProps {
 	sites: ( BrandSite & { is_editable?: boolean } )[];
@@ -71,7 +70,7 @@ const SiteTable = ( {
 			<CardHeader>
 				<h3>{ __( 'Brand Sites', 'onedesign' ) }</h3>
 				<div style={ { display: 'flex', gap: '16px' } }>
-					{ IS_MULTISITE && IS_GOVERNING_SITE_SELECTED && (
+					{ IS_GOVERNING_SITE_SELECTED && (
 						<MultiSites
 							setBrandSites={ setSites }
 							brandSites={ sites }

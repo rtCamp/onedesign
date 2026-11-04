@@ -1,6 +1,3 @@
-/**
- * WordPress dependencies
- */
 import {
 	Button,
 	Card,
@@ -17,11 +14,7 @@ import {
 	useState,
 } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
-
-/**
- * Internal dependencies
- */
-import { API_NAMESPACE, MULTISITES, NONCE } from '../../js/constants';
+import { API_NAMESPACE, MULTISITES, NONCE } from '@/js/utils';
 
 type SiteId = number | string;
 

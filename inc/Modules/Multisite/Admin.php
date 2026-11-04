@@ -45,18 +45,10 @@ class Admin implements Registrable {
 			return;
 		}
 
-		wp_localize_script(
-			Assets::MULTISITE_SETUP_SCRIPT_HANDLE,
-			'OneDesignMultiSiteSettings',
-			array_merge(
-				Assets::get_localized_data(),
-				[
-					'multisites' => MU_Settings::get_all_multisites_info(),
-				]
-			)
-		);
+		wp_localize_script( Assets::MULTISITE_SETUP_SCRIPT_HANDLE, 'OneDesignSettings', Assets::get_localized_data() );
 
 		wp_enqueue_script( Assets::MULTISITE_SETUP_SCRIPT_HANDLE );
+		wp_enqueue_style( Assets::ADMIN_STYLES_HANDLE );
 
 		// @todo Move other scripts from Assets to here.
 	}

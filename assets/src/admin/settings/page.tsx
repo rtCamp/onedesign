@@ -5,7 +5,7 @@ import SiteTable from '@/components/SiteTable';
 import SiteModal from '@/components/SiteModal';
 import SiteSettings from '@/components/SiteSettings';
 import SiteTypeSettings from '@/components/SiteTypeSettings';
-import { API_NAMESPACE, NONCE } from '@/js/constants';
+import { API_NAMESPACE, NONCE } from '@/js/utils';
 import type { SiteType } from '@/types/global';
 
 export interface NoticeType {
@@ -30,13 +30,14 @@ export const defaultBrandSite: BrandSite = {
 
 export type EditingIndex = number | null;
 
+const SITE_TYPE = ( window.OneDesignSettings.siteType as SiteType ) || '';
+
 /**
  * Settings page component for OneDesign plugin.
  *
  * @return Rendered component.
  */
 const OneDesignSettingsPage = (): JSX.Element => {
-	const [ siteType, setSiteType ] = useState< SiteType | null >( null );
 	const [ showModal, setShowModal ] = useState( false );
 	const [ editingIndex, setEditingIndex ] = useState< EditingIndex >( null );
 	const [ sites, setSites ] = useState< BrandSite[] >( [] );
@@ -51,29 +52,20 @@ const OneDesignSettingsPage = (): JSX.Element => {
 
 		const fetchData = async () => {
 			try {
-				const [ siteTypeRes, sitesRes ] = await Promise.all( [
-					fetch( `${ API_NAMESPACE }/site-type`, {
+				const sitesRes = await fetch(
+					`${ API_NAMESPACE }/shared-sites`,
+					{
 						headers: {
 							'Content-Type': 'application/json',
 							'X-WP-NONCE': token,
 						},
-					} ),
-					fetch( `${ API_NAMESPACE }/shared-sites`, {
-						headers: {
-							'Content-Type': 'application/json',
-							'X-WP-NONCE': token,
-						},
-					} ),
-				] );
+					}
+				);
 
-				const siteTypeData = ( await siteTypeRes.json() ) as {
-					site_type?: SiteType;
-				};
 				const sitesData = ( await sitesRes.json() ) as {
 					shared_sites?: BrandSite[];
 				};
 
-				setSiteType( siteTypeData?.site_type ?? '' );
 				if ( Array.isArray( sitesData?.shared_sites ) ) {
 					setSites( sitesData?.shared_sites );
 				}
@@ -201,11 +193,11 @@ const OneDesignSettingsPage = (): JSX.Element => {
 				</Snackbar>
 			) }
 
-			{ siteType === '' && <SiteTypeSettings /> }
+			{ ! SITE_TYPE && <SiteTypeSettings /> }
 
-			{ siteType === 'brand-site' && <SiteSettings /> }
+			{ SITE_TYPE === 'brand-site' && <SiteSettings /> }
 
-			{ siteType === 'governing-site' && (
+			{ SITE_TYPE === 'governing-site' && (
 				<SiteTable
 					sites={ sites }
 					onEdit={ setEditingIndex }

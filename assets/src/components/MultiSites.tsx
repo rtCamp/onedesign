@@ -1,14 +1,7 @@
-/**
- * WordPress dependencies
- */
 import { Button, Modal, CheckboxControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useCallback, useEffect, useState } from '@wordpress/element';
-
-/**
- * External dependencies
- */
-import { API_NAMESPACE, NONCE, CURRENT_SITE_ID } from '@/js/constants';
+import { API_NAMESPACE, NONCE, CURRENT_SITE_ID } from '@/js/utils';
 import type { BrandSite, NoticeType } from '@/admin/settings/page';
 
 type SiteId = number | string;
@@ -210,7 +203,7 @@ const MultiSites = ( {
 	const availableSites =
 		sites?.filter(
 			( site ) =>
-				String( site.id ) !== CURRENT_SITE_ID &&
+				String( site.id ) !== String( CURRENT_SITE_ID ) &&
 				! brandSites?.some(
 					( brandSite ) =>
 						String( brandSite.id ) === String( site.id )

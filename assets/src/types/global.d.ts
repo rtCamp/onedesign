@@ -14,13 +14,23 @@ export interface OneDesignSharedSite {
 	logo_id: number;
 }
 
+export interface OneDesignMultisite {
+	id: string;
+	name: string;
+	url: string;
+}
+
 export interface OneDesignSettings {
 	restUrl: string;
-	restNonce: string;
-	apiKey: string;
-	settingsLink: string;
+	nonce: string;
+	api_key: string;
 	setupUrl: string;
+	siteType: SiteType | null;
 	sharedSites?: OneDesignSharedSite[];
+	restNamespace: string;
+	multisites: OneDesignMultisite[];
+	isGoverningSiteSelected: boolean;
+	currentSiteId: number;
 }
 
 declare global {

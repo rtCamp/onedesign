@@ -23,33 +23,6 @@ class Basic_Options_Controller extends Abstract_REST_Controller {
 	 */
 	public function register_routes(): void {
 		/**
-		 * Register a route to get site type and set site type.
-		 */
-		register_rest_route(
-			self::NAMESPACE,
-			'/site-type',
-			[
-				[
-					'methods'             => WP_REST_Server::READABLE,
-					'callback'            => [ $this, 'get_site_type' ],
-					'permission_callback' => [ self::class, 'permission_callback' ],
-				],
-				[
-					'methods'             => WP_REST_Server::CREATABLE,
-					'callback'            => [ $this, 'set_site_type' ],
-					'permission_callback' => [ self::class, 'permission_callback' ],
-					'args'                => [
-						'site_type' => [
-							'required'          => true,
-							'type'              => 'string',
-							'sanitize_callback' => 'sanitize_text_field',
-						],
-					],
-				],
-			]
-		);
-
-		/**
 		 * Register a route which will store array of sites data like site name, site url, its GitHub repo and api key.
 		 */
 		register_rest_route(
@@ -92,17 +65,12 @@ class Basic_Options_Controller extends Abstract_REST_Controller {
 		);
 
 		/**
-		 * Register a route to get api key option.
+		 * Register a route to regenerate the api key.
 		 */
 		register_rest_route(
 			self::NAMESPACE,
 			'/secret-key',
 			[
-				[
-					'methods'             => WP_REST_Server::READABLE,
-					'callback'            => [ $this, 'get_secret_key' ],
-					'permission_callback' => [ self::class, 'permission_callback' ],
-				],
 				[
 					'methods'             => WP_REST_Server::EDITABLE,
 					'callback'            => [ $this, 'regenerate_secret_key' ],
@@ -119,11 +87,6 @@ class Basic_Options_Controller extends Abstract_REST_Controller {
 			'/governing-site',
 			[
 				[
-					'methods'             => WP_REST_Server::READABLE,
-					'callback'            => [ $this, 'get_governing_site' ],
-					'permission_callback' => [ self::class, 'permission_callback' ],
-				],
-				[
 					'methods'             => WP_REST_Server::DELETABLE,
 					'callback'            => [ $this, 'remove_governing_site' ],
 					'permission_callback' => [ self::class, 'permission_callback' ],
@@ -137,41 +100,6 @@ class Basic_Options_Controller extends Abstract_REST_Controller {
 	 */
 	public static function permission_callback(): bool {
 		return current_user_can( 'manage_options' );
-	}
-
-	/**
-	 * Get the site type.
-	 *
-	 * @return \WP_REST_Response|\WP_Error
-	 */
-	public function get_site_type(): WP_REST_Response|\WP_Error {
-
-		return rest_ensure_response(
-			[
-				'success'   => true,
-				'site_type' => Settings::get_site_type(),
-			]
-		);
-	}
-
-	/**
-	 * Set the site type.
-	 *
-	 * @param \WP_REST_Request $request The request object.
-	 *
-	 * @return \WP_REST_Response|\WP_Error
-	 */
-	public function set_site_type( WP_REST_Request $request ): WP_REST_Response|\WP_Error {
-
-		$site_type = sanitize_text_field( $request->get_param( 'site_type' ) );
-		$success   = update_option( Settings::OPTION_SITE_TYPE, $site_type, false );
-
-		return rest_ensure_response(
-			[
-				'success'   => $success,
-				'site_type' => $site_type,
-			]
-		);
 	}
 
 	/**
@@ -245,22 +173,6 @@ class Basic_Options_Controller extends Abstract_REST_Controller {
 		);
 	}
 
-		/**
-		 * Get governing site url.
-		 *
-		 * @return \WP_REST_Response|\WP_Error
-		 */
-	public function get_governing_site(): WP_REST_Response|\WP_Error {
-		$governing_site_url = Settings::get_parent_site_url();
-
-		return rest_ensure_response(
-			[
-				'success'            => true,
-				'governing_site_url' => $governing_site_url,
-			]
-		);
-	}
-
 	/**
 	 * Remove governing site url.
 	 *
@@ -273,20 +185,6 @@ class Basic_Options_Controller extends Abstract_REST_Controller {
 			[
 				'success' => true,
 				'message' => __( 'Governing site removed successfully.', 'onedesign' ),
-			]
-		);
-	}
-
-	/**
-	 * Get the secret key.
-	 */
-	public function get_secret_key(): \WP_REST_Response|\WP_Error {
-		$secret_key = Settings::get_api_key();
-
-		return new \WP_REST_Response(
-			[
-				'success'    => true,
-				'secret_key' => $secret_key,
 			]
 		);
 	}
