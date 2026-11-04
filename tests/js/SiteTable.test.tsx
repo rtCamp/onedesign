@@ -1,77 +1,137 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
-
-/**
- * Internal dependencies
- */
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import SiteTable from '@/components/SiteTable';
 
-const baseProps = {
-	onEdit: vi.fn(),
-	onDelete: vi.fn(),
-	setFormData: vi.fn(),
-	setShowModal: vi.fn(),
-	setSites: vi.fn(),
-	setNotice: vi.fn(),
-};
+const sites = [
+	{
+		name: 'Brand One',
+		url: 'https://brand-one.example.com/',
+	},
+];
 
 describe( 'SiteTable', () => {
-	it( 'shows an empty-state row when there are no sites', () => {
-		render( <SiteTable sites={ [] } { ...baseProps } /> );
+	it( 'renders an empty state when there are no brand sites', () => {
+		render(
+			<SiteTable
+				sites={ [] }
+				onEdit={ vi.fn() }
+				onDelete={ vi.fn() }
+				setFormData={ vi.fn() }
+				setShowModal={ vi.fn() }
+				setSites={ vi.fn() }
+				setNotice={ vi.fn() }
+			/>
+		);
+
 		expect(
-			screen.getByText( /no brand sites found/i )
+			screen.getByText( 'No Brand Sites found.' )
 		).toBeInTheDocument();
 	} );
 
-	it( 'renders a row per site with name and url', () => {
-		const sites = [
-			{
-				id: '1',
-				name: 'Alpha',
-				url: 'https://alpha.example',
-				api_key: 'abcdefghij1234',
-				is_editable: true,
-			},
-		];
-		render( <SiteTable sites={ sites } { ...baseProps } /> );
-		expect( screen.getByText( 'Alpha' ) ).toBeInTheDocument();
+	it( 'opens the add modal when the add button is clicked', () => {
+		const setShowModal = vi.fn();
+
+		render(
+			<SiteTable
+				sites={ [] }
+				onEdit={ vi.fn() }
+				onDelete={ vi.fn() }
+				setFormData={ vi.fn() }
+				setShowModal={ setShowModal }
+				setSites={ vi.fn() }
+				setNotice={ vi.fn() }
+			/>
+		);
+
+		fireEvent.click(
+			screen.getByRole( 'button', { name: 'Add Brand Site' } )
+		);
+
+		expect( setShowModal ).toHaveBeenCalledWith( true );
+	} );
+
+	it( 'passes the selected site to edit handlers', () => {
+		const onEdit = vi.fn();
+		const setFormData = vi.fn();
+		const setShowModal = vi.fn();
+
+		render(
+			<SiteTable
+				sites={ sites }
+				onEdit={ onEdit }
+				onDelete={ vi.fn() }
+				setFormData={ setFormData }
+				setShowModal={ setShowModal }
+				setSites={ vi.fn() }
+				setNotice={ vi.fn() }
+			/>
+		);
+
+		fireEvent.click( screen.getByRole( 'button', { name: 'Edit' } ) );
+
+		// The key field starts empty, since the stored key never reaches the browser.
+		expect( setFormData ).toHaveBeenCalledWith( {
+			...sites[ 0 ],
+			api_key: '',
+		} );
+		expect( onEdit ).toHaveBeenCalledWith( 0 );
+		expect( setShowModal ).toHaveBeenCalledWith( true );
+	} );
+
+	it( 'confirms deletion before calling onDelete', () => {
+		const onDelete = vi.fn();
+
+		render(
+			<SiteTable
+				sites={ sites }
+				onEdit={ vi.fn() }
+				onDelete={ onDelete }
+				setFormData={ vi.fn() }
+				setShowModal={ vi.fn() }
+				setSites={ vi.fn() }
+				setNotice={ vi.fn() }
+			/>
+		);
+
+		fireEvent.click( screen.getByRole( 'button', { name: 'Delete' } ) );
+
+		const dialog = screen.getByRole( 'dialog', {
+			name: 'Delete Brand Site',
+		} );
 		expect(
-			screen.getByText( 'https://alpha.example' )
+			within( dialog ).getByText(
+				'Are you sure you want to delete this Brand Site? This action cannot be undone.'
+			)
 		).toBeInTheDocument();
+
+		fireEvent.click(
+			within( dialog ).getByRole( 'button', { name: 'Delete' } )
+		);
+
+		expect( onDelete ).toHaveBeenCalledWith( 0 );
 	} );
 
-	it( 'opens the edit flow for a site', () => {
-		const sites = [
-			{
-				id: '7',
-				name: 'Beta',
-				url: 'https://beta.example',
-				api_key: 'key1234567',
-			},
-		];
-		render( <SiteTable sites={ sites } { ...baseProps } /> );
-		fireEvent.click( screen.getByRole( 'button', { name: /^edit$/i } ) );
-		expect( baseProps.setFormData ).toHaveBeenCalledWith( sites[ 0 ] );
-		expect( baseProps.onEdit ).toHaveBeenCalledWith( 0 );
-		expect( baseProps.setShowModal ).toHaveBeenCalledWith( true );
-	} );
+	it( 'lets the user cancel deletion', () => {
+		const onDelete = vi.fn();
 
-	it( 'confirms deletion through the modal', () => {
-		const sites = [
-			{
-				id: '3',
-				name: 'Gamma',
-				url: 'https://gamma.example',
-				api_key: 'key1234567',
-			},
-		];
-		render( <SiteTable sites={ sites } { ...baseProps } /> );
-		fireEvent.click( screen.getByRole( 'button', { name: /^delete$/i } ) );
-		// Modal is open; confirm the deletion.
-		const confirm = screen
-			.getAllByRole( 'button', { name: /^delete$/i } )
-			.at( -1 );
-		fireEvent.click( confirm as HTMLElement );
-		expect( baseProps.onDelete ).toHaveBeenCalledWith( 0 );
+		render(
+			<SiteTable
+				sites={ sites }
+				onEdit={ vi.fn() }
+				onDelete={ onDelete }
+				setFormData={ vi.fn() }
+				setShowModal={ vi.fn() }
+				setSites={ vi.fn() }
+				setNotice={ vi.fn() }
+			/>
+		);
+
+		fireEvent.click( screen.getByRole( 'button', { name: 'Delete' } ) );
+		fireEvent.click( screen.getByRole( 'button', { name: 'Cancel' } ) );
+
+		expect( onDelete ).not.toHaveBeenCalled();
+		expect(
+			screen.queryByRole( 'dialog', { name: 'Delete Brand Site' } )
+		).not.toBeInTheDocument();
 	} );
 } );

@@ -197,17 +197,60 @@ final class SettingsTest extends TestCase {
 
 		$this->assertSame(
 			[
-				'https://brand-one.example' => [
+				'https://brand-one.example/' => [
 					'api_key' => 'brand-one-key',
 					'id'      => 'brand-1',
 					'logo'    => 'https://brand-one.example/logo.png',
 					'logo_id' => 11,
 					'name'    => 'Brand One',
-					'url'     => 'https://brand-one.example',
+					'url'     => 'https://brand-one.example/',
 				],
 			],
 			Settings::get_shared_sites()
 		);
+	}
+
+	/** Ensures remove_shared_site removes only the matching site, regardless of trailing slash. */
+	public function test_remove_shared_site_removes_only_the_matching_site(): void {
+		Settings::set_shared_sites(
+			[
+				[
+					'id'      => 'brand-1',
+					'name'    => 'Brand One',
+					'url'     => 'https://brand-one.example',
+					'api_key' => 'brand-one-key',
+				],
+				[
+					'id'      => 'brand-2',
+					'name'    => 'Brand Two',
+					'url'     => 'https://brand-two.example',
+					'api_key' => 'brand-two-key',
+				],
+			]
+		);
+
+		$this->assertTrue( Settings::remove_shared_site( 'https://brand-one.example' ) );
+
+		$remaining_sites = Settings::get_shared_sites();
+		$this->assertSame( [ 'https://brand-two.example/' ], array_keys( $remaining_sites ) );
+		$this->assertSame( 'brand-two-key', $remaining_sites['https://brand-two.example/']['api_key'] );
+	}
+
+	/** Ensures remove_shared_site leaves the option alone for unknown URLs. */
+	public function test_remove_shared_site_returns_false_for_unknown(): void {
+		Settings::set_shared_sites(
+			[
+				[
+					'id'      => 'brand-1',
+					'name'    => 'Brand One',
+					'url'     => 'https://brand-one.example',
+					'api_key' => 'brand-one-key',
+				],
+			]
+		);
+
+		$this->assertFalse( Settings::remove_shared_site( 'https://unknown.example' ) );
+		$this->assertCount( 1, Settings::get_shared_sites() );
 	}
 
 	/** Ensures parent site URL can be stored and retrieved. */

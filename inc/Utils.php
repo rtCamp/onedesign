@@ -32,4 +32,18 @@ final class Utils {
 	public static function get_current_site_url(): string {
 		return self::normalize_url( (string) get_option( 'home' ) );
 	}
+
+	/**
+	 * Logs a message to the PHP error log when debugging is enabled.
+	 *
+	 * @param string $message The message to log. Will be prefixed with the plugin name.
+	 */
+	public static function log( string $message ): void {
+		if ( ! defined( 'WP_DEBUG' ) || ! WP_DEBUG ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Debug-only logging.
+		error_log( 'OneDesign: ' . $message );
+	}
 }

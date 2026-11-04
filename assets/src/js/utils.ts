@@ -58,6 +58,19 @@ export const isValidUrl = ( url: string ): boolean => {
 };
 
 /**
+ * Ensures that a URL string ends with a trailing slash.
+ *
+ * @param {string} url - The URL string to normalize.
+ * @return {string} The normalized URL with a trailing slash.
+ */
+export const withTrailingSlash = ( url: string ): string => {
+	if ( ! url ) {
+		return '';
+	}
+	return url.endsWith( '/' ) ? url : `${ url }/`;
+};
+
+/**
  * WordPress REST API base URL for OneDesign plugin requests.
  *
  * @constant

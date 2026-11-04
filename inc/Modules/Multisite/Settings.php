@@ -45,15 +45,10 @@ class Settings implements Registrable {
 	/**
 	 * Get the governing site for multisite setup.
 	 *
-	 * @return ?int Governing site ID, or 0 if not set. null if not multisite.
+	 * @return int Governing site ID, or 0 if not set.
 	 */
-	public static function get_multisite_governing_site_id(): ?int {
-		if ( ! is_multisite() ) {
-			return null;
-		}
-
-		$governing_site_id = get_site_option( self::OPTION_MULTISITE_GOVERNING_SITE, 0 );
-		return is_numeric( $governing_site_id ) ? (int) $governing_site_id : 0;
+	public static function get_multisite_governing_site_id(): int {
+		return (int) get_site_option( self::OPTION_MULTISITE_GOVERNING_SITE, 0 );
 	}
 
 	/**
@@ -62,10 +57,6 @@ class Settings implements Registrable {
 	 * @param int $site_id The site ID to set as governing site.
 	 */
 	public static function set_multisite_governing_site_id( int $site_id ): bool {
-		if ( ! is_multisite() ) {
-			return false;
-		}
-
 		return update_site_option( self::OPTION_MULTISITE_GOVERNING_SITE, $site_id );
 	}
 
@@ -75,8 +66,7 @@ class Settings implements Registrable {
 	 * @return bool True if governing site is selected, false otherwise.
 	 */
 	public static function is_governing_site_selected(): bool {
-		$governing_site_id = self::get_multisite_governing_site_id();
-		return ( (int) $governing_site_id ) > 0;
+		return self::get_multisite_governing_site_id() > 0;
 	}
 
 	/**

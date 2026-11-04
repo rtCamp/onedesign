@@ -88,11 +88,21 @@ const SiteSettings = (): JSX.Element => {
 
 	const deleteGoverningSiteConnection = useCallback( async () => {
 		try {
-			await apiFetch( {
+			const data = await apiFetch< {
+				governing_site_notified?: boolean;
+				message: string;
+			} >( {
 				path: '/onedesign/v1/governing-site',
 				method: 'DELETE',
 			} );
 			setGoverningSite( '' );
+
+			// Disconnected locally, but the governing site may still list this site.
+			if ( data?.governing_site_notified === false ) {
+				setNotice( { type: 'warning', message: data.message } );
+				return;
+			}
+
 			setNotice( {
 				type: 'success',
 				message: __(
@@ -151,9 +161,11 @@ const SiteSettings = (): JSX.Element => {
 						<Button
 							variant="primary"
 							onClick={ () => {
-								navigator?.clipboard
-									?.writeText( apiKey )
-									?.then( () => {
+								(
+									navigator.clipboard?.writeText( apiKey ) ??
+									Promise.reject( '' )
+								)
+									.then( () => {
 										setNotice( {
 											type: 'success',
 											message: __(
@@ -162,7 +174,7 @@ const SiteSettings = (): JSX.Element => {
 											),
 										} );
 									} )
-									?.catch( ( error: unknown ) => {
+									.catch( ( error ) => {
 										setNotice( {
 											type: 'error',
 											message:
@@ -171,7 +183,7 @@ const SiteSettings = (): JSX.Element => {
 													'onedesign'
 												) +
 												' ' +
-												String( error ),
+												error,
 										} );
 									} );
 							} }
@@ -191,8 +203,10 @@ const SiteSettings = (): JSX.Element => {
 				<CardBody>
 					<div>
 						<TextareaControl
+							label={ __( 'API Key', 'onedesign' ) }
+							hideLabelFromVision
 							value={ apiKey }
-							disabled
+							readOnly
 							onChange={ () => {} }
 							help={ __(
 								'This key is used for secure communication with the Governing site.',

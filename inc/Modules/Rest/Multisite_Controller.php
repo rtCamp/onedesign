@@ -19,20 +19,6 @@ use WP_REST_Server;
  */
 class Multisite_Controller extends Abstract_REST_Controller {
 	/**
-	 * The namespace for the REST API.
-	 */
-	public const NAMESPACE = parent::NAMESPACE . '/multisite';
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * Reuses the namespace constant.
-	 *
-	 * @var string
-	 */
-	protected $namespace = self::NAMESPACE;
-
-	/**
 	 * {@inheritDoc}
 	 */
 	public function register_hooks(): void {
@@ -52,17 +38,17 @@ class Multisite_Controller extends Abstract_REST_Controller {
 		 */
 		register_rest_route(
 			self::NAMESPACE,
-			'/governing-site',
+			'/multisite/governing-site',
 			[
 				[
 					'methods'             => WP_REST_Server::READABLE,
 					'callback'            => [ $this, 'get_multisite_governing_site' ],
-					'permission_callback' => [ Basic_Options_Controller::class, 'permission_callback' ],
+					'permission_callback' => static fn () => current_user_can( 'manage_options' ),
 				],
 				[
 					'methods'             => WP_REST_Server::CREATABLE,
-					'callback'            => [ $this, 'set_multisite_governing_site' ],
-					'permission_callback' => [ Basic_Options_Controller::class, 'permission_callback' ],
+					'callback'            => [ $this, 'set_governing_site' ],
+					'permission_callback' => static fn () => current_user_can( 'manage_options' ),
 					'args'                => [
 						'governing_site_id' => [
 							'required'          => true,
@@ -79,12 +65,12 @@ class Multisite_Controller extends Abstract_REST_Controller {
 		 */
 		register_rest_route(
 			self::NAMESPACE,
-			'/add-sites',
+			'/multisite/add-sites',
 			[
 				[
 					'methods'             => WP_REST_Server::CREATABLE,
-					'callback'            => [ $this, 'add_multisite_sites' ],
-					'permission_callback' => [ Basic_Options_Controller::class, 'permission_callback' ],
+					'callback'            => [ $this, 'add_sites' ],
+					'permission_callback' => static fn () => current_user_can( 'manage_options' ),
 					'args'                => [
 						'site_ids' => [
 							'required' => true,
@@ -100,12 +86,12 @@ class Multisite_Controller extends Abstract_REST_Controller {
 		 */
 		register_rest_route(
 			self::NAMESPACE,
-			'/sites',
+			'/multisite/sites',
 			[
 				[
 					'methods'             => WP_REST_Server::READABLE,
 					'callback'            => [ $this, 'get_all_multisite_sites' ],
-					'permission_callback' => [ Basic_Options_Controller::class, 'permission_callback' ],
+					'permission_callback' => static fn () => current_user_can( 'manage_options' ),
 				],
 			]
 		);
@@ -134,7 +120,7 @@ class Multisite_Controller extends Abstract_REST_Controller {
 	 *
 	 * @return \WP_REST_Response|\WP_Error
 	 */
-	public function set_multisite_governing_site( \WP_REST_Request $request ): WP_REST_Response|\WP_Error {
+	public function set_governing_site( \WP_REST_Request $request ): WP_REST_Response|\WP_Error {
 
 		$governing_site_id = filter_var( $request->get_param( 'governing_site_id' ), FILTER_SANITIZE_NUMBER_INT );
 
@@ -194,7 +180,7 @@ class Multisite_Controller extends Abstract_REST_Controller {
 	 *
 	 * @return \WP_REST_Response|\WP_Error
 	 */
-	public function add_multisite_sites( \WP_REST_Request $request ): WP_REST_Response|\WP_Error {
+	public function add_sites( \WP_REST_Request $request ): WP_REST_Response|\WP_Error {
 
 		$site_ids = array_map( 'absint', (array) $request->get_param( 'site_ids' ) );
 
