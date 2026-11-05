@@ -43,7 +43,7 @@
 	"require-dev": {
 		"dealerdirect/phpcodesniffer-composer-installer": "^1.2",
 		"phpstan/extension-installer": "^1.3",
-		"phpstan/phpstan": "^2.3.0",
+		"phpstan/phpstan": "^2.3.4",
 		"phpstan/phpstan-deprecation-rules": "^2.0.5",
 		"phpstan/phpstan-phpunit": "^2.1.1",
 		"rtcamp/coding-standards-d": "^0.1.1",
