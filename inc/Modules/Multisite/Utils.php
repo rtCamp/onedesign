@@ -110,7 +110,7 @@ final class Utils {
 			'name'    => wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ),
 			'url'     => Plugin_Utils::get_current_site_url(),
 			'logo'    => (string) wp_get_attachment_url( $logo_id ),
-			'logo_id' => $logo_id,
+			'logo_id' => 0,
 			'api_key' => AdminSettings::get_api_key(),
 		];
 
