@@ -33,6 +33,15 @@ final class SingletonTestDouble {
 #[CoversClass( \OneDesign\Contracts\Traits\Singleton::class )]
 final class SingletonTest extends TestCase {
 	/**
+	 * {@inheritDoc}
+	 */
+	protected function tearDown(): void {
+		SingletonTestDouble::reset_instance();
+
+		parent::tearDown();
+	}
+
+	/**
 	 * Tests that instance returns the same object.
 	 */
 	public function test_instance_returns_singleton_instance(): void {
@@ -48,8 +57,6 @@ final class SingletonTest extends TestCase {
 		$fixture = SingletonTestDouble::instance();
 
 		$fixture->__clone();
-
-		$this->assertTrue( true );
 	}
 
 	/**
@@ -61,7 +68,5 @@ final class SingletonTest extends TestCase {
 		$fixture = SingletonTestDouble::instance();
 
 		$fixture->__wakeup();
-
-		$this->assertTrue( true );
 	}
 }

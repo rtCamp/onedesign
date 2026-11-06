@@ -101,6 +101,40 @@ final class AdminTest extends TestCase {
 	}
 
 	/**
+	 * The settings page enqueues its localized bundle, and the media library only on governing sites.
+	 */
+	public function test_enqueue_scripts_on_settings_page(): void {
+		$this->preserve_globals( [ 'wp_scripts', 'wp_styles' ] );
+		$GLOBALS['wp_scripts'] = new \WP_Scripts(); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Isolate enqueues; restored in tearDown.
+		$GLOBALS['wp_styles']  = new \WP_Styles(); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Isolate enqueues; restored in tearDown.
+		$cache                 = new \ReflectionProperty( Assets::class, 'localized_data' );
+		$cache->setValue( null, [] );
+		( new Assets() )->register_assets();
+
+		try {
+			update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_CONSUMER );
+			$admin = new Admin();
+
+			$admin->enqueue_scripts( 'edit.php' );
+			$this->assertFalse( wp_script_is( Assets::SETTINGS_SCRIPT_HANDLE, 'enqueued' ) );
+
+			$admin->enqueue_scripts( Admin::SETTINGS_HOOK );
+			$this->assertTrue( wp_script_is( Assets::SETTINGS_SCRIPT_HANDLE, 'enqueued' ) );
+			$this->assertTrue( wp_style_is( Assets::ADMIN_STYLES_HANDLE, 'enqueued' ) );
+			$localized = (string) wp_scripts()->get_data( Assets::SETTINGS_SCRIPT_HANDLE, 'data' );
+			$this->assertStringContainsString( 'var OneDesignSettings', $localized );
+			$this->assertStringContainsString( '"api_key":"' . Settings::get_api_key() . '"', $localized );
+			$media_enqueues = did_action( 'wp_enqueue_media' );
+
+			update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_GOVERNING );
+			$admin->enqueue_scripts( Admin::SETTINGS_HOOK );
+			$this->assertSame( $media_enqueues + 1, did_action( 'wp_enqueue_media' ) );
+		} finally {
+			$cache->setValue( null, [] );
+		}
+	}
+
+	/**
 	 * Ensures the setup notice shows on the plugins and dashboard screens when the site type is unset.
 	 *
 	 * @param string $screen Screen to render the notice on.

@@ -23,8 +23,6 @@ class EncryptorTest extends TestCase {
 	 * Test encrypt/decrypt roundtrip with various inputs.
 	 *
 	 * @param string $raw The raw input to encrypt then decrypt.
-	 *
-	 * @dataProvider roundtrip_provider
 	 */
 	#[DataProvider( 'roundtrip_provider' )]
 	public function test_encrypt_decrypt_roundtrip( string $raw ): void {
@@ -39,8 +37,6 @@ class EncryptorTest extends TestCase {
 	 * Test decrypt returns input unchanged when given invalid base64.
 	 *
 	 * @param string $invalid The invalid input string.
-	 *
-	 * @dataProvider invalid_input_provider
 	 */
 	#[DataProvider( 'invalid_input_provider' )]
 	public function test_decrypt_returns_input_on_invalid_base64( string $invalid ): void {
