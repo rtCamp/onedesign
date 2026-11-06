@@ -4,7 +4,7 @@ Tags: OnePress, block patterns, templates, pattern sync, multisite
 Requires at least: 6.9
 Tested up to: 7.1
 <!-- x-release-please-start-version: -->
-Stable tag: 1.1.3
+Stable tag: 2.0.0
 <!-- x-release-please-end: -->
 Requires PHP: 8.2
 License: GPLv2 or later
