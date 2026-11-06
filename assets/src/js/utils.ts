@@ -71,34 +71,11 @@ export const withTrailingSlash = ( url: string ): string => {
 };
 
 /**
- * WordPress REST API base URL for OneDesign plugin requests.
- *
- * @constant
- * @type {string}
+ * Sites on this multisite network that a network admin can add as brand sites.
  */
-export const API_NAMESPACE =
-	window.OneDesignSettings.restUrl + window.OneDesignSettings.restNamespace;
+export const MULTISITES = window.OneDesignSettings.multisites ?? [];
 
 /**
- * WordPress REST API nonce for authenticated requests.
- *
- * @constant
- * @type {string}
+ * The current site's id, which the settings screen sends with the sites to add.
  */
-export const NONCE = window.OneDesignSettings.nonce as string;
-
-/**
- * Sites on this multisite network, for picking the governing site and adding brand sites.
- */
-export const MULTISITES = window.OneDesignSettings.multisites;
-
-/**
- * Whether the network has picked its governing site.
- */
-export const IS_GOVERNING_SITE_SELECTED =
-	window.OneDesignSettings.isGoverningSiteSelected;
-
-/**
- * Current site's blog ID on the network.
- */
-export const CURRENT_SITE_ID = window.OneDesignSettings.currentSiteId;
+export const CURRENT_SITE_ID = window.OneDesignSettings.currentSiteId ?? '';

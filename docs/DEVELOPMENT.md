@@ -54,8 +54,9 @@ Code contributions, bug reports, and feature requests are welcome! The following
 ├── assets
 │   └── src            # TypeScript (.ts/.tsx) sources.
 │       ├── admin
-│       │   ├── multisite-plugin
-│       │   │   └── index.tsx
+│       │   ├── network-settings # Network Admin > Settings > OneDesign, which lists the network's sites, makes them governing sites and adds brand sites to them.
+│       │   │   ├── index.tsx
+│       │   │   └── page.tsx
 │       │   ├── patterns # The Pattern Library, which shares patterns with brand sites.
 │       │   │   ├── index.tsx
 │       │   │   └── page.tsx
@@ -68,7 +69,7 @@ Code contributions, bug reports, and feature requests are welcome! The following
 │       ├── components
 │       │   ├── brand-site-picker.tsx # The libraries' parts, with library.tsx, preview-card.tsx and use-library-data.ts, which patterns and templates share.
 │       │   ├── library.tsx
-│       │   ├── MultiSites.tsx
+│       │   ├── MultiSites.tsx # Adds the network's sites to a governing site, from its settings screen and the network screen.
 │       │   ├── preview-card.tsx
 │       │   ├── SiteModal.tsx
 │       │   ├── SiteSettings.tsx
@@ -112,8 +113,8 @@ Code contributions, bug reports, and feature requests are welcome! The following
 │   │   │   ├── Patterns.php # Lists a site's patterns, and keeps and registers the ones a brand site received.
 │   │   │   └── Templates.php # Finds what a site's templates use, and keeps and registers the ones a brand site received.
 │   │   ├── Multisite/
-│   │   │   ├── Admin.php
-│   │   │   └── Settings.php
+│   │   │   ├── Admin.php # Registers the network screen and its setup notice.
+│   │   │   └── Utils.php
 │   │   ├── Rest/
 │   │   │   ├── Abstract_REST_Controller.php
 │   │   │   ├── Brand_Site_Controller.php
