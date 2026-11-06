@@ -3,7 +3,7 @@
  */
 export default {
 	'**/*.{js,jsx,ts,tsx}': [ 'wp-scripts lint-js --fix' ],
-	// '**/*.{css,scss}': [ 'wp-scripts lint-style --allow-empty-input --fix' ],
+	'**/*.{css,scss}': [ 'wp-scripts lint-style --allow-empty-input --fix' ],
 	/**
 	 * @todo Simplify when we can use PHPCS 4.x's improved exit codes.
 	 * @see https://github.com/PHPCSStandards/PHP_CodeSniffer/issues/184

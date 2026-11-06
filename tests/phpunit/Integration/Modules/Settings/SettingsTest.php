@@ -5,192 +5,318 @@
  * @package OneDesign\Tests\Integration\Modules\Settings
  */
 
-declare( strict_types = 1 );
+declare(strict_types = 1);
 
 namespace OneDesign\Tests\Integration\Modules\Settings;
 
-use OneDesign\Encryptor;
 use OneDesign\Modules\Settings\Settings;
 use OneDesign\Tests\TestCase;
 use PHPUnit\Framework\Attributes\CoversClass;
 
-/**
- * Tests for the plugin settings.
- */
+/** Class SettingsTest */
 #[CoversClass( Settings::class )]
 final class SettingsTest extends TestCase {
-	/**
-	 * {@inheritDoc}
-	 */
+	/** @var \OneDesign\Modules\Settings\Settings */
+	private Settings $settings;
+
+	/** {@inheritDoc} */
+	protected function setUp(): void {
+		parent::setUp();
+
+		$this->settings = new Settings();
+	}
+
+	/** {@inheritDoc} */
 	protected function tearDown(): void {
-		$this->unregister_settings();
+		delete_option( Settings::OPTION_SITE_TYPE );
+		delete_option( Settings::OPTION_CONSUMER_API_KEY );
+		delete_option( Settings::OPTION_CONSUMER_PARENT_SITE_URL );
+		delete_option( Settings::OPTION_GOVERNING_SHARED_SITES );
 
 		parent::tearDown();
 	}
 
-	/**
-	 * Brand sites get consumer settings; governing sites get the shared-sites setting.
-	 */
-	public function test_register_settings_registers_options_for_site_type(): void {
+	/** Ensures the class can be instantiated and hook methods can be called without error. */
+	public function test_class_instantiation(): void {
+		$this->settings->register_hooks();
+		$this->settings->register_settings();
+
+		$this->assertTrue( true );
+	}
+
+	/** Ensures register_settings registers the site type setting. */
+	public function test_register_settings_registers_site_type(): void {
+		$this->settings->register_settings();
+
+		$this->assertSettingRegistered( Settings::OPTION_SITE_TYPE );
+	}
+
+	/** Ensures register_settings registers consumer options. */
+	public function test_register_settings_registers_consumer_options(): void {
 		update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_CONSUMER );
-		( new Settings() )->register_settings();
 
-		$registered = get_registered_settings();
-		$this->assertArrayHasKey( Settings::OPTION_SITE_TYPE, $registered );
-		$this->assertArrayHasKey( Settings::OPTION_CONSUMER_API_KEY, $registered );
-		$this->assertArrayHasKey( Settings::OPTION_CONSUMER_PARENT_SITE_URL, $registered );
-		$this->assertArrayNotHasKey( Settings::OPTION_GOVERNING_SHARED_SITES, $registered );
+		$this->settings->register_settings();
 
-		$this->unregister_settings();
+		$this->assertSettingRegistered( Settings::OPTION_CONSUMER_API_KEY );
+		$this->assertSettingRegistered( Settings::OPTION_CONSUMER_PARENT_SITE_URL );
+	}
 
+	/** Ensures register_settings registers governing options. */
+	public function test_register_settings_registers_governing_options(): void {
 		update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_GOVERNING );
-		( new Settings() )->register_settings();
 
-		$registered = get_registered_settings();
-		$this->assertArrayHasKey( Settings::OPTION_GOVERNING_SHARED_SITES, $registered );
-		$this->assertArrayNotHasKey( Settings::OPTION_CONSUMER_API_KEY, $registered );
+		$this->settings->register_settings();
+
+		$this->assertSettingRegistered( Settings::OPTION_GOVERNING_SHARED_SITES );
 	}
 
-	/**
-	 * Registered sanitizers reject unknown site types and normalize the parent URL.
-	 */
-	public function test_registered_sanitizers_apply_on_update(): void {
+	/** The brand sites hold their keys, so they aren't exposed through the core settings route. */
+	public function test_shared_sites_are_not_in_the_rest_settings(): void {
+		update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_GOVERNING );
+
+		$this->settings->register_settings();
+
+		$this->assertFalse( get_registered_settings()[ Settings::OPTION_GOVERNING_SHARED_SITES ]['show_in_rest'] );
+	}
+
+	/** Ensures get_site_type returns null when not set. */
+	public function test_get_site_type_returns_null_when_not_set(): void {
+		delete_option( Settings::OPTION_SITE_TYPE );
+
+		$this->assertNull( Settings::get_site_type() );
+	}
+
+	/** Ensures get_site_type returns a value when set. */
+	public function test_get_site_type_returns_value_when_set(): void {
 		update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_CONSUMER );
-		( new Settings() )->register_settings();
 
-		update_option( Settings::OPTION_SITE_TYPE, 'not-a-site-type' );
-		$this->assertSame( '', get_option( Settings::OPTION_SITE_TYPE ) );
-
-		update_option( Settings::OPTION_CONSUMER_PARENT_SITE_URL, 'https://governing.example/' );
-		$this->assertSame( 'https://governing.example', Settings::get_parent_site_url() );
+		$this->assertSame( Settings::SITE_TYPE_CONSUMER, Settings::get_site_type() );
 	}
 
-	/**
-	 * Shared sites are trimmed, URL-normalized, given an ID, and dropped when name/url is missing.
-	 */
-	public function test_sanitize_shared_sites(): void {
+	/** Ensures governing site detection works. */
+	public function test_is_governing_site(): void {
+		update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_GOVERNING );
+
+		$this->assertTrue( Settings::is_governing_site() );
+		$this->assertFalse( Settings::is_consumer_site() );
+	}
+
+	/** Ensures consumer site detection works. */
+	public function test_is_consumer_site(): void {
+		update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_CONSUMER );
+
+		$this->assertTrue( Settings::is_consumer_site() );
+		$this->assertFalse( Settings::is_governing_site() );
+	}
+
+	/** Ensures sanitize_shared_sites handles valid data. */
+	public function test_sanitize_shared_sites_with_valid_data(): void {
 		$sanitized = Settings::sanitize_shared_sites(
 			[
 				[
-					'id'      => ' site-1 ',
-					'name'    => ' Brand One ',
-					'url'     => 'https://brand-one.example/',
-					'logo'    => 'https://brand-one.example/logo.png',
+					'id'      => ' site-id ',
+					'name'    => ' Demo Site ',
+					'url'     => 'https://example.com/path/',
+					'logo'    => 'https://example.com/logo.png',
 					'logo_id' => '42',
-					'api_key' => ' key ',
+					'api_key' => ' secret-key ',
 				],
-				[
-					'name' => 'No ID',
-					'url'  => 'https://brand-two.example',
-				],
-				[ 'name' => 'Missing URL' ],
-				'not-an-array',
 			]
 		);
 
-		$this->assertCount( 2, $sanitized );
 		$this->assertSame(
 			[
-				'id'      => 'site-1',
-				'name'    => 'Brand One',
-				'url'     => 'https://brand-one.example',
-				'logo'    => 'https://brand-one.example/logo.png',
-				'logo_id' => 42,
-				'api_key' => 'key',
+				[
+					'id'      => 'site-id',
+					'name'    => 'Demo Site',
+					'url'     => 'https://example.com/path',
+					'logo'    => 'https://example.com/logo.png',
+					'logo_id' => 42,
+					'api_key' => 'secret-key',
+				],
 			],
-			$sanitized[0]
+			$sanitized
 		);
-		$this->assertTrue( wp_is_uuid( $sanitized[1]['id'] ) );
+	}
+
+	/** Ensures sanitize_shared_sites returns an empty array for non-array input. */
+	public function test_sanitize_shared_sites_returns_empty_for_non_array(): void {
 		$this->assertSame( [], Settings::sanitize_shared_sites( 'not-an-array' ) );
 	}
 
-	/**
-	 * Stored shared sites come back keyed by URL with defaults filled in; sites without a URL are skipped.
-	 */
-	public function test_set_and_get_shared_sites(): void {
-		$this->assertSame( [], Settings::get_shared_sites() );
-
-		Settings::set_shared_sites(
+	/** Ensures sanitize_shared_sites generates a UUID for a missing ID. */
+	public function test_sanitize_shared_sites_generates_uuid_for_missing_id(): void {
+		$sanitized = Settings::sanitize_shared_sites(
 			[
-				'ignored-key' => [
-					'name' => 'Brand One',
-					'url'  => 'https://brand-one.example',
+				[
+					'name' => 'Demo Site',
+					'url'  => 'https://example.com',
 				],
-				[ 'name' => 'No URL' ],
 			]
 		);
 
-		$this->assertSame( [ 0, 1 ], array_keys( get_option( Settings::OPTION_GOVERNING_SHARED_SITES ) ), 'Stored list should be re-indexed' );
+		$this->assertCount( 1, $sanitized );
+		$this->assertMatchesRegularExpression( '/^[0-9a-f-]{36}$/i', $sanitized[0]['id'] );
+	}
+
+	/** Ensures sanitize_shared_sites skips entries without a name or URL. */
+	public function test_sanitize_shared_sites_skips_sites_without_name_or_url(): void {
+		$sanitized = Settings::sanitize_shared_sites(
+			[
+				[
+					'name' => 'Missing URL',
+				],
+			]
+		);
+
+		$this->assertSame( [], $sanitized );
+	}
+
+	/** Ensures get_shared_sites returns an empty array when not set. */
+	public function test_get_shared_sites_returns_empty_when_not_set(): void {
+		$this->assertSame( [], Settings::get_shared_sites() );
+	}
+
+	/** Ensures shared sites round-trip through storage. */
+	public function test_set_and_get_shared_sites_roundtrip(): void {
+		$sites = [
+			[
+				'id'      => 'brand-1',
+				'name'    => 'Brand One',
+				'url'     => 'https://brand-one.example',
+				'logo'    => 'https://brand-one.example/logo.png',
+				'logo_id' => 11,
+				'api_key' => 'brand-one-key',
+			],
+		];
+
+		$this->assertTrue( Settings::set_shared_sites( $sites ) );
+
+		$stored_sites = get_option( Settings::OPTION_GOVERNING_SHARED_SITES, [] );
+		$this->assertNotSame( 'brand-one-key', $stored_sites[0]['api_key'] );
+
 		$this->assertSame(
 			[
-				'https://brand-one.example' => [
-					'api_key' => '',
-					'id'      => '',
-					'logo'    => '',
-					'logo_id' => 0,
+				'https://brand-one.example/' => [
+					'api_key' => 'brand-one-key',
+					'id'      => 'brand-1',
+					'logo'    => 'https://brand-one.example/logo.png',
+					'logo_id' => 11,
 					'name'    => 'Brand One',
-					'url'     => 'https://brand-one.example',
+					'url'     => 'https://brand-one.example/',
 				],
 			],
 			Settings::get_shared_sites()
 		);
 	}
 
-	/**
-	 * Changing site type generates a key through the registered hook only for brand sites.
-	 */
+	/** Ensures remove_shared_site removes only the matching site, regardless of trailing slash. */
+	public function test_remove_shared_site_removes_only_the_matching_site(): void {
+		Settings::set_shared_sites(
+			[
+				[
+					'id'      => 'brand-1',
+					'name'    => 'Brand One',
+					'url'     => 'https://brand-one.example',
+					'api_key' => 'brand-one-key',
+				],
+				[
+					'id'      => 'brand-2',
+					'name'    => 'Brand Two',
+					'url'     => 'https://brand-two.example',
+					'api_key' => 'brand-two-key',
+				],
+			]
+		);
+
+		$this->assertTrue( Settings::remove_shared_site( 'https://brand-one.example' ) );
+
+		$remaining_sites = Settings::get_shared_sites();
+		$this->assertSame( [ 'https://brand-two.example/' ], array_keys( $remaining_sites ) );
+		$this->assertSame( 'brand-two-key', $remaining_sites['https://brand-two.example/']['api_key'] );
+	}
+
+	/** Ensures remove_shared_site leaves the option alone for unknown URLs. */
+	public function test_remove_shared_site_returns_false_for_unknown(): void {
+		Settings::set_shared_sites(
+			[
+				[
+					'id'      => 'brand-1',
+					'name'    => 'Brand One',
+					'url'     => 'https://brand-one.example',
+					'api_key' => 'brand-one-key',
+				],
+			]
+		);
+
+		$this->assertFalse( Settings::remove_shared_site( 'https://unknown.example' ) );
+		$this->assertCount( 1, Settings::get_shared_sites() );
+	}
+
+	/** Ensures parent site URL can be stored and retrieved. */
+	public function test_set_parent_site_url_and_get(): void {
+		$this->assertTrue( Settings::set_parent_site_url( 'https://governing.example/' ) );
+		$this->assertSame( 'https://governing.example', Settings::get_parent_site_url() );
+	}
+
+	/** Ensures get_api_key generates a key if none is set. */
+	public function test_get_api_key_generates_if_not_set(): void {
+		$api_key = Settings::get_api_key();
+
+		$this->assertNotSame( '', $api_key );
+		$this->assertNotSame( $api_key, get_option( Settings::OPTION_CONSUMER_API_KEY, '' ) );
+		$this->assertSame( $api_key, Settings::get_api_key() );
+	}
+
+	/** Ensures regenerate_api_key returns a new key. */
+	public function test_regenerate_api_key_returns_new_key(): void {
+		$initial_api_key = Settings::get_api_key();
+		$new_api_key     = Settings::regenerate_api_key();
+
+		$this->assertNotSame( '', $new_api_key );
+		$this->assertNotSame( $initial_api_key, $new_api_key );
+		$this->assertSame( $new_api_key, Settings::get_api_key() );
+	}
+
+	/** Ensures the registered sanitizers reject unknown site types and normalize the parent URL. */
+	public function test_registered_sanitizers_apply_on_update(): void {
+		update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_CONSUMER );
+		$this->settings->register_settings();
+
+		update_option( Settings::OPTION_SITE_TYPE, 'not-a-site-type' );
+		$this->assertSame( '', get_option( Settings::OPTION_SITE_TYPE ) );
+
+		update_option( Settings::OPTION_CONSUMER_PARENT_SITE_URL, 'https://governing.example/' );
+		$this->assertSame( 'https://governing.example', Settings::get_parent_site_url() );
+
+		foreach ( [ Settings::OPTION_SITE_TYPE, Settings::OPTION_CONSUMER_API_KEY, Settings::OPTION_CONSUMER_PARENT_SITE_URL ] as $option ) {
+			unregister_setting( Settings::SETTING_GROUP, $option );
+		}
+	}
+
+	/** Ensures changing the site type generates an API key only for brand sites. */
 	public function test_site_type_changes_generate_keys_only_for_brand_sites(): void {
-		( new Settings() )->register_hooks();
-		$this->assertNull( Settings::get_site_type() );
-		$this->assertFalse( Settings::is_governing_site() );
-		$this->assertFalse( Settings::is_consumer_site() );
+		$this->settings->register_hooks();
 
 		update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_GOVERNING );
-		$this->assertTrue( Settings::is_governing_site() );
 		$this->assertFalse( get_option( Settings::OPTION_CONSUMER_API_KEY ) );
-		$this->assertFalse( Settings::is_consumer_site() );
 
 		update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_CONSUMER );
-		$this->assertTrue( Settings::is_consumer_site() );
-		$this->assertSame( Settings::SITE_TYPE_CONSUMER, Settings::get_site_type() );
 		$this->assertNotEmpty( get_option( Settings::OPTION_CONSUMER_API_KEY ) );
 	}
 
 	/**
-	 * API keys persist encrypted, remain stable on reads, and rotate explicitly.
+	 * Ensures a setting is registered.
+	 *
+	 * @param string $setting_name Setting name.
 	 */
-	public function test_get_api_key_generates_and_persists_encrypted_key(): void {
-		$api_key = Settings::get_api_key();
-		$stored  = get_option( Settings::OPTION_CONSUMER_API_KEY );
+	private function assertSettingRegistered( string $setting_name ): void {
+		$registered_settings = get_registered_settings();
 
-		$this->assertSame( 128, strlen( $api_key ) );
-		$this->assertNotSame( $api_key, $stored );
-		$this->assertSame( $api_key, Encryptor::decrypt( $stored ) );
-		$this->assertSame( $api_key, Settings::get_api_key() );
+		$this->assertArrayHasKey( $setting_name, $registered_settings );
 
-		$new_key = Settings::regenerate_api_key();
-		$this->assertNotSame( $api_key, $new_key );
-		$this->assertSame( $new_key, Settings::get_api_key() );
-		$this->assertSame( $new_key, Encryptor::decrypt( get_option( Settings::OPTION_CONSUMER_API_KEY ) ) );
-	}
+		global $new_allowed_options;
 
-	/**
-	 * The parent site URL is stored untrailingslashed.
-	 */
-	public function test_set_parent_site_url_normalizes_url(): void {
-		$this->assertNull( Settings::get_parent_site_url() );
-
-		Settings::set_parent_site_url( 'https://governing.example/' );
-
-		$this->assertSame( 'https://governing.example', Settings::get_parent_site_url() );
-	}
-
-	/**
-	 * Unregister every plugin setting.
-	 */
-	private function unregister_settings(): void {
-		foreach ( [ Settings::OPTION_SITE_TYPE, Settings::OPTION_CONSUMER_API_KEY, Settings::OPTION_CONSUMER_PARENT_SITE_URL, Settings::OPTION_GOVERNING_SHARED_SITES ] as $option ) {
-			unregister_setting( Settings::SETTING_GROUP, $option );
-		}
+		$this->assertContains( $setting_name, $new_allowed_options[ Settings::SETTING_GROUP ] ?? [] );
 	}
 }

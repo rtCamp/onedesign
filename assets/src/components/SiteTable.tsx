@@ -1,6 +1,3 @@
-/**
- * WordPress dependencies
- */
 import { useState } from '@wordpress/element';
 import {
 	Button,
@@ -10,55 +7,14 @@ import {
 	Modal,
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
-
-/**
- * Internal dependencies
- */
-import { getInitials } from '../js/utils';
+import type {
+	BrandSite,
+	EditingIndex,
+	NoticeType,
+} from '@/admin/settings/page';
+import { CURRENT_SITE_ID, MULTISITES, getInitials } from '@/js/utils';
 import MultiSites from './MultiSites';
-import { IS_MULTISITE, IS_GOVERNING_SITE_SELECTED } from '../js/constants';
 
-type SiteId = number | string;
-
-interface Site {
-	id?: SiteId;
-	name?: string;
-	url?: string;
-	logo?: string;
-	api_key?: string;
-	logo_id?: number | null;
-	is_editable?: boolean;
-}
-
-interface Notice {
-	type: 'error' | 'success';
-	message: string;
-}
-
-interface SiteTableProps {
-	sites: Site[];
-	onEdit: ( index: number ) => void;
-	onDelete: ( index: number ) => void;
-	setFormData: ( site: Site ) => void;
-	setShowModal: ( show: boolean ) => void;
-	setSites: ( sites: Site[] ) => void;
-	setNotice: ( notice: Notice ) => void;
-}
-
-/**
- * SiteTable component to display and manage brand sites.
- *
- * @param props              - Component properties.
- * @param props.sites        - List of brand sites.
- * @param props.onEdit       - Function to handle editing a site.
- * @param props.onDelete     - Function to handle deleting a site.
- * @param props.setFormData  - Function to set form data for editing.
- * @param props.setShowModal - Function to show/hide the modal for adding/editing a site.
- * @param props.setSites     - Function to update the list of sites.
- * @param props.setNotice    - Function to set notice messages.
- *
- * @return Rendered component.
- */
 const SiteTable = ( {
 	sites,
 	onEdit,
@@ -67,9 +23,22 @@ const SiteTable = ( {
 	setShowModal,
 	setSites,
 	setNotice,
-}: SiteTableProps ): JSX.Element => {
+}: {
+	sites: BrandSite[];
+	onEdit: ( index: number ) => void;
+	onDelete: ( index: number | null ) => void;
+	setFormData: ( data: BrandSite ) => void;
+	setShowModal: ( show: boolean ) => void;
+	setSites: ( sites: BrandSite[] ) => void;
+	setNotice: ( notice: NoticeType ) => void;
+} ) => {
 	const [ showDeleteModal, setShowDeleteModal ] = useState( false );
-	const [ deleteIndex, setDeleteIndex ] = useState< number | null >( null );
+	const [ deleteIndex, setDeleteIndex ] = useState< EditingIndex >( null );
+
+	// Only network admins get the network's sites to add. They're listed when the page loads, so leave out the ones added since.
+	const networkSites = MULTISITES.filter(
+		( site ) => ! sites.some( ( brandSite ) => brandSite.id === site.id )
+	);
 
 	const handleDeleteClick = ( index: number ) => {
 		setDeleteIndex( index );
@@ -77,9 +46,7 @@ const SiteTable = ( {
 	};
 
 	const handleDeleteConfirm = () => {
-		if ( deleteIndex !== null ) {
-			onDelete( deleteIndex );
-		}
+		onDelete( deleteIndex );
 		setShowDeleteModal( false );
 		setDeleteIndex( null );
 	};
@@ -94,10 +61,11 @@ const SiteTable = ( {
 			<CardHeader>
 				<h3>{ __( 'Brand Sites', 'onedesign' ) }</h3>
 				<div style={ { display: 'flex', gap: '16px' } }>
-					{ IS_MULTISITE && IS_GOVERNING_SITE_SELECTED && (
+					{ networkSites.length > 0 && (
 						<MultiSites
-							setBrandSites={ setSites }
-							brandSites={ sites }
+							governingSiteId={ CURRENT_SITE_ID }
+							sites={ networkSites }
+							onAdd={ setSites }
 							setNotice={ setNotice }
 						/>
 					) }
@@ -111,7 +79,10 @@ const SiteTable = ( {
 				</div>
 			</CardHeader>
 			<CardBody>
-				<table className="wp-list-table widefat fixed striped">
+				<table
+					className="wp-list-table widefat fixed striped "
+					style={ { marginTop: '16px' } }
+				>
 					<thead>
 						<tr>
 							<th>{ __( 'Site Name', 'onedesign' ) }</th>
@@ -140,13 +111,10 @@ const SiteTable = ( {
 								<td>{ site?.name }</td>
 								<td>{ site?.url }</td>
 								<td>
-									{ site?.logo ? (
+									{ site.logo ? (
 										<img
 											src={ site.logo }
-											alt={ __(
-												'Site Logo',
-												'onedesign'
-											) }
+											alt=""
 											style={ {
 												maxWidth: '100px',
 												maxHeight: '50px',
@@ -156,24 +124,26 @@ const SiteTable = ( {
 										/>
 									) : (
 										<span className="onedesign-site-initials">
-											{ getInitials( site?.name ?? '' ) }
+											{ getInitials( site.name ) }
 										</span>
 									) }
 								</td>
 								<td>
-									<code>
-										{ site?.api_key?.substring( 0, 10 ) }...
-									</code>
+									{ /* The stored key never reaches the browser. */ }
+									<code>••••••••</code>
 								</td>
 								<td>
 									<Button
 										variant="secondary"
 										onClick={ () => {
-											setFormData( site );
+											// The key field starts empty, which keeps the stored key.
+											setFormData( {
+												...site,
+												api_key: '',
+											} );
 											onEdit( index );
 											setShowModal( true );
 										} }
-										disabled={ site?.is_editable === false }
 										style={ { marginRight: '8px' } }
 									>
 										{ __( 'Edit', 'onedesign' ) }
@@ -203,27 +173,18 @@ const SiteTable = ( {
 	);
 };
 
-interface DeleteConfirmationModalProps {
-	onConfirm: () => void;
-	onCancel: () => void;
-}
-
-/**
- * DeleteConfirmationModal component for confirming site deletion.
- *
- * @param props           - Component properties.
- * @param props.onConfirm - Function to call on confirmation.
- * @param props.onCancel  - Function to call on cancellation.
- * @return Rendered component.
- */
 const DeleteConfirmationModal = ( {
 	onConfirm,
 	onCancel,
-}: DeleteConfirmationModalProps ): JSX.Element => (
+}: {
+	onConfirm: () => void;
+	onCancel: () => void;
+} ) => (
 	<Modal
 		title={ __( 'Delete Brand Site', 'onedesign' ) }
 		onRequestClose={ onCancel }
 		isDismissible
+		shouldCloseOnClickOutside
 	>
 		<p>
 			{ __(

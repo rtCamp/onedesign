@@ -60,9 +60,8 @@ Built for enterprise teams, OneDesign unifies your design, editorial, and develo
 
 | Requirement   | Version                                                                                                                                                                                        |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| WordPress     | >= 6.8                                                                                                                                                                                         |
-| PHP           | >= 8.0                                                                                                                                                                                         |
-| Tested Up to  | >= 6.9                                                                                                                                                                                         |
+| WordPress     | >= 6.9                                                                                                                                                                                         |
+| PHP           | >= 8.2                                                                                                                                                                                         |
 | Prerequisites | <ul><li>A FSE (Full Site Editing) compatible theme across all sites. With same variables and variations.</li><li>All the blocks used in the patterns must be available on all sites.</li></ul> |
 
 ## Installation

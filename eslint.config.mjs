@@ -1,6 +1,5 @@
 // eslint.config.mjs
 import wordpress from '@wordpress/eslint-plugin';
-import jest from 'eslint-plugin-jest';
 
 export default [
 	{
@@ -39,7 +38,6 @@ export default [
 			'@wordpress/i18n-no-flanking-whitespace': 'error',
 
 			// Additional WordPress rules not in recommended preset
-			'@wordpress/dependency-group': 'error',
 			'@wordpress/data-no-store-string-literals': 'error',
 			'@wordpress/wp-global-usage': 'error',
 			'@wordpress/react-no-unsafe-timeout': 'error',
@@ -63,7 +61,7 @@ export default [
 				{
 					devDependencies: [
 						'**/*.@(spec|test).@(j|t)s?(x)',
-						'**/@(webpack|jest|babel|playwright).config.@(j|t)s',
+						'**/@(webpack|vitest|babel|playwright).config.@(j|t|mj)s',
 						'**/scripts/**',
 						'**/tests/**',
 					],
@@ -139,25 +137,23 @@ export default [
 		},
 	},
 
-	// Jest unit test files
-	{
+	// Vitest unit test files
+	...[
+		...wordpress.configs[ 'test-unit' ],
+		{
+			rules: {
+				'vitest/no-commented-out-tests': 'warn',
+				'vitest/prefer-to-have-length': 'warn',
+			},
+		},
+	].map( ( config ) => ( {
+		...config,
 		files: [
 			'**/__tests__/**/*.{ts,tsx}',
 			'**/*.{test,spec}.{ts,tsx}',
 			'tests/js/**/*.{ts,tsx}',
 		],
-		...jest.configs[ 'flat/recommended' ],
-		rules: {
-			...jest.configs[ 'flat/recommended' ].rules,
-			'jest/expect-expect': 'error',
-			'jest/no-commented-out-tests': 'warn',
-			'jest/no-disabled-tests': 'warn',
-			'jest/no-focused-tests': 'error',
-			'jest/no-identical-title': 'error',
-			'jest/prefer-to-have-length': 'warn',
-			'jest/valid-expect': 'error',
-		},
-	},
+	} ) ),
 
 	// Playwright E2E tests
 	{

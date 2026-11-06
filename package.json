@@ -6,11 +6,11 @@
 		"npm": ">=11.19.0"
 	},
 	"files": [
-		"assets",
 		"build",
 		"inc",
-		"languages",
+		"languages/*.pot",
 		"vendor",
+		"composer.json",
 		"readme.txt",
 		"onedesign.php",
 		"uninstall.php"
@@ -21,7 +21,7 @@
 		"build:prod": "npm run clean && cross-env NODE_ENV=production npm run build:js",
 		"clean": "rimraf build",
 		"format": "wp-scripts format",
-		"i18n:make-pot": "wp-env run cli --env-cwd=wp-content/plugins/$(basename \"$(pwd)\")/ -- wp i18n make-pot . ./languages/onedesign.pot --domain=onedesign --include='*.php,inc,src' --exclude='assets,build,node_modules,tests,vendor'",
+		"i18n:make-pot": "wp-env run cli --env-cwd=wp-content/plugins/$(basename \"$(pwd)\")/ -- wp i18n make-pot . ./languages/onedesign.pot --domain=onedesign --include='*.php,inc,build' --exclude='assets/src,node_modules,tests,vendor'",
 		"i18n:make-json": "wp-env run cli --env-cwd=wp-content/plugins/$(basename \"$(pwd)\")/ -- wp i18n make-json languages/ --no-purge",
 		"lint:css:fix": "wp-scripts lint-style --fix",
 		"lint:css": "wp-scripts lint-style",
@@ -45,53 +45,48 @@
 		"wp-env:test": "wp-env --config=.wp-env.test.json"
 	},
 	"dependencies": {
-		"@wordpress/api-fetch": "^7.40.0",
-		"@wordpress/block-editor": "^15.11.0",
-		"@wordpress/blocks": "^15.13.0",
-		"@wordpress/components": "^30.9.0",
-		"@wordpress/compose": "^8.4.0",
-		"@wordpress/data": "^10.40.0",
-		"@wordpress/element": "^6.40.0",
-		"@wordpress/i18n": "^6.13.0",
-		"@wordpress/icons": "^11.7.0",
-		"@wordpress/plugins": "^7.40.0",
-		"dompurify": "^3.4.16",
+		"@wordpress/api-fetch": "~7.33.1",
+		"@wordpress/block-editor": "~15.6.9",
+		"@wordpress/block-library": "~9.33.12",
+		"@wordpress/blocks": "~15.6.3",
+		"@wordpress/components": "~30.6.5",
+		"@wordpress/compose": "~7.33.1",
+		"@wordpress/element": "~6.33.1",
+		"@wordpress/i18n": "~6.6.1",
+		"@wordpress/icons": "^19.0.0",
 		"react": "^18.3.1",
 		"react-dom": "^18.3.1"
 	},
 	"devDependencies": {
-		"@playwright/test": "^1.63.0",
+		"@playwright/test": "^1.64.1",
 		"@testing-library/jest-dom": "^7.0.1",
 		"@testing-library/react": "^16.3.3",
-		"@types/jest": "^30.0.0",
 		"@types/react": "^18.3.31",
 		"@types/react-dom": "^18.3.7",
-		"@types/wordpress__block-editor": "^15.0.6",
-		"@wordpress/babel-preset-default": "^8.56.0",
-		"@wordpress/e2e-test-utils-playwright": "^2.1.0",
-		"@wordpress/env": "^11.16.0",
-		"@wordpress/eslint-plugin": "^27.0.0",
-		"@wordpress/prettier-config": "^4.56.0",
-		"@wordpress/scripts": "^35.0.0",
-		"@wordpress/stylelint-config": "^26.0.0",
+		"@types/wordpress__block-editor": "^15.0.8",
+		"@vitest/coverage-v8": "^5.0.5",
+		"@wordpress/babel-preset-default": "^10.0.0",
+		"@wordpress/e2e-test-utils-playwright": "^3.1.0",
+		"@wordpress/env": "^12.0.0",
+		"@wordpress/eslint-plugin": "^28.0.0",
+		"@wordpress/prettier-config": "^5.0.0",
+		"@wordpress/scripts": "^37.0.0",
+		"@wordpress/stylelint-config": "^27.0.0",
 		"cross-env": "^10.1.0",
-		"eslint-plugin-jest": "^29.16.6",
-		"jest-watch-typeahead": "^3.0.1",
-		"lefthook": "^2.1.16",
+		"jsdom": "^30.1.3",
+		"lefthook": "^2.2.2",
 		"lint-staged": "^17.6.0",
-		"npm-run-all": "^4.1.5",
 		"prettier": "npm:wp-prettier@^3",
 		"rimraf": "^6.1.3",
 		"typescript": "^6.0.3",
-		"typescript-eslint": "^8.71.0",
+		"typescript-eslint": "^8.72.1",
+		"vite": "^8.3.5",
+		"vitest": "^5.0.5",
 		"webpack-remove-empty-scripts": "^1.1.1"
 	},
 	"overrides": {
 		"@types/node": "^24.0.0",
 		"fast-xml-parser@<5.3.1": "^5.3.1",
-		"markdownlint-cli": {
-			"minimatch@<3.1.4": "^3.1.4"
-		},
 		"prettier": "npm:wp-prettier@^3",
 		"react": "^18.3.1",
 		"react-dom": "^18.3.1",
@@ -100,6 +95,6 @@
 		"webpack-dev-server@<5.2.1": "^5.2.1"
 	},
 	"allowScripts": {
-		"lefthook@2.1.16": true
+		"lefthook@2.2.2": true
 	}
 }

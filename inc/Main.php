@@ -25,20 +25,19 @@ final class Main {
 	 */
 	private const REGISTRABLE_CLASSES = [
 		Modules\Core\Assets::class,
-		Modules\Core\Rest::class,
 		Modules\Settings\Admin::class,
 		Modules\Settings\Settings::class,
+		Modules\Library\Admin::class,
+		Modules\Library\Patterns::class,
+		Modules\Library\Templates::class,
 		Modules\Multisite\Admin::class,
-		Modules\Multisite\Settings::class,
-		Modules\Rest\Basic_Options_Controller::class,
+		Modules\Rest\Brand_Site_Controller::class,
+		Modules\Rest\Governing_Site_Controller::class,
 		Modules\Rest\Multisite_Controller::class,
 		Modules\Rest\Patterns_Controller::class,
+		Modules\Rest\Secret_Key_Controller::class,
+		Modules\Rest\Shared_Sites_Controller::class,
 		Modules\Rest\Templates_Controller::class,
-		Modules\Post_Types\Admin::class,
-		Modules\Post_Types\CPT_Restriction::class,
-		Modules\Post_Types\Meta::class,
-		Modules\Post_Types\Pattern::class,
-		Modules\Post_Types\Template::class,
 	];
 
 	/**
@@ -87,7 +86,7 @@ final class Main {
 				static function () {
 					wp_admin_notice(
 						sprintf(
-						/* translators: 1: Plugin name */
+						/* translators: %s: URL of the Permalink Settings screen. */
 							__( 'OneDesign: The plugin requires pretty permalinks to be enabled. Please go to <a href="%s">Permalink Settings</a> and enable an option other than <code>Plain</code>.', 'onedesign' ),
 							admin_url( 'options-permalink.php' ),
 						),
@@ -110,11 +109,6 @@ final class Main {
 		// Loop through all the classes, instantiate them, and register any hooks.
 		$instances = [];
 		foreach ( self::REGISTRABLE_CLASSES as $class_name ) {
-			/**
-			 * If it's a singleton, we can use the instance method. Otherwise we instantiate it directly.
-			 *
-			 * @todo reduce use of singletons where possible.
-			 */
 			$instances[ $class_name ] = new $class_name();
 			$instances[ $class_name ]->register_hooks();
 		}

@@ -1,9 +1,4 @@
 /**
- * External dependencies
- */
-import DOMPurify from 'dompurify';
-
-/**
  * Helper function to extract initials from a name.
  *
  * @param name - The name to extract initials from.
@@ -46,8 +41,9 @@ export const getInitials = ( name: string ): string => {
 		first.charAt( 0 ) + ( second ? second.charAt( 0 ) : '' )
 	).toUpperCase();
 };
+
 /**
- * Validates if a given string is a valid URL.
+ * Validates if a given string is a valid http or https URL.
  *
  * @param {string} url - The URL string to validate.
  *
@@ -55,20 +51,31 @@ export const getInitials = ( name: string ): string => {
  */
 export const isValidUrl = ( url: string ): boolean => {
 	try {
-		new URL( url );
-		return true;
+		return [ 'http:', 'https:' ].includes( new URL( url ).protocol );
 	} catch {
 		return false;
 	}
 };
 
 /**
- * Sanitizes a given string by removing all HTML tags.
+ * Ensures that a URL string ends with a trailing slash.
  *
- * @param item - The string to sanitize.
- *
- * @return The sanitized string with all HTML tags removed.
+ * @param {string} url - The URL string to normalize.
+ * @return {string} The normalized URL with a trailing slash.
  */
-export const PurifyElement = ( item: string ): string => {
-	return DOMPurify.sanitize( item, { ALLOWED_TAGS: [] } );
+export const withTrailingSlash = ( url: string ): string => {
+	if ( ! url ) {
+		return '';
+	}
+	return url.endsWith( '/' ) ? url : `${ url }/`;
 };
+
+/**
+ * Sites on this multisite network that a network admin can add as brand sites.
+ */
+export const MULTISITES = window.OneDesignSettings.multisites ?? [];
+
+/**
+ * The current site's id, which the settings screen sends with the sites to add.
+ */
+export const CURRENT_SITE_ID = window.OneDesignSettings.currentSiteId ?? '';

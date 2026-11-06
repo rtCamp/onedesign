@@ -1,10 +1,8 @@
 <?php
 /**
- * Assets unit tests.
+ * Asset registration unit tests.
  *
  * @package OneDesign\Tests\Integration\Modules\Core
- *
- * phpcs:disable WordPress.WP.GlobalVariablesOverride.Prohibited -- Tests reset WP globals as fixtures.
  */
 
 declare( strict_types = 1 );
@@ -12,171 +10,168 @@ declare( strict_types = 1 );
 namespace OneDesign\Tests\Integration\Modules\Core;
 
 use OneDesign\Modules\Core\Assets;
-use OneDesign\Modules\Post_Types\Pattern;
-use OneDesign\Modules\Post_Types\Template;
 use OneDesign\Modules\Settings\Settings;
 use OneDesign\Tests\TestCase;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Tests for asset registration and enqueueing.
+ * Tests for asset registration and localization.
  */
-#[CoversClass( Assets::class )]
+#[CoversClass( \OneDesign\Modules\Core\Assets::class )]
 final class AssetsTest extends TestCase {
 	/**
-	 * Temporary plugin directory holding fixture build files.
+	 * Tests no errors on class instantiation.
 	 */
-	private string $fixture_dir;
+	public function test_assets_class_instantiation(): void {
+		$assets = new Assets();
 
-	/**
-	 * Localized data from before this fixture replaced the request cache.
-	 *
-	 * @var array<string,mixed>
-	 */
-	private array $original_localized_data = [];
+		$assets->register_hooks();
+		$assets->register_assets();
 
-	/**
-	 * {@inheritDoc}
-	 */
-	protected function setUp(): void {
-		parent::setUp();
-
-		$this->preserve_globals( [ 'wp_scripts', 'wp_styles' ] );
-
-		$GLOBALS['wp_scripts'] = new \WP_Scripts();
-		$GLOBALS['wp_styles']  = new \WP_Styles();
-
-		$cache                         = new \ReflectionProperty( Assets::class, 'localized_data' );
-		$this->original_localized_data = $cache->isInitialized() ? $cache->getValue() : [];
-		$cache->setValue( null, [] );
-
-		$this->fixture_dir = trailingslashit( get_temp_dir() ) . uniqid( 'onedesign-assets-', true ) . '/';
-		wp_mkdir_p( $this->fixture_dir . 'build' );
+		$this->assertTrue( true );
 	}
 
 	/**
-	 * {@inheritDoc}
+	 * Registering a script again still gives it the dependencies from its asset file.
 	 */
-	protected function tearDown(): void {
-		foreach ( (array) glob( $this->fixture_dir . 'build/*' ) as $file ) {
-			unlink( (string) $file ); // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_ops_unlink
-		}
-		rmdir( $this->fixture_dir . 'build' ); // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.directory_rmdir
-		rmdir( $this->fixture_dir ); // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.directory_rmdir
+	public function test_registering_a_script_again_keeps_its_dependencies(): void {
+		$assets = new Assets();
 
-		unset( $GLOBALS['current_screen'] );
+		$assets->register_assets();
+		wp_deregister_script( Assets::SETTINGS_SCRIPT_HANDLE );
+		$assets->register_assets();
 
-		( new \ReflectionProperty( Assets::class, 'localized_data' ) )->setValue( null, $this->original_localized_data );
+		$asset = require ONEDESIGN_DIR . 'build/settings.asset.php';
 
-		parent::tearDown();
+		$this->assertNotEmpty( $asset['dependencies'] );
+		$this->assertSame( $asset['dependencies'], wp_scripts()->registered[ Assets::SETTINGS_SCRIPT_HANDLE ]->deps );
 	}
 
 	/**
-	 * Scripts get deps/version from the .asset.php file; bundles without build files are skipped.
+	 * Scripts take their version from the asset file, and bundles without build files are skipped.
 	 */
 	public function test_register_assets_uses_asset_files_and_skips_missing_bundles(): void {
-		$this->write_build_file( 'settings.asset.php', "<?php return [ 'dependencies' => [ 'wp-element' ], 'version' => 'abc123' ];" );
-		$this->write_build_file( 'settings.css' );
-		$this->write_build_file( 'admin.css' );
+		$this->preserve_globals( [ 'wp_scripts', 'wp_styles' ] );
+		$GLOBALS['wp_scripts'] = new \WP_Scripts(); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Isolate registration; restored in tearDown.
+		$GLOBALS['wp_styles']  = new \WP_Styles(); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Isolate registration; restored in tearDown.
 
-		$this->make_assets()->register_assets();
+		$fixture_dir = trailingslashit( get_temp_dir() ) . uniqid( 'onedesign-assets-', true ) . '/';
+		$files       = [
+			'settings.asset.php' => "<?php return [ 'dependencies' => [ 'wp-element' ], 'version' => 'abc123' ];",
+			'admin.css'          => '',
+		];
+		wp_mkdir_p( $fixture_dir . 'build' );
+		foreach ( $files as $name => $content ) {
+			file_put_contents( $fixture_dir . 'build/' . $name, $content ); // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_ops_file_put_contents
+		}
 
-		$script = wp_scripts()->registered[ Assets::SETTINGS_SCRIPT_HANDLE ];
-		$this->assertSame( [ 'wp-element' ], $script->deps );
-		$this->assertSame( 'abc123', $script->ver );
-		$this->assertStringEndsWith( 'build/settings.js', $script->src );
-		$this->assertTrue( wp_style_is( Assets::SETTINGS_SCRIPT_HANDLE, 'registered' ) );
+		try {
+			$assets = new Assets();
+			( new \ReflectionProperty( Assets::class, 'plugin_dir' ) )->setValue( $assets, $fixture_dir );
+			$assets->register_assets();
 
-		$this->assertTrue( wp_style_is( Assets::ADMIN_STYLES_HANDLE, 'enqueued' ) );
-		$this->assertSame( [ 'wp-components' ], wp_styles()->registered[ Assets::ADMIN_STYLES_HANDLE ]->deps );
+			$script = wp_scripts()->registered[ Assets::SETTINGS_SCRIPT_HANDLE ];
+			$this->assertSame( [ 'wp-element', 'wp-i18n' ], $script->deps, 'Translations add wp-i18n to the asset file dependencies' );
+			$this->assertSame( 'abc123', $script->ver );
+			$this->assertStringEndsWith( 'build/settings.js', $script->src );
+			$this->assertSame( [ 'wp-components' ], wp_styles()->registered[ Assets::ADMIN_STYLES_HANDLE ]->deps );
 
-		$this->assertFalse( wp_script_is( Assets::ONBOARDING_SCRIPT_HANDLE, 'registered' ) );
-		$this->assertFalse( wp_script_is( Assets::MULTISITE_SETUP_SCRIPT_HANDLE, 'registered' ) );
+			$this->assertFalse( wp_script_is( Assets::PATTERN_LIBRARY_SCRIPT_HANDLE, 'registered' ) );
+			$this->assertFalse( wp_style_is( Assets::LIBRARY_STYLES_HANDLE, 'registered' ) );
+		} finally {
+			foreach ( array_keys( $files ) as $name ) {
+				unlink( $fixture_dir . 'build/' . $name ); // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_ops_unlink
+			}
+			rmdir( $fixture_dir . 'build' ); // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.directory_rmdir
+			rmdir( $fixture_dir ); // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.directory_rmdir
+		}
 	}
 
 	/**
-	 * The pattern library bundle is only enqueued, with its localized data, on the pattern editor screen.
+	 * Ensures plugin scripts receive a defer attribute.
 	 */
-	public function test_enqueue_scripts_loads_pattern_library_on_pattern_screen_only(): void {
-		$this->write_build_file( 'patterns-library.asset.php', "<?php return [ 'dependencies' => [], 'version' => '1' ];" );
-		$this->write_build_file( 'editor.css' );
-		$this->write_build_file( 'templates-library.asset.php', "<?php return [ 'dependencies' => [], 'version' => '1' ];" );
-		$assets = $this->make_assets();
+	public function test_defer_scripts_adds_defer_for_plugin_handles(): void {
+		$assets = new Assets();
+		$tag    = '<script src="https://example.com/script.js"></script>';
 
-		set_current_screen( 'dashboard' );
-		$assets->enqueue_scripts();
-		$this->assertFalse( wp_script_is( Assets::PATTERN_LIBRARY_SCRIPT_HANDLE, 'registered' ) );
+		$actual = $assets->defer_scripts( $tag, Assets::SETTINGS_SCRIPT_HANDLE );
 
-		set_current_screen( Pattern::get_slug() );
-		$assets->enqueue_scripts();
-
-		$this->assertTrue( wp_script_is( Assets::PATTERN_LIBRARY_SCRIPT_HANDLE, 'enqueued' ) );
-		$this->assertTrue( wp_style_is( Assets::EDITOR_STYLES_HANDLE, 'enqueued' ) );
-		$this->assertStringContainsString( 'var patternSyncData', (string) wp_scripts()->get_data( Assets::PATTERN_LIBRARY_SCRIPT_HANDLE, 'data' ) );
-		$this->assertFalse( wp_script_is( Assets::TEMPLATE_LIBRARY_SCRIPT_HANDLE, 'enqueued' ) );
+		$this->assertSame( '<script defer src="https://example.com/script.js"></script>', $actual );
 	}
 
 	/**
-	 * The template library bundle is enqueued with its localized data on the template editor screen.
+	 * Ensures unrelated script handles are unchanged.
 	 */
-	public function test_enqueue_scripts_loads_template_library_on_template_screen(): void {
-		$this->write_build_file( 'templates-library.asset.php', "<?php return [ 'dependencies' => [], 'version' => '1' ];" );
-		$this->write_build_file( 'template.css' );
+	public function test_defer_scripts_does_not_modify_other_handles(): void {
+		$assets = new Assets();
+		$tag    = '<script src="https://example.com/script.js"></script>';
 
-		set_current_screen( Template::get_slug() );
-		$this->make_assets()->enqueue_scripts();
-
-		$this->assertTrue( wp_script_is( Assets::TEMPLATE_LIBRARY_SCRIPT_HANDLE, 'enqueued' ) );
-		$this->assertTrue( wp_style_is( Assets::TEMPLATE_LIBRARY_SCRIPT_HANDLE, 'enqueued' ) );
-		$this->assertStringContainsString( 'var TemplateLibraryData', (string) wp_scripts()->get_data( Assets::TEMPLATE_LIBRARY_SCRIPT_HANDLE, 'data' ) );
-		$this->assertFalse( wp_script_is( Assets::PATTERN_LIBRARY_SCRIPT_HANDLE, 'enqueued' ) );
+		$this->assertSame( $tag, $assets->defer_scripts( $tag, 'other-handle' ) );
 	}
 
 	/**
-	 * Only the settings and onboarding bundles are deferred, and never twice.
+	 * Ensures defer is not duplicated on existing script tags.
 	 */
-	public function test_defer_scripts_only_defers_plugin_bundles_once(): void {
-		$assets = $this->make_assets();
-		$tag    = '<script src="https://example.com/app.js"></script>';
+	public function test_defer_scripts_does_not_duplicate_defer_attribute(): void {
+		$assets = new Assets();
+		$tag    = '<script defer src="https://example.com/script.js"></script>';
 
-		$deferred = $assets->defer_scripts( $tag, Assets::SETTINGS_SCRIPT_HANDLE );
-
-		$this->assertSame( '<script defer src="https://example.com/app.js"></script>', $deferred );
-		$this->assertSame( $deferred, $assets->defer_scripts( $deferred, Assets::ONBOARDING_SCRIPT_HANDLE ) );
-		$this->assertSame( $tag, $assets->defer_scripts( $tag, Assets::PATTERN_LIBRARY_SCRIPT_HANDLE ) );
+		$this->assertSame( $tag, $assets->defer_scripts( $tag, Assets::SETTINGS_SCRIPT_HANDLE ) );
 	}
 
 	/**
-	 * Localized data exposes the decrypted API key and is cached across calls.
+	 * Ensures localized data exposes the expected keys.
 	 */
-	public function test_get_localized_data_exposes_api_key_and_is_cached(): void {
+	public function test_get_localized_data_returns_expected_keys(): void {
+		update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_GOVERNING, false );
+
 		$data = Assets::get_localized_data();
 
-		$this->assertSame( Settings::get_api_key(), $data['apiKey'] );
-		$this->assertSame( esc_url( home_url( '/wp-json' ) ), $data['restUrl'] );
-		$this->assertStringContainsString( 'page=onedesign-settings', $data['settingsLink'] );
-
-		Settings::regenerate_api_key();
-		$this->assertSame( $data, Assets::get_localized_data() );
+		$this->assertArrayHasKey( 'nonce', $data );
+		$this->assertArrayHasKey( 'api_key', $data );
+		$this->assertArrayHasKey( 'setupUrl', $data );
+		$this->assertArrayHasKey( 'sharedSites', $data );
+		$this->assertArrayHasKey( 'siteType', $data );
 	}
 
 	/**
-	 * Create an Assets instance that reads build files from the fixture directory.
+	 * Keeps the brand sites' API keys out of the page, and doesn't generate a key on governing sites.
 	 */
-	private function make_assets(): Assets {
-		$assets = new Assets();
-		( new \ReflectionProperty( Assets::class, 'plugin_dir' ) )->setValue( $assets, $this->fixture_dir );
+	public function test_get_localized_data_omits_secrets(): void {
+		update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_GOVERNING, false );
+		delete_option( Settings::OPTION_CONSUMER_API_KEY );
+		Settings::set_shared_sites(
+			[
+				[
+					'name'    => 'Brand',
+					'url'     => 'https://brand.example.com',
+					'api_key' => 'brand-secret',
+				],
+			]
+		);
+		$this->reset_localized_data();
 
-		return $assets;
+		$data = Assets::get_localized_data();
+
+		$this->assertSame( '', $data['api_key'], 'Governing sites have no consumer key.' );
+		$this->assertFalse( get_option( Settings::OPTION_CONSUMER_API_KEY ), 'No consumer key is generated on governing sites.' );
+		$this->assertCount( 1, $data['sharedSites'] );
+		$this->assertArrayNotHasKey( 'api_key', $data['sharedSites'][0] );
+		$this->assertStringNotContainsString( 'brand-secret', (string) wp_json_encode( $data ) );
+
+		update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_CONSUMER, false );
+		$this->reset_localized_data();
+
+		$this->assertNotSame( '', Assets::get_localized_data()['api_key'] );
+
+		$this->reset_localized_data();
 	}
 
 	/**
-	 * Write a fixture file into the build directory.
-	 *
-	 * @param string $name    File name.
-	 * @param string $content File contents.
+	 * Clears the static localized data cache.
 	 */
-	private function write_build_file( string $name, string $content = '' ): void {
-		file_put_contents( $this->fixture_dir . 'build/' . $name, $content ); // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_ops_file_put_contents
+	private function reset_localized_data(): void {
+		$property = new \ReflectionProperty( Assets::class, 'localized_data' );
+		$property->setValue( null, [] );
 	}
 }

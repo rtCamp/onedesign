@@ -1,6 +1,3 @@
-/**
- * WordPress dependencies
- */
 import { useEffect, useState, useCallback } from '@wordpress/element';
 import {
 	TextareaControl,
@@ -14,16 +11,10 @@ import {
 	Modal,
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
+import apiFetch from '@wordpress/api-fetch';
+import type { NoticeType } from '@/admin/settings/page';
 
-/**
- * Internal dependencies
- */
-import { API_NAMESPACE, NONCE, API_KEY } from '../js/constants';
-
-interface NoticeState {
-	type: 'error' | 'success' | 'warning';
-	message: string;
-}
+const API_KEY = window.OneDesignSettings.api_key;
 
 /**
  * SiteSettings component for managing API key and governing site connection.
@@ -31,56 +22,20 @@ interface NoticeState {
  * @return Rendered component.
  */
 const SiteSettings = (): JSX.Element => {
-	const [ apiKey, setApiKey ] = useState( '' );
-	const [ isLoading, setIsLoading ] = useState( false );
-	const [ notice, setNotice ] = useState< NoticeState | null >( null );
+	const [ apiKey, setApiKey ] = useState( API_KEY );
+	const [ isLoading, setIsLoading ] = useState( true );
+	const [ notice, setNotice ] = useState< NoticeType | null >( null );
 	const [ governingSite, setGoverningSite ] = useState( '' );
 	const [ showDisconnectionModal, setShowDisconnectionModal ] =
 		useState( false );
 
-	const fetchApiKey = useCallback( async () => {
-		try {
-			setIsLoading( true );
-			const response = await fetch( API_NAMESPACE + '/secret-key', {
-				method: 'GET',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-WP-Nonce': NONCE,
-					'X-OneDesign-Token': API_KEY,
-				},
-			} );
-			if ( ! response.ok ) {
-				throw new Error( 'Network response was not ok' );
-			}
-			const data = ( await response.json() ) as { secret_key?: string };
-			setApiKey( data?.secret_key || '' );
-		} catch {
-			setNotice( {
-				type: 'error',
-				message: __(
-					'Failed to fetch api key. Please try again later.',
-					'onedesign'
-				),
-			} );
-		} finally {
-			setIsLoading( false );
-		}
-	}, [] );
-
-	// regenerate api key using REST endpoint.
+	// The admin nonce authenticates these same-site requests.
 	const regenerateApiKey = useCallback( async () => {
 		try {
-			const response = await fetch( API_NAMESPACE + '/secret-key', {
+			const data = await apiFetch< { secret_key?: string } >( {
+				path: '/onedesign/v1/secret-key',
 				method: 'POST',
-				headers: {
-					'X-WP-Nonce': NONCE,
-					'X-OneDesign-Token': API_KEY,
-				},
 			} );
-			if ( ! response.ok ) {
-				throw new Error( 'Network response was not ok' );
-			}
-			const data = ( await response.json() ) as { secret_key?: string };
 			if ( data?.secret_key ) {
 				setApiKey( data.secret_key );
 				setNotice( {
@@ -94,70 +49,60 @@ const SiteSettings = (): JSX.Element => {
 				setNotice( {
 					type: 'error',
 					message: __(
-						'Failed to regenerate api key. Please try again later.',
+						'Failed to regenerate API key. Please try again later.',
 						'onedesign'
 					),
 				} );
 			}
-		} catch {
+		} catch ( error ) {
 			setNotice( {
 				type: 'error',
-				message: __(
-					'Error regenerating api key. Please try again later.',
-					'onedesign'
-				),
+				message:
+					( error as { message?: string } )?.message ||
+					__(
+						'Error regenerating API key. Please try again later.',
+						'onedesign'
+					),
 			} );
 		}
 	}, [] );
 
 	const fetchCurrentGoverningSite = useCallback( async () => {
-		setIsLoading( true );
 		try {
-			const response = await fetch(
-				`${ API_NAMESPACE }/governing-site?${ new Date().getTime() }`,
-				{
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
-						'X-WP-Nonce': NONCE,
-						'X-OneDesign-Token': apiKey,
-					},
-				}
-			);
-			if ( ! response.ok ) {
-				throw new Error( 'Network response was not ok' );
-			}
-			const data = ( await response.json() ) as {
-				governing_site_url?: string;
-			};
-			setGoverningSite( data?.governing_site_url || '' );
-		} catch {
+			const data = await apiFetch< {
+				onedesign_parent_site_url?: string;
+			} >( { path: '/wp/v2/settings' } );
+			setGoverningSite( data?.onedesign_parent_site_url || '' );
+		} catch ( error ) {
 			setNotice( {
 				type: 'error',
-				message: __(
-					'Failed to fetch governing site. Please try again later.',
-					'onedesign'
-				),
+				message:
+					( error as { message?: string } )?.message ||
+					__(
+						'Failed to fetch governing site. Please try again later.',
+						'onedesign'
+					),
 			} );
-		} finally {
-			setIsLoading( false );
 		}
-	}, [ apiKey ] );
+	}, [] );
 
 	const deleteGoverningSiteConnection = useCallback( async () => {
 		try {
-			const response = await fetch( `${ API_NAMESPACE }/governing-site`, {
+			const data = await apiFetch< {
+				governing_site_notified?: boolean;
+				message: string;
+			} >( {
+				path: '/onedesign/v1/governing-site',
 				method: 'DELETE',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-WP-Nonce': NONCE,
-					'X-OneDesign-Token': apiKey,
-				},
 			} );
-			if ( ! response.ok ) {
-				throw new Error( 'Network response was not ok' );
-			}
 			setGoverningSite( '' );
+
+			// Disconnected locally, but the governing site may still list this site.
+			if ( data?.governing_site_notified === false ) {
+				setNotice( { type: 'warning', message: data.message } );
+				return;
+			}
+
 			setNotice( {
 				type: 'success',
 				message: __(
@@ -165,27 +110,29 @@ const SiteSettings = (): JSX.Element => {
 					'onedesign'
 				),
 			} );
-		} catch {
+		} catch ( error ) {
 			setNotice( {
 				type: 'error',
-				message: __(
-					'Failed to disconnect governing site. Please try again later.',
-					'onedesign'
-				),
+				message:
+					( error as { message?: string } )?.message ||
+					__(
+						'Failed to disconnect governing site. Please try again later.',
+						'onedesign'
+					),
 			} );
 		} finally {
 			setShowDisconnectionModal( false );
 		}
-	}, [ apiKey ] );
+	}, [] );
 
 	const handleDisconnectGoverningSite = useCallback( async () => {
 		setShowDisconnectionModal( true );
 	}, [] );
 
+	// Load once on mount.
 	useEffect( () => {
-		fetchApiKey();
-		fetchCurrentGoverningSite();
-	}, [] ); // eslint-disable-line react-hooks/exhaustive-deps
+		fetchCurrentGoverningSite().finally( () => setIsLoading( false ) );
+	}, [ fetchCurrentGoverningSite ] );
 
 	if ( isLoading ) {
 		return <Spinner />;
@@ -203,10 +150,7 @@ const SiteSettings = (): JSX.Element => {
 				</Notice>
 			) }
 
-			<Card
-				className="brand-site-settings"
-				style={ { marginTop: '30px' } }
-			>
+			<Card style={ { marginTop: '30px' } }>
 				<CardHeader>
 					<h2>{ __( 'API Key', 'onedesign' ) }</h2>
 					<div>
@@ -214,9 +158,11 @@ const SiteSettings = (): JSX.Element => {
 						<Button
 							variant="primary"
 							onClick={ () => {
-								navigator?.clipboard
-									?.writeText( apiKey )
-									?.then( () => {
+								(
+									navigator.clipboard?.writeText( apiKey ) ??
+									Promise.reject( '' )
+								)
+									.then( () => {
 										setNotice( {
 											type: 'success',
 											message: __(
@@ -225,7 +171,7 @@ const SiteSettings = (): JSX.Element => {
 											),
 										} );
 									} )
-									?.catch( ( error: unknown ) => {
+									.catch( ( error ) => {
 										setNotice( {
 											type: 'error',
 											message:
@@ -234,7 +180,7 @@ const SiteSettings = (): JSX.Element => {
 													'onedesign'
 												) +
 												' ' +
-												String( error ),
+												error,
 										} );
 									} );
 							} }
@@ -254,14 +200,16 @@ const SiteSettings = (): JSX.Element => {
 				<CardBody>
 					<div>
 						<TextareaControl
+							label={ __( 'API Key', 'onedesign' ) }
+							hideLabelFromVision
 							value={ apiKey }
-							disabled
-							onChange={ () => {} }
+							readOnly
 							help={ __(
 								'This key is used for secure communication with the Governing site.',
 								'onedesign'
 							) }
 							__nextHasNoMarginBottom
+							onChange={ () => {} } // to avoid ts warning
 						/>
 					</div>
 				</CardBody>
@@ -277,7 +225,7 @@ const SiteSettings = (): JSX.Element => {
 						isDestructive
 						onClick={ handleDisconnectGoverningSite }
 						disabled={
-							governingSite?.trim().length === 0 || isLoading
+							governingSite.trim().length === 0 || isLoading
 						}
 					>
 						{ __( 'Disconnect Governing Site', 'onedesign' ) }
@@ -288,13 +236,13 @@ const SiteSettings = (): JSX.Element => {
 						label={ __( 'Governing Site URL', 'onedesign' ) }
 						value={ governingSite }
 						disabled
-						onChange={ () => {} }
 						help={ __(
 							'This is the URL of the Governing site this Brand site is connected to.',
 							'onedesign'
 						) }
 						__next40pxDefaultSize
 						__nextHasNoMarginBottom
+						onChange={ () => {} } // to avoid ts warning
 					/>
 				</CardBody>
 			</Card>

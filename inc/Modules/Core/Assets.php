@@ -10,8 +10,6 @@ declare( strict_types = 1 );
 namespace OneDesign\Modules\Core;
 
 use OneDesign\Contracts\Interfaces\Registrable;
-use OneDesign\Modules\Post_Types\Pattern;
-use OneDesign\Modules\Post_Types\Template;
 use OneDesign\Modules\Settings\Settings;
 
 /**
@@ -33,9 +31,8 @@ final class Assets implements Registrable {
 	 * Asset handles
 	 */
 	public const ADMIN_STYLES_HANDLE            = self::PREFIX . 'admin';
-	public const EDITOR_STYLES_HANDLE           = self::PREFIX . 'editor';
-	public const MULTISITE_SETUP_SCRIPT_HANDLE  = self::PREFIX . 'multisite-setup';
-	public const ONBOARDING_SCRIPT_HANDLE       = self::PREFIX . 'setup';
+	public const LIBRARY_STYLES_HANDLE          = self::PREFIX . 'library';
+	public const NETWORK_SETTINGS_SCRIPT_HANDLE = self::PREFIX . 'network-settings';
 	public const PATTERN_LIBRARY_SCRIPT_HANDLE  = self::PREFIX . 'patterns-library';
 	public const SETTINGS_SCRIPT_HANDLE         = self::PREFIX . 'settings';
 	public const TEMPLATE_LIBRARY_SCRIPT_HANDLE = self::PREFIX . 'templates-library';
@@ -69,10 +66,12 @@ final class Assets implements Registrable {
 	public static function get_localized_data(): array {
 		if ( empty( self::$localized_data ) ) {
 			self::$localized_data = [
-				'restUrl'      => esc_url( home_url( '/wp-json' ) ),
-				'restNonce'    => wp_create_nonce( 'wp_rest' ),
-				'apiKey'       => Settings::get_api_key(),
-				'settingsLink' => esc_url( admin_url( 'admin.php?page=onedesign-settings' ) ),
+				'nonce'       => wp_create_nonce( 'wp_rest' ),
+				// Only brand sites use a key of their own, so governing sites don't generate one.
+				'api_key'     => Settings::is_consumer_site() ? Settings::get_api_key() : '',
+				'setupUrl'    => admin_url( 'admin.php?page=onedesign-settings' ),
+				'sharedSites' => Settings::get_shared_sites_without_keys(),
+				'siteType'    => Settings::get_site_type(),
 			];
 		}
 
@@ -91,7 +90,6 @@ final class Assets implements Registrable {
 	 * {@inheritDoc}
 	 */
 	public function register_hooks(): void {
-		add_action( 'enqueue_block_editor_assets', [ $this, 'enqueue_scripts' ] );
 		add_action( 'admin_enqueue_scripts', [ $this, 'register_assets' ] );
 
 		// Add defer attribute to certain plugin bundles to improve admin load performance.
@@ -99,19 +97,23 @@ final class Assets implements Registrable {
 	}
 
 	/**
-	 * Register admin assets to WordPress.
-	 *
-	 * Assets are registered once centrally, and enqueued in the modules that need them.
+	 * Register all scripts and styles.
 	 */
 	public function register_assets(): void {
 
 		$this->register_script( self::SETTINGS_SCRIPT_HANDLE, 'settings' );
-		$this->register_style( self::SETTINGS_SCRIPT_HANDLE, 'settings' );
 
-		$this->register_script( self::ONBOARDING_SCRIPT_HANDLE, 'onboarding' );
-		$this->register_style( self::ONBOARDING_SCRIPT_HANDLE, 'onboarding', [ 'wp-components' ] );
+		$this->register_script( self::NETWORK_SETTINGS_SCRIPT_HANDLE, 'network-settings' );
 
-		$this->register_script( self::MULTISITE_SETUP_SCRIPT_HANDLE, 'multisite-plugin' );
+		$this->register_script(
+			self::PATTERN_LIBRARY_SCRIPT_HANDLE,
+			'patterns-library',
+		);
+
+		$this->register_script(
+			self::TEMPLATE_LIBRARY_SCRIPT_HANDLE,
+			'templates-library',
+		);
 
 		$this->register_style(
 			self::ADMIN_STYLES_HANDLE,
@@ -119,53 +121,11 @@ final class Assets implements Registrable {
 			[ 'wp-components' ],
 		);
 
-		wp_enqueue_style( self::ADMIN_STYLES_HANDLE );
-	}
-
-	/**
-	 * Add scripts and styles to the page.
-	 */
-	public function enqueue_scripts(): void {
-
-		$current_screen = get_current_screen();
-
-		if ( $current_screen instanceof \WP_Screen && Pattern::get_slug() === $current_screen->id ) {
-			$this->register_script(
-				self::PATTERN_LIBRARY_SCRIPT_HANDLE,
-				'patterns-library'
-			);
-
-			wp_localize_script(
-				self::PATTERN_LIBRARY_SCRIPT_HANDLE,
-				'patternSyncData',
-				self::get_localized_data(),
-			);
-
-			wp_enqueue_script( self::PATTERN_LIBRARY_SCRIPT_HANDLE );
-
-			$this->register_style( self::EDITOR_STYLES_HANDLE, 'editor' );
-			wp_enqueue_style( self::EDITOR_STYLES_HANDLE );
-		}
-
-		if ( ! $current_screen instanceof \WP_Screen || Template::get_slug() !== $current_screen->id ) {
-			return;
-		}
-
-		$this->register_script(
-			self::TEMPLATE_LIBRARY_SCRIPT_HANDLE,
-			'templates-library'
+		$this->register_style(
+			self::LIBRARY_STYLES_HANDLE,
+			'library',
+			[ 'wp-components', 'wp-block-editor' ],
 		);
-
-		wp_localize_script(
-			self::TEMPLATE_LIBRARY_SCRIPT_HANDLE,
-			'TemplateLibraryData',
-			self::get_localized_data(),
-		);
-
-		wp_enqueue_script( self::TEMPLATE_LIBRARY_SCRIPT_HANDLE );
-
-		$this->register_style( self::TEMPLATE_LIBRARY_SCRIPT_HANDLE, 'template' );
-		wp_enqueue_style( self::TEMPLATE_LIBRARY_SCRIPT_HANDLE );
 	}
 
 	/**
@@ -178,7 +138,6 @@ final class Assets implements Registrable {
 	public function defer_scripts( string $tag, string $handle ): string {
 		$defer_handles = [
 			self::SETTINGS_SCRIPT_HANDLE,
-			self::ONBOARDING_SCRIPT_HANDLE,
 		];
 
 		// Bail if we don't need to defer.
@@ -208,18 +167,24 @@ final class Assets implements Registrable {
 		}
 
 		// phpcs:ignore WordPressVIPMinimum.Files.IncludingFile.UsingVariable -- The file is checked for existence above.
-		$asset = require_once $asset_file;
+		$asset = require $asset_file;
 
 		$version   = $ver ?? ( $asset['version'] ?? filemtime( $asset_file ) );
 		$asset_src = sprintf( '%s/%s.js', $this->plugin_url . untrailingslashit( self::ASSETS_DIR ), $filename );
 
-		return wp_register_script(
+		$registered = wp_register_script(
 			$handle,
 			$asset_src,
 			$deps ?: $asset['dependencies'],
 			$version ?: false,
 			$in_footer
 		);
+
+		if ( $registered ) {
+			wp_set_script_translations( $handle, 'onedesign', $this->plugin_dir . 'languages' );
+		}
+
+		return $registered;
 	}
 
 	/**

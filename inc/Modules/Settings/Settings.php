@@ -11,6 +11,7 @@ namespace OneDesign\Modules\Settings;
 
 use OneDesign\Contracts\Interfaces\Registrable;
 use OneDesign\Encryptor;
+use OneDesign\Utils;
 
 /**
  * Class - Settings
@@ -87,11 +88,8 @@ final class Settings implements Registrable {
 				'label'             => __( 'Consumer API Key', 'onedesign' ),
 				'description'       => __( 'API key used by governing site to authenticate requests from this consumer site.', 'onedesign' ),
 				'sanitize_callback' => 'sanitize_text_field',
-				'show_in_rest'      => [
-					'schema' => [
-						'type' => 'string',
-					],
-				],
+				// Core would return the encrypted key and save a new one unencrypted, so it's only regenerated through the OneDesign route.
+				'show_in_rest'      => false,
 			],
 			self::OPTION_CONSUMER_PARENT_SITE_URL => [
 				'type'              => 'string',
@@ -115,36 +113,8 @@ final class Settings implements Registrable {
 				'label'             => __( 'Brand Sites', 'onedesign' ),
 				'description'       => __( 'An array of brand sites connected to this governing site.', 'onedesign' ),
 				'sanitize_callback' => [ self::class, 'sanitize_shared_sites' ],
-				'show_in_rest'      => [
-					'schema' => [
-						'type'  => 'array',
-						'items' => [
-							'type'       => 'object',
-							'properties' => [
-								'id'      => [
-									'type' => 'string',
-								],
-								'name'    => [
-									'type' => 'string',
-								],
-								'url'     => [
-									'type'   => 'string',
-									'format' => 'uri',
-								],
-								'logo'    => [
-									'type'   => 'string',
-									'format' => 'uri',
-								],
-								'logo_id' => [
-									'type' => 'integer',
-								],
-								'api_key' => [
-									'type' => 'string',
-								],
-							],
-						],
-					],
-				],
+				// The stored sites hold the brand keys, which never leave the server.
+				'show_in_rest'      => false,
 			],
 		];
 
@@ -235,7 +205,7 @@ final class Settings implements Registrable {
 	 */
 
 	/**
-	 * Get brand sites configured for this governing site.
+	 * Get brand sites configured for this governing site, keyed by the (trailing-slash) URL.
 	 *
 	 * @return array<string,array{
 	 *  api_key: string,
@@ -255,13 +225,18 @@ final class Settings implements Registrable {
 				continue;
 			}
 
-			$brands_to_return[ $brand['url'] ] = [
-				'api_key' => $brand['api_key'] ?? '',
+			$decrypted_api_key = ! empty( $brand['api_key'] ) ? Encryptor::decrypt( $brand['api_key'] ) : '';
+
+			// Always use a trailing-slash URL.
+			$url = trailingslashit( $brand['url'] );
+
+			$brands_to_return[ $url ] = [
+				'api_key' => $decrypted_api_key ?: '',
 				'id'      => $brand['id'] ?? '',
 				'logo'    => $brand['logo'] ?? '',
 				'logo_id' => $brand['logo_id'] ?? 0,
 				'name'    => $brand['name'] ?? '',
-				'url'     => $brand['url'] ?? '',
+				'url'     => $url,
 			];
 		}
 
@@ -269,9 +244,33 @@ final class Settings implements Registrable {
 	}
 
 	/**
-	 * Get a single brand site by URL
+	 * Gets the brand sites for the browser, without their API keys.
 	 *
-	 * @param string $site_url The site URL.
+	 * @return array{
+	 *  id: string,
+	 *  name: string,
+	 *  url: string,
+	 *  logo: string,
+	 *  logo_id: int,
+	 * }[]
+	 */
+	public static function get_shared_sites_without_keys(): array {
+		return array_map(
+			static fn ( array $site ): array => [
+				'id'      => $site['id'],
+				'name'    => $site['name'],
+				'url'     => $site['url'],
+				'logo'    => $site['logo'],
+				'logo_id' => $site['logo_id'],
+			],
+			array_values( self::get_shared_sites() )
+		);
+	}
+
+	/**
+	 * Gets a brand site by its ID.
+	 *
+	 * @param string $site_id The site ID.
 	 *
 	 * @return ?array{
 	 *   api_key: string,
@@ -282,12 +281,14 @@ final class Settings implements Registrable {
 	 *   url: string,
 	 * }
 	 */
-	public static function get_shared_site_by_url( string $site_url ): ?array {
-		$brand_sites = self::get_shared_sites();
+	public static function get_shared_site_by_id( string $site_id ): ?array {
+		foreach ( self::get_shared_sites() as $site ) {
+			if ( $site['id'] === $site_id ) {
+				return $site;
+			}
+		}
 
-		$normalized_url = trailingslashit( $site_url );
-
-		return $brand_sites[ $normalized_url ] ?? null;
+		return null;
 	}
 
 	/**
@@ -302,11 +303,51 @@ final class Settings implements Registrable {
 	 *   logo_id?: int,
 	 *   name?: string,
 	 *   url?: string,
-	 *   is_editable?: bool
 	 * }> $sites The sites to set.
 	 */
 	public static function set_shared_sites( array $sites ): bool {
+		foreach ( $sites as &$site ) {
+			if ( empty( $site['api_key'] ) || empty( $site['url'] ) ) {
+				continue;
+			}
+			// Ensure URLs are trailing-slashed.
+			$site['url'] = trailingslashit( $site['url'] );
+
+			$encrypted_key = Encryptor::encrypt( $site['api_key'] );
+
+			if ( false === $encrypted_key ) {
+				return false;
+			}
+
+			$site['api_key'] = $encrypted_key;
+		}
+
 		return update_option( self::OPTION_GOVERNING_SHARED_SITES, array_values( $sites ), false );
+	}
+
+	/**
+	 * Remove a single brand site by URL.
+	 *
+	 * @param string $site_url The site URL.
+	 *
+	 * @return bool Whether the site was removed.
+	 */
+	public static function remove_shared_site( string $site_url ): bool {
+		$sites = get_option( self::OPTION_GOVERNING_SHARED_SITES, [] );
+		$sites = is_array( $sites ) ? $sites : [];
+
+		$normalized_url = Utils::normalize_url( $site_url );
+
+		$remaining_sites = array_filter(
+			$sites,
+			static fn ( $site ): bool => empty( $site['url'] ) || Utils::normalize_url( $site['url'] ) !== $normalized_url
+		);
+
+		if ( count( $remaining_sites ) === count( $sites ) ) {
+			return false;
+		}
+
+		return update_option( self::OPTION_GOVERNING_SHARED_SITES, array_values( $remaining_sites ), false );
 	}
 
 	/**
@@ -360,17 +401,6 @@ final class Settings implements Registrable {
 		}
 
 		update_option( self::OPTION_CONSUMER_API_KEY, $encrypted_key, false );
-		if ( is_multisite() ) {
-			/**
-			 * Trigger action when API key is generated in multisite setup.
-			 *
-			 * @param string $secret_key The generated secret key.
-			 * @param int $blog_id The blog ID where the key is generated.
-			 *
-			 * @hook onedesign_regenerate_api_key
-			 */
-			do_action( 'onedesign_regenerate_api_key', $api_key, get_current_blog_id() );
-		}
 
 		return $api_key;
 	}

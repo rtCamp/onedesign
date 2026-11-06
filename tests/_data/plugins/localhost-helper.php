@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 add_filter( // phpcs:ignore WordPressVIPMinimum.Hooks.RestrictedHooks.http_request_args
 	'http_request_args',
 	static function ( array $args, string $url ): array {
-		if ( false === strpos( $url, 'onedesign/v1' ) ) {
+		if ( ! str_contains( $url, 'onedesign/v1' ) ) {
 			return $args;
 		}
 
@@ -35,7 +35,7 @@ add_filter( // phpcs:ignore WordPressVIPMinimum.Hooks.RestrictedHooks.http_reque
 add_filter(
 	'pre_http_request',
 	static function ( $preempt, array $args, string $url ) {
-		if ( false === strpos( $url, 'onedesign/v1' ) || false === strpos( $url, '://localhost' ) ) {
+		if ( ! str_contains( $url, 'onedesign/v1' ) || ! str_contains( $url, '://localhost' ) ) {
 			return $preempt;
 		}
 

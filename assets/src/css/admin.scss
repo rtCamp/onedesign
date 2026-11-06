@@ -1,33 +1,11 @@
-/* onedesign admin styles */
-
-/*
- * Core WordPress classes that don't match `selector-class-pattern` (disabled in stylelint.config.js):
- * - .components-notice__content
- * - .toplevel_page_onedesign
- */
+/* stylelint-disable selector-class-pattern */
 
 #onedesign-settings-page {
-	&:has(.components-snackbar-list) {
-		.components-snackbar-list {
-			position: fixed;
-			bottom: 20px;
-			right: 20px;
-			z-index: 1000000;
-			align-items: flex-end;
-			justify-content: flex-end;
-			display: flex;
-			flex-direction: column;
-		}
-	}
-
-	&:not(:has(.components-snackbar-list)) {
-		.components-snackbar {
-			position: fixed;
-			bottom: 20px;
-			right: 20px;
-			z-index: 1000000;
-			width: auto;
-		}
+	.components-snackbar {
+		position: fixed;
+		bottom: 20px;
+		right: 20px;
+		z-index: 1000000;
 	}
 
 	.components-notice__content {
@@ -35,7 +13,7 @@
 	}
 
 	.onedesign-success-notice {
-		background-color: #16a32d;
+		background-color: #007017;
 		color: #fff;
 	}
 
@@ -60,53 +38,12 @@
 	}
 }
 
-.toplevel_page_onedesign {
-	.onedesign-site-checkbox {
-		pointer-events: none;
-	}
+#onedesign-settings-page .wp-list-table td,
+#onedesign-network-settings .wp-list-table td {
+	vertical-align: middle;
 }
 
-body {
-	&.onedesign-missing-brand-sites,
-	&.onedesign-brand-site {
-		.wp-first-item:has(.onedesign-plugin-manager-page) {
-			display: none;
-		}
-	}
-
-	&.onedesign-governing-site-site {
-		.wp-first-item:has(.onedesign-plugin-manager-page) {
-			display: inline-block;
-		}
-	}
-}
-
-[id="onedesign-multisite-selection-modal"],
-[id="onedesign-site-selection-modal"] {
-	position: fixed;
-	top: 50%;
-	left: 50%;
-	transform: translate(-50%, -50%);
-	z-index: 10000;
-	min-width: 40vw;
-}
-
-body.onedesign-multisite-selection-modal,
-body.onedesign-site-selection-modal {
-	&::before {
-		content: "";
-		position: fixed;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		background-color: rgba(0, 0, 0, 0.5);
-		z-index: 9999;
-	}
-}
-
-[id="toplevel_page_onedesign"] {
-	.dashicons-admin-generic::before {
-		content: url(../images/logo.svg) !important;
-	}
+// Modals render outside the page's root.
+.onedesign-form-error {
+	margin-bottom: 16px;
 }

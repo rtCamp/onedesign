@@ -1,7 +1,29 @@
-/**
- * External dependencies
- */
-import { getInitials, isValidUrl, PurifyElement } from '@/js/utils';
+import { describe, expect, it } from 'vitest';
+import { isValidUrl, withTrailingSlash, getInitials } from '@/js/utils';
+
+describe( 'utils', () => {
+	it( 'validates well-formed urls', () => {
+		expect( isValidUrl( 'https://example.com/path' ) ).toBe( true );
+		expect( isValidUrl( 'not-a-url' ) ).toBe( false );
+	} );
+
+	it( 'only accepts http and https urls', () => {
+		expect( isValidUrl( 'http://localhost:8890' ) ).toBe( true );
+		expect( isValidUrl( 'ftp://example.com' ) ).toBe( false );
+		expect( isValidUrl( 'javascript:alert(1)' ) ).toBe( false );
+		expect( isValidUrl( 'mailto:a@b.c' ) ).toBe( false );
+	} );
+
+	it( 'adds a trailing slash only when needed', () => {
+		expect( withTrailingSlash( '' ) ).toBe( '' );
+		expect( withTrailingSlash( 'https://example.com' ) ).toBe(
+			'https://example.com/'
+		);
+		expect( withTrailingSlash( 'https://example.com/' ) ).toBe(
+			'https://example.com/'
+		);
+	} );
+} );
 
 describe( 'getInitials', () => {
 	it( 'returns "?" for empty or invalid input', () => {
@@ -37,36 +59,5 @@ describe( 'getInitials', () => {
 
 	it( 'trims surrounding whitespace before extracting', () => {
 		expect( getInitials( '   spaced name   ' ) ).toBe( 'SN' );
-	} );
-} );
-
-describe( 'isValidUrl', () => {
-	it( 'accepts parseable http(s) URLs', () => {
-		expect( isValidUrl( 'https://example.com' ) ).toBe( true );
-		expect( isValidUrl( 'http://example.com/path' ) ).toBe( true );
-	} );
-
-	it( 'rejects unparseable strings and non-http(s) schemes', () => {
-		expect( isValidUrl( 'not a url' ) ).toBe( false );
-		expect( isValidUrl( '' ) ).toBe( false );
-	} );
-} );
-
-describe( 'PurifyElement', () => {
-	it( 'strips all HTML tags, keeping text content', () => {
-		expect( PurifyElement( '<strong>Bold</strong>' ) ).toBe( 'Bold' );
-		expect( PurifyElement( '<a href="#">link</a> text' ) ).toBe(
-			'link text'
-		);
-	} );
-
-	it( 'removes script tags entirely', () => {
-		expect(
-			PurifyElement( 'safe<script>alert(1)</script>' )
-		).not.toContain( '<script>' );
-	} );
-
-	it( 'leaves plain text untouched', () => {
-		expect( PurifyElement( 'just text' ) ).toBe( 'just text' );
 	} );
 } );
