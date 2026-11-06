@@ -329,7 +329,7 @@ class Templates_Controller extends Abstract_REST_Controller {
 	}
 
 	/**
-	 * Gets these templates of this site, with the patterns, template parts and synced patterns they use.
+	 * Gets this site's templates with the slugs of these ids, under those ids, with the patterns, template parts and synced patterns they use.
 	 *
 	 * @param string[] $ids The template ids.
 	 *
@@ -337,7 +337,17 @@ class Templates_Controller extends Abstract_REST_Controller {
 	 * @phpstan-return Shared_Content|\WP_Error
 	 */
 	private static function get_shared_content( array $ids ): array|\WP_Error {
-		$templates = array_values( array_filter( get_block_templates(), static fn ( \WP_Block_Template $template ): bool => in_array( $template->id, $ids, true ) ) );
+		$by_slug   = array_column( get_block_templates(), null, 'slug' );
+		$templates = [];
+		foreach ( $ids as $id ) {
+			$slug = explode( '//', $id, 2 )[1] ?? '';
+
+			if ( isset( $by_slug[ $slug ] ) ) {
+				$template     = clone $by_slug[ $slug ];
+				$template->id = $id;
+				$templates[]  = $template;
+			}
+		}
 
 		if ( empty( $templates ) ) {
 			return new \WP_Error( 'onedesign_templates_not_found', __( 'None of these templates exist on this site.', 'onedesign' ), [ 'status' => 400 ] );
