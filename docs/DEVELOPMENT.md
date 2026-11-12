@@ -28,8 +28,6 @@ Code contributions, bug reports, and feature requests are welcome! The following
   - [PHPUnit](#phpunit)
   - [Vitest (JavaScript Unit Tests)](#vitest-javascript-unit-tests)
     - [Running Tests](#running-tests-1)
-    - [Test Location](#test-location)
-    - [Writing Tests](#writing-tests)
   - [Playwright](#playwright)
   - [GitHub Workflows](#github-workflows)
 - [Internationalization](#internationalization)
@@ -50,41 +48,40 @@ Code contributions, bug reports, and feature requests are welcome! The following
 │   ├── .codecov.yml   # Codecov configuration for test coverage reporting.
 │   └── dependabot.yml # Dependabot configuration for automated dependency updates.
 │
-│   # Non-php plugin assets.
-├── assets
-│   └── src            # TypeScript (.ts/.tsx) sources.
-│       ├── admin
-│       │   ├── network-settings # Network Admin > Settings > OneDesign, which lists the network's sites, makes them governing sites and adds brand sites to them.
+├── assets/  # Sources that webpack compiles into build/.
+│   └── src/
+│       ├── admin/
+│       │   ├── network-settings/ # Network settings.
 │       │   │   ├── index.tsx
 │       │   │   └── page.tsx
-│       │   ├── patterns # The Pattern Library, which shares patterns with brand sites.
+│       │   ├── patterns/  # Pattern Library.
 │       │   │   ├── index.tsx
 │       │   │   └── page.tsx
-│       │   ├── settings
+│       │   ├── settings/  # Plugin settings.
 │       │   │   ├── index.tsx
 │       │   │   └── page.tsx
-│       │   └── templates # The Template Library, which shares templates with brand sites.
+│       │   └── templates/ # Template Library.
 │       │       ├── index.tsx
 │       │       └── page.tsx
-│       ├── components
-│       │   ├── brand-site-picker.tsx # The libraries' parts, with library.tsx, preview-card.tsx and use-library-data.ts, which patterns and templates share.
+│       ├── components/
+│       │   ├── brand-site-picker.tsx
 │       │   ├── library.tsx
-│       │   ├── MultiSites.tsx # Adds the network's sites to a governing site, from its settings screen and the network screen.
+│       │   ├── MultiSites.tsx
 │       │   ├── preview-card.tsx
 │       │   ├── SiteModal.tsx
 │       │   ├── SiteSettings.tsx
 │       │   ├── SiteTable.tsx
 │       │   ├── SiteTypeSettings.tsx
 │       │   └── use-library-data.ts
-│       ├── css
+│       ├── css/
 │       │   ├── admin.scss
 │       │   └── library.scss
-│       ├── images
-│       │   └── logo.svg
-│       ├── js
+│       ├── images/
+│       │   └── logo.svg # The admin menu icon
+│       ├── js/
 │       │   └── utils.ts
-│       └── types
-│           ├── global.d.ts # The window globals the PHP side localizes.
+│       └── types/
+│           ├── global.d.ts
 │           ├── wordpress-block-editor.d.ts
 │           ├── wordpress-block-library.d.ts
 │           └── wordpress-blocks.d.ts
@@ -107,25 +104,25 @@ Code contributions, bug reports, and feature requests are welcome! The following
 │   │       └── Singleton.php
 │   ├── Modules/
 │   │   ├── Core/
-│   │   │   └── Assets.php
+│   │   │   └── Assets.php  # JS/CSS asset loader.
 │   │   ├── Library/
-│   │   │   ├── Admin.php # Registers the Pattern Library and Template Library screens.
-│   │   │   ├── Patterns.php # Lists a site's patterns, and keeps and registers the ones a brand site received.
-│   │   │   └── Templates.php # Finds what a site's templates use, and keeps and registers the ones a brand site received.
+│   │   │   ├── Admin.php
+│   │   │   ├── Patterns.php
+│   │   │   └── Templates.php
 │   │   ├── Multisite/
-│   │   │   ├── Admin.php # Registers the network screen and its setup notice.
+│   │   │   ├── Admin.php
 │   │   │   └── Utils.php
 │   │   ├── Rest/
 │   │   │   ├── Abstract_REST_Controller.php
 │   │   │   ├── Brand_Site_Controller.php
 │   │   │   ├── Governing_Site_Controller.php
 │   │   │   ├── Multisite_Controller.php
-│   │   │   ├── Patterns_Controller.php # Lists, adds and removes the patterns in a site's library.
+│   │   │   ├── Patterns_Controller.php
 │   │   │   ├── Remote_Client.php # Sends the requests between the governing and brand sites.
 │   │   │   ├── Secret_Key_Controller.php
 │   │   │   ├── Shared_Sites_Controller.php
-│   │   │   └── Templates_Controller.php # Lists, applies, re-syncs and removes the templates in a site's library.
-│   │   └── Settings/
+│   │   │   └── Templates_Controller.php
+│   │   └── Settings/ # Shared site settings.
 │   │       ├── Admin.php
 │   │       └── Settings.php
 │   │
@@ -176,20 +173,20 @@ Code contributions, bug reports, and feature requests are welcome! The following
 ├── .prettierignore               # Prettier ignore patterns.
 ├── .prettierrc.js                # Prettier configuration.
 ├── .release-please-manifest.json # Release Please manifest file.
+├── stylelint.config.mjs          # Stylelint configuration.
 ├── .wp-env.json                  # wp-env configuration (governing site).
 ├── .wp-env.child.json            # wp-env configuration (brand site).
 ├── .wp-env.test.json             # wp-env configuration (test site).
 ├── blueprint.json                # WordPress Playground blueprint configuration.
 ├── babel.config.js               # Babel configuration.
 ├── composer.json                 # PHP dependencies.
-├── eslint.config.mjs   # ESLint flat config.
+├── eslint.config.mjs             # ESLint configuration.
 ├── LICENSE.md                    # License file.
 ├── package.json                  # Node.js dependencies.
 ├── playwright.config.ts          # Playwright configuration.
 ├── phpstan.neon.dist             # PHPStan configuration.
 ├── phpunit.xml.dist              # PHPUnit configuration.
 ├── release-please-config.json    # Release Please configuration.
-├── stylelint.config.mjs          # Stylelint configuration.
 ├── tsconfig.base.json            # TypeScript base configuration.
 ├── tsconfig.json                 # TypeScript configuration.
 ├── vitest.config.mjs             # Vitest configuration.
@@ -313,7 +310,7 @@ For more information on using `wp-env`, see the [wp-env documentation](https://d
 
 - `npm run start:js`: Starts the JS/CSS watcher (development mode).
 - `npm run build:dev`: Builds assets for development.
-- `npm run build:prod`: Builds assets for production and installs optimized PHP dependencies.
+- `npm run build:prod`: Cleans `build/` and builds assets for production.
 - `npm run clean`: Cleans generated assets.
 
 ## Code Contributions (Pull Requests)
@@ -334,7 +331,7 @@ This project uses several tools to ensure code quality and standards are maintai
 
 This project uses [ESLint](https://eslint.org) through `@wordpress/scripts` and `@wordpress/eslint-plugin` for JavaScript linting, following WordPress coding standards and best practices.
 
-Our specific ESLint configuration is defined in the [`.eslintrc.js`](../.eslintrc.js) file.
+Our specific ESLint configuration is defined in the [`eslint.config.mjs`](../eslint.config.mjs) file.
 
 You can run ESLint on JavaScript files using:
 
@@ -428,7 +425,7 @@ By default, lefthook calls [lint-staged](https://github.com/okonet/lint-staged) 
 
 The project uses WordPress Playground to demo the plugin and on pull requests. The [`blueprint.json`](https://wordpress.github.io/wordpress-playground/blueprints) file enables testing and demos in the [WordPress Playground](https://playground.wordpress.net/).
 
-The [README.md](../README.md) and plugin preview use [`blueprint.json`](../blueprint.json) to load the latest plugin release for testing and demos.
+The plugin preview uses [`blueprint.json`](../blueprint.json) to load the latest plugin release for testing and demos.
 
 Pull requests automatically generate a Playground preview from the build artifacts of the PR branch, using the [PR preview workflow](../.github/workflows/wp-playground-pr-preview.yml).
 
@@ -445,7 +442,7 @@ npm run test:php
 To generate a code coverage report, make sure to start the testing environment with coverage mode enabled:
 
 ```bash
-npm run wp-env start -- --xdebug-mode=coverage
+npm run wp-env:test start -- --xdebug-mode=coverage
 
 npm run test:php
 ```
@@ -533,10 +530,10 @@ Releases are automated with [Release Please](https://github.com/googleapis/relea
 
 1. Merge pull requests into `main` with **squash merge** and a Conventional Commit title.
 2. Release Please updates and maintains a release PR from `main` using:
-   - [`.github/workflows/release-please.yml`](../.github/workflows/release-please.yml)
+   - [`.github/workflows/release.yml`](../.github/workflows/release.yml)
    - [`release-please-config.json`](../release-please-config.json)
    - [`.release-please-manifest.json`](../.release-please-manifest.json)
 3. Merge the release PR when you're ready to ship.
-4. Release Please creates the GitHub Release, which then triggers the [release workflow](../.github/workflows/release.yml) to build and upload the plugin zip asset.
+4. Release Please creates the GitHub Release, and the same workflow then builds the plugin zip and uploads it to the release.
 
 > **Note:** In `readme.txt` the Release Please markers are written as `<!-- x-release-please-start-version: -->` (with a colon). The WordPress.org readme parser stops reading the header at the first line without a colon, so a plain HTML comment would hide `Stable tag`, `Requires PHP` and `License`. With the colon the line is parsed as an unknown header key and ignored, and Release Please still matches the marker text.

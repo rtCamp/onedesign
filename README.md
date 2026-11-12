@@ -1,26 +1,26 @@
-![Banner V3](./.wordpress-org/banner.webp)
+![Banner](./.wordpress-org/banner.webp)
 
-# OneDesign
+# OneDesign [![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 
-Contributors: [rtcamp](https://profiles.wordpress.org/rtcamp), [parthnvaswani](https://github.com/parthnvaswani), [up1512001](https://github.com/up1512001), [singhakanshu00](https://github.com/singhakanshu00), [danish17](https://github.com/danish17), [aviral-mittal](https://github.com/aviral-mittal), [vaishaliagola27](https://github.com/vaishaliagola27), [rishavjeet](https://github.com/rishavjeet), [vishal4669](https://github.com/vishal4669), [iamimmanuelraj](https://github.com/iamimmanuelraj) [vishalkakadiya](https://github.com/vishalkakadiya)
+**Contributors:** [rtcamp](https://profiles.wordpress.org/rtcamp), [parthnvaswani](https://github.com/parthnvaswani), [up1512001](https://github.com/up1512001), [singhakanshu00](https://github.com/singhakanshu00), [danish17](https://github.com/danish17), [aviral-mittal](https://github.com/aviral-mittal), [vaishaliagola27](https://github.com/vaishaliagola27), [rishavjeet](https://github.com/rishavjeet), [vishal4669](https://github.com/vishal4669), [iamimmanuelraj](https://github.com/iamimmanuelraj), [vishalkakadiya](https://github.com/vishalkakadiya)
 
-Tags: OnePress, Pattern distribution, Pattern sync, OneDesign, WordPress multisite, WordPress network, Gutenberg, WordPress Site Editor, Block Patterns, Pattern management, WordPress plugin, Design consistency, Pattern library
+**Tags:** OnePress, OneDesign, Block patterns, Templates, Pattern sync, WordPress multisite, Site Editor
 
-This plugin is licensed under the GPL v2 or later.
+**License:** [GPL v2 or later](http://www.gnu.org/licenses/gpl-2.0.html)
 
-[![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](http://www.gnu.org/licenses/gpl-2.0.html)
+> **OneDesign** is a [OnePress](https://rtcamp.com/onepress/) ecosystem plugin that syncs **block patterns and templates** across WordPress sites. You build them on one governing site and apply them to your brand sites from there.
 
-This tool enables synchronization of block patterns and templates across multiple sites in a WordPress multisite network.
+---
 
-## Description
+## 🧠 What is OneDesign?
 
-OneDesign allows you to define patterns and templates on a Governing site and apply them to brand sites, maintaining consistency across your network. The plugin provides an intuitive interface for browsing, searching, and applying patterns and templates, making it easy to maintain design consistency across all your network sites.
+**OneDesign** is part of the **OnePress ecosystem**. You build block patterns and templates on one **governing site** and apply them to your **brand sites**, so every site in your network starts from the same designs. It works with a multisite network and with standalone sites.
 
-## Why OneDesign?
+---
 
-Managing multiple websites—whether for different brands, regions, or languages shouldn't mean reinventing the wheel each time. Instead of designing layouts from scratch for each site, OneDesign lets you create once and deploy anywhere, in just one click.
+## 💡 Why OneDesign?
 
-Built for enterprise teams, OneDesign unifies your design, editorial, and development processes across all web properties. The result? A shared design system that dramatically cuts down on development, decision-making, and opportunity costs—saving you hundreds of thousands of dollars.
+When each brand, region or language has its own site, the same layouts tend to get rebuilt on every one of them, and they drift apart over time. **OneDesign** lets you build a pattern or template once and send it to the sites that need it.
 
 ### Benefits
 
@@ -56,20 +56,25 @@ Built for enterprise teams, OneDesign unifies your design, editorial, and develo
 
 - **Pattern Management**: View and manage already applied patterns
 
-## Requirements
+## 🧾 Requirements
 
-| Requirement   | Version                                                                                                                                                                                        |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| WordPress     | >= 6.9                                                                                                                                                                                         |
-| PHP           | >= 8.2                                                                                                                                                                                         |
-| Prerequisites | <ul><li>A FSE (Full Site Editing) compatible theme across all sites. With same variables and variations.</li><li>All the blocks used in the patterns must be available on all sites.</li></ul> |
+| Requirement | Version |
+| ----------- | ------- |
+| WordPress   | >= 6.9  |
+| PHP         | >= 8.2  |
 
-## Installation
+- Stored API keys are encrypted with a key derived from your WordPress salts, so rotating the salts empties them. To keep them when you rotate salts, define `ONEPRESS_ENCRYPTION_KEY` and `ONEPRESS_ENCRYPTION_SALT` in `wp-config.php`. Define them before you add any keys, or enter the keys again after you do.
+- Every site needs the same block theme, with the same style variables and variations.
+- Every block a pattern or template uses has to be available on the sites you apply it to.
 
-1. Download the OneDesign plugin ZIP from Releases of GitHub Repository.
-2. Upload the `OneDesign` directory to the `/wp-content/plugins/` directory
-3. For multisite installations, network activate the plugin through the 'Plugins' menu in WordPress
-4. For single site installations, activate the plugin through the 'Plugins' menu in WordPress
+---
+
+## 🧰 Installation
+
+1. Download the latest OneDesign plugin from the [GitHub releases](https://github.com/rtCamp/onedesign/releases) and install it on your WordPress sites.
+2. Activate the plugin.
+   For **multisite installations**, make sure to `Network Activate` the plugin.
+3. Visit the `OneDesign > Settings` page to configure the Governing and Brand sites (on a multisite network, start at `Network Admin > Settings > OneDesign`).
 
 ## How It Works
 
@@ -133,9 +138,9 @@ https://github.com/user-attachments/assets/d2c4b94f-3720-422d-b996-a102156bb941
 
 ## Development & Contributing
 
-[OneDesign](https://github.com/rtCamp/onedesign) is under active development and maintained by [rtCamp](https://rtcamp.com/).
+OneDesign is under active development and maintained by [rtCamp](https://rtcamp.com).
 
-Contributions are **Welcome** and **encouraged!** To learn more about contributing to OneDesign, please read the [Contributing Guide](./docs/CONTRIBUTING.md).
+Contributions are welcome and encouraged! To learn more about contributing to OneDesign, please read the [Contributing Guide](./docs/CONTRIBUTING.md).
 
 For development guidelines, please refer to our [Development Guide](./docs/DEVELOPMENT.md).
 
