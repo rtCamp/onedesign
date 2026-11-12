@@ -294,7 +294,8 @@ describe( 'network settings screen', () => {
 	it( "shows the server's message in the open modal when a site isn't made a governing site, and keeps the selection", async () => {
 		mockedApiFetch.mockRejectedValueOnce( {
 			code: 'onedesign_site_has_type',
-			message: 'Sales & Marketing already has a OneDesign site type.',
+			message:
+				'Site Sales & Marketing already has a OneDesign site type.',
 			data: { status: 400 },
 		} );
 
