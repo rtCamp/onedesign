@@ -333,7 +333,7 @@ class Patterns_Controller_GoverningSiteTest extends TestCase {
 			[
 				'post_type'    => 'wp_block',
 				'post_title'   => 'Lab Hero',
-				'post_content' => '<!-- wp:block {"ref":' . $nested . '} /-->',
+				'post_content' => '<!-- wp:group --><div class="wp-block-group"><!-- wp:paragraph --><p>Hero</p><!-- /wp:paragraph --><!-- wp:block {"ref":' . $nested . '} /--></div><!-- /wp:group -->',
 			]
 		);
 		$body   = [
@@ -352,7 +352,7 @@ class Patterns_Controller_GoverningSiteTest extends TestCase {
 		$response = $this->dispatch( 'POST', '/patterns', $body );
 
 		$this->assertSame( 200, $response->get_status() );
-		$this->assertSame( '<!-- wp:block /-->', get_option( Patterns::PATTERNS_OPTION_KEY )[ 'user-pattern-' . $hero ]['content'] );
+		$this->assertSame( '<!-- wp:group --><div class="wp-block-group"><!-- wp:paragraph --><p>Hero</p><!-- /wp:paragraph --></div><!-- /wp:group -->', get_option( Patterns::PATTERNS_OPTION_KEY )[ 'user-pattern-' . $hero ]['content'] );
 		$this->assertNull( get_post( $copy ) );
 	}
 

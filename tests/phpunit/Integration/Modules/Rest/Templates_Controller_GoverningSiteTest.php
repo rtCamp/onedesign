@@ -264,9 +264,10 @@ class Templates_Controller_GoverningSiteTest extends TestCase {
 			'<!-- wp:template-part {"slug":"lab-header","theme":"' . get_stylesheet() . '","tagName":"header","style":{"spacing":{"padding":{"top":"1rem"}}}} /-->'
 			. '<!-- wp:group {"layout":{"type":"constrained"}} --><div class="wp-block-group">'
 			. '<!-- wp:pattern {"slug":"lab/cta"} /-->'
+			. '<!-- wp:block {"ref":' . $password . '} /-->'
 			. '<!-- wp:block {"ref":' . $hero . ',' . $overrides . '} /-->'
 			. '</div><!-- /wp:group -->'
-			. '<!-- wp:block {"ref":' . $draft . '} /--><!-- wp:block {"ref":' . $password . '} /-->'
+			. '<!-- wp:block {"ref":' . $draft . '} /-->'
 		);
 
 		$this->apply( [ $this->template_id ], 'brand-1' );
@@ -285,9 +286,14 @@ class Templates_Controller_GoverningSiteTest extends TestCase {
 		$template = get_option( Templates::TEMPLATES_OPTION_KEY )[ $this->template_id ];
 		$this->assertSame( 'test-blog-brand-one//' . sanitize_title( $this->template_id ), $template['id'] );
 		$this->assertStringContainsString( '<!-- wp:template-part {"slug":"' . $this->brand_slug( 'lab-header' ) . '","tagName":"header","style":{"spacing":{"padding":{"top":"1rem"}}}} /-->', $template['content'] );
-		$this->assertStringContainsString( '<!-- wp:pattern {"slug":"' . $this->brand_slug( 'lab-cta' ) . '"} /-->', $template['content'] );
-		$this->assertStringContainsString( '<!-- wp:block {"ref":' . $brand_hero->ID . ',' . $overrides . '} /-->', $template['content'] );
-		$this->assertSame( 2, substr_count( $template['content'], '<!-- wp:block /-->' ), 'The unpublished and password-protected synced patterns are dropped.' );
+		$this->assertStringEndsWith(
+			'<!-- wp:group {"layout":{"type":"constrained"}} --><div class="wp-block-group">'
+			. '<!-- wp:pattern {"slug":"' . $this->brand_slug( 'lab-cta' ) . '"} /-->'
+			. '<!-- wp:block {"ref":' . $brand_hero->ID . ',' . $overrides . '} /-->'
+			. '</div><!-- /wp:group -->',
+			$template['content'],
+			'The unpublished and password-protected synced patterns are dropped.'
+		);
 
 		$pattern = get_option( Templates::TEMPLATE_PATTERNS_OPTION_KEY )['lab/cta'];
 		$this->assertSame( $this->brand_slug( 'lab-cta' ), $pattern['name'] );
