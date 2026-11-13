@@ -404,6 +404,7 @@ describe( 'SettingsPage', () => {
 	} );
 
 	it( 'warns when a deleted brand site could not be notified', async () => {
+		vi.useFakeTimers();
 		setSharedSites( [
 			{
 				id: 'one',
@@ -431,7 +432,15 @@ describe( 'SettingsPage', () => {
 			} )
 		).toBeInTheDocument();
 
-		// The admin can dismiss it once they have acted on it.
+		// It outlasts a snackbar's timeout, and the admin dismisses it once they have acted on it.
+		act( () => {
+			vi.advanceTimersByTime( 20000 );
+		} );
+		expect(
+			screen.getByText( message, {
+				selector: '.components-notice__content',
+			} )
+		).toBeInTheDocument();
 		fireEvent.click( screen.getByRole( 'button', { name: 'Close' } ) );
 		expect(
 			screen.queryByText( message, {
