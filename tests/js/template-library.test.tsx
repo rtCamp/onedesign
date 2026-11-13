@@ -1,11 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-	fireEvent,
-	render,
-	screen,
-	waitFor,
-	within,
-} from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import apiFetch from '@wordpress/api-fetch';
 import TemplateLibrary from '@/admin/templates/page';
 import { findNotice, restError, routes, type Handler } from './library-routes';
@@ -153,7 +147,7 @@ describe( 'template library', () => {
 
 		fireEvent.click( homeCard );
 		expect( screen.getByText( '1 template selected' ) ).toBeInTheDocument();
-		await waitFor( () => expect( apply ).toBeEnabled() );
+		expect( apply ).toBeEnabled();
 
 		fireEvent.click( screen.getByRole( 'checkbox', { name: 'About' } ) );
 		expect(

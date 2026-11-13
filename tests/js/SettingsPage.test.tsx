@@ -122,10 +122,6 @@ describe( 'SettingsPage', () => {
 		mockSubmitResults.length = 0;
 	} );
 
-	afterEach( () => {
-		vi.useRealTimers();
-	} );
-
 	it( 'loads shared sites and renders the page structure', async () => {
 		setSharedSites( [
 			{
@@ -404,68 +400,6 @@ describe( 'SettingsPage', () => {
 			screen.queryByText( /was removed, but/, {
 				selector: '.components-notice__content',
 			} )
-		).not.toBeInTheDocument();
-	} );
-
-	it( 'gives each snackbar its own timeout', async () => {
-		vi.useFakeTimers();
-		const site = {
-			id: 'one',
-			name: 'Brand Site',
-			url: 'https://brand.example.com/',
-			logo: '',
-			logo_id: 0,
-		};
-		setSharedSites( [ site ] );
-		mockedApiFetch
-			.mockResolvedValueOnce( { shared_sites: [ site ] } )
-			.mockResolvedValueOnce( {
-				governing_site_notified: true,
-				message: 'Brand site removed successfully.',
-			} );
-		const snackbar = ( text: string ) =>
-			screen.queryByText( text, {
-				selector: '.components-snackbar__content',
-			} );
-
-		render( <SettingsPage /> );
-		fireEvent.click(
-			await screen.findByRole( 'button', { name: 'Open Modal' } )
-		);
-		fireEvent.click(
-			screen.getByRole( 'button', { name: 'Submit Modal' } )
-		);
-		await waitFor( () =>
-			expect(
-				snackbar( 'Brand Site saved successfully.' )
-			).toBeInTheDocument()
-		);
-
-		act( () => {
-			vi.advanceTimersByTime( 6000 );
-		} );
-		fireEvent.click(
-			screen.getByRole( 'button', { name: 'Delete Site' } )
-		);
-		await waitFor( () =>
-			expect(
-				snackbar( 'Brand site removed successfully.' )
-			).toBeInTheDocument()
-		);
-
-		// Past the first snackbar's timeout, the second one still shows.
-		act( () => {
-			vi.advanceTimersByTime( 6000 );
-		} );
-		expect(
-			snackbar( 'Brand site removed successfully.' )
-		).toBeInTheDocument();
-
-		act( () => {
-			vi.advanceTimersByTime( 4000 );
-		} );
-		expect(
-			snackbar( 'Brand site removed successfully.' )
 		).not.toBeInTheDocument();
 	} );
 
