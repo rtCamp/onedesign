@@ -104,7 +104,8 @@ Code contributions, bug reports, and feature requests are welcome! The following
 │   │       └── Singleton.php
 │   ├── Modules/
 │   │   ├── Core/
-│   │   │   └── Assets.php  # JS/CSS asset loader.
+│   │   │   ├── Assets.php  # JS/CSS asset loader.
+│   │   │   └── Uninstaller.php # Deletes the plugin's data on uninstall, or on deactivation if the site opted in.
 │   │   ├── Library/
 │   │   │   ├── Admin.php
 │   │   │   ├── Patterns.php

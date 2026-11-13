@@ -31,7 +31,8 @@ final class Settings implements Registrable {
 	 * Setting keys
 	 */
 	// Shared settings.
-	public const OPTION_SITE_TYPE = self::SETTING_PREFIX . 'site_type';
+	public const OPTION_SITE_TYPE                   = self::SETTING_PREFIX . 'site_type';
+	public const OPTION_DELETE_DATA_ON_DEACTIVATION = self::SETTING_PREFIX . 'delete_data_on_deactivation';
 
 	// Consumer settings.
 	public const OPTION_CONSUMER_API_KEY         = self::SETTING_PREFIX . 'consumer_api_key';
@@ -62,7 +63,7 @@ final class Settings implements Registrable {
 	 */
 	public function register_settings(): void {
 		$shared_settings = [
-			self::OPTION_SITE_TYPE => [
+			self::OPTION_SITE_TYPE                   => [
 				'type'              => 'string',
 				'label'             => __( 'Site Type', 'onedesign' ),
 				'description'       => __( 'Defines whether this site is a governing or a brand site.', 'onedesign' ),
@@ -79,6 +80,14 @@ final class Settings implements Registrable {
 						'enum' => [ self::SITE_TYPE_CONSUMER, self::SITE_TYPE_GOVERNING ],
 					],
 				],
+			],
+			self::OPTION_DELETE_DATA_ON_DEACTIVATION => [
+				'type'              => 'boolean',
+				'label'             => __( 'Delete plugin data on deactivation', 'onedesign' ),
+				'description'       => __( 'Whether to delete the plugin\'s settings when it\'s deactivated.', 'onedesign' ),
+				'default'           => false,
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'show_in_rest'      => true,
 			],
 		];
 
@@ -371,6 +380,13 @@ final class Settings implements Registrable {
 	 */
 	public static function is_consumer_site(): bool {
 		return self::SITE_TYPE_CONSUMER === self::get_site_type();
+	}
+
+	/**
+	 * Whether to delete the plugin's data when it's deactivated.
+	 */
+	public static function should_delete_data_on_deactivation(): bool {
+		return (bool) get_option( self::OPTION_DELETE_DATA_ON_DEACTIVATION, false );
 	}
 
 	/**

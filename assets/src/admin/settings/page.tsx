@@ -6,6 +6,7 @@ import SiteTable from '@/components/SiteTable';
 import SiteModal from '@/components/SiteModal';
 import SiteSettings from '@/components/SiteSettings';
 import SiteTypeSettings from '@/components/SiteTypeSettings';
+import DeactivationSettings from '@/components/deactivation-settings';
 import type { SiteType } from '@/types/global';
 
 export interface NoticeType {
@@ -200,6 +201,8 @@ const SettingsPage = () => {
 					setNotice={ setNotice }
 				/>
 			) }
+
+			<DeactivationSettings setNotice={ setNotice } />
 
 			{ showModal && (
 				<SiteModal

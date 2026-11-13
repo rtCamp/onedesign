@@ -87,7 +87,7 @@ final class AssetsTest extends TestCase {
 
 		$data = Assets::get_localized_data();
 
-		$this->assertEqualsCanonicalizing( [ 'api_key', 'setupUrl', 'sharedSites', 'siteType' ], array_keys( $data ) );
+		$this->assertEqualsCanonicalizing( [ 'api_key', 'deleteDataOnDeactivation', 'setupUrl', 'sharedSites', 'siteType' ], array_keys( $data ) );
 	}
 
 	/**

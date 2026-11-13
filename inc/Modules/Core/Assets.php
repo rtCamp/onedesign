@@ -66,11 +66,12 @@ final class Assets implements Registrable {
 	public static function get_localized_data(): array {
 		if ( empty( self::$localized_data ) ) {
 			self::$localized_data = [
+				'deleteDataOnDeactivation' => Settings::should_delete_data_on_deactivation(),
 				// Only brand sites use a key of their own, so governing sites don't generate one.
-				'api_key'     => Settings::is_consumer_site() ? Settings::get_api_key() : '',
-				'setupUrl'    => admin_url( 'admin.php?page=onedesign-settings' ),
-				'sharedSites' => Settings::get_shared_sites_without_keys(),
-				'siteType'    => Settings::get_site_type(),
+				'api_key'                  => Settings::is_consumer_site() ? Settings::get_api_key() : '',
+				'setupUrl'                 => admin_url( 'admin.php?page=onedesign-settings' ),
+				'sharedSites'              => Settings::get_shared_sites_without_keys(),
+				'siteType'                 => Settings::get_site_type(),
 			];
 		}
 

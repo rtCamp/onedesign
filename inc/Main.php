@@ -57,12 +57,13 @@ final class Main {
 	 */
 	private function setup(): void {
 		// Ensure pretty permalinks are enabled.
-		if ( ! $this->has_pretty_permalinks() ) {
-			return;
+		if ( $this->has_pretty_permalinks() ) {
+			// Load the plugin classes.
+			$this->load();
 		}
 
-		// Load the plugin classes.
-		$this->load();
+		// Register activation/deactivation routines.
+		register_deactivation_hook( ONEDESIGN_FILE, [ Modules\Core\Uninstaller::class, 'deactivate' ] );
 
 		// Do other stuff here like dep-checking, telemetry, etc.
 	}
