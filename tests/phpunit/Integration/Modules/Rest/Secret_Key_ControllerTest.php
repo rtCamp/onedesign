@@ -30,8 +30,8 @@ class Secret_Key_ControllerTest extends TestCase {
 	/**
 	 * {@inheritDoc}
 	 */
-	public function set_up(): void {
-		parent::set_up();
+	public function setUp(): void {
+		parent::setUp();
 
 		global $wp_rest_server;
 		$wp_rest_server = new \WP_REST_Server();
@@ -47,11 +47,11 @@ class Secret_Key_ControllerTest extends TestCase {
 	/**
 	 * {@inheritDoc}
 	 */
-	public function tear_down(): void {
+	public function tearDown(): void {
 		global $wp_rest_server;
 		$wp_rest_server = null;
 
-		parent::tear_down();
+		parent::tearDown();
 	}
 
 	/**

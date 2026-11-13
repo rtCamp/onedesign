@@ -30,8 +30,8 @@ class Governing_Site_Controller_ConsumerSiteTest extends TestCase {
 	/**
 	 * {@inheritDoc}
 	 */
-	public function set_up(): void {
-		parent::set_up();
+	public function setUp(): void {
+		parent::setUp();
 
 		update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_CONSUMER );
 
@@ -49,11 +49,11 @@ class Governing_Site_Controller_ConsumerSiteTest extends TestCase {
 	/**
 	 * {@inheritDoc}
 	 */
-	public function tear_down(): void {
+	public function tearDown(): void {
 		global $wp_rest_server;
 		$wp_rest_server = null;
 
-		parent::tear_down();
+		parent::tearDown();
 	}
 
 	/**
@@ -150,7 +150,7 @@ class Governing_Site_Controller_ConsumerSiteTest extends TestCase {
 	}
 
 	/**
-	 * Only a governing site with this site's key can connect it, so a logged-in admin (from set_up) is refused.
+	 * Only a governing site with this site's key can connect it, so a logged-in admin (from setUp) is refused.
 	 */
 	public function test_connect_refuses_an_admin_without_the_key(): void {
 		delete_option( Settings::OPTION_CONSUMER_PARENT_SITE_URL );

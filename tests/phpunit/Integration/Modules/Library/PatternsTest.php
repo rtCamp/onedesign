@@ -23,8 +23,8 @@ final class PatternsTest extends TestCase {
 	/**
 	 * {@inheritDoc}
 	 */
-	public function set_up(): void {
-		parent::set_up();
+	public function setUp(): void {
+		parent::setUp();
 
 		update_option(
 			Patterns::PATTERNS_OPTION_KEY,
@@ -42,12 +42,12 @@ final class PatternsTest extends TestCase {
 	/**
 	 * {@inheritDoc}
 	 */
-	public function tear_down(): void {
+	public function tearDown(): void {
 		if ( \WP_Block_Patterns_Registry::get_instance()->is_registered( 'theme/hero' ) ) {
 			unregister_block_pattern( 'theme/hero' );
 		}
 
-		parent::tear_down();
+		parent::tearDown();
 	}
 
 	/**

@@ -30,8 +30,8 @@ class Brand_Site_Controller_GoverningSiteTest extends TestCase {
 	/**
 	 * {@inheritDoc}
 	 */
-	public function set_up(): void {
-		parent::set_up();
+	public function setUp(): void {
+		parent::setUp();
 
 		update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_GOVERNING );
 
@@ -49,11 +49,11 @@ class Brand_Site_Controller_GoverningSiteTest extends TestCase {
 	/**
 	 * {@inheritDoc}
 	 */
-	public function tear_down(): void {
+	public function tearDown(): void {
 		global $wp_rest_server;
 		$wp_rest_server = null;
 
-		parent::tear_down();
+		parent::tearDown();
 	}
 
 	/**
@@ -125,7 +125,7 @@ class Brand_Site_Controller_GoverningSiteTest extends TestCase {
 	}
 
 	/**
-	 * Only a brand site can remove itself, so a logged-in admin (from set_up) without its key is refused.
+	 * Only a brand site can remove itself, so a logged-in admin (from setUp) without its key is refused.
 	 */
 	public function test_remove_brand_site_refuses_an_admin_without_a_brand_key(): void {
 		Settings::set_shared_sites(
