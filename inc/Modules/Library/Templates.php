@@ -332,7 +332,13 @@ final class Templates implements Registrable {
 					if ( $ref ) {
 						$block['attrs']['ref'] = $ref;
 					} else {
-						unset( $block['attrs']['ref'] );
+						$block = [
+							'blockName'    => null,
+							'attrs'        => [],
+							'innerBlocks'  => [],
+							'innerHTML'    => '',
+							'innerContent' => [],
+						];
 					}
 				}
 
@@ -444,7 +450,13 @@ final class Templates implements Registrable {
 			parse_blocks( $content ),
 			static function ( array &$block ) use ( $synced_patterns ): string {
 				if ( 'core/block' === $block['blockName'] && ! in_array( (int) ( $block['attrs']['ref'] ?? 0 ), $synced_patterns, true ) ) {
-					unset( $block['attrs']['ref'] );
+					$block = [
+						'blockName'    => null,
+						'attrs'        => [],
+						'innerBlocks'  => [],
+						'innerHTML'    => '',
+						'innerContent' => [],
+					];
 				}
 
 				return '';

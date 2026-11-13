@@ -649,7 +649,7 @@ class Templates_Controller_BrandSiteTest extends TestCase {
 		);
 
 		$post_ids = get_option( Templates::POST_IDS_OPTION_KEY );
-		$this->assertSame( '<!-- wp:block {"ref":' . $post_ids[13] . ',"metadata":{"name":"CTA"}} /--><!-- wp:block /-->', get_post( $post_ids[12] )->post_content );
+		$this->assertSame( '<!-- wp:block {"ref":' . $post_ids[13] . ',"metadata":{"name":"CTA"}} /-->', get_post( $post_ids[12] )->post_content );
 	}
 
 	/**
