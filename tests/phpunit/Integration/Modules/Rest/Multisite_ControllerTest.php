@@ -156,6 +156,18 @@ final class Multisite_ControllerTest extends TestCase {
 	}
 
 	/**
+	 * The error names the site that already has a type.
+	 */
+	public function test_a_site_with_a_type_is_named_in_the_error(): void {
+		update_blog_option( $this->brand_b_id, Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_CONSUMER );
+
+		$response = $this->add_governing_site( $this->brand_b_id );
+
+		$this->assertSame( 400, $response->get_status() );
+		$this->assertStringContainsString( 'Sales & Marketing', $response->as_error()->get_error_message() );
+	}
+
+	/**
 	 * A request with no site ID is refused, and the site it came to stays typeless.
 	 */
 	public function test_a_governing_site_needs_a_site_id(): void {
@@ -302,6 +314,18 @@ final class Multisite_ControllerTest extends TestCase {
 
 		$this->assertSame( Settings::SITE_TYPE_GOVERNING, get_blog_option( $other_governing_id, Settings::OPTION_SITE_TYPE ) );
 		$this->assertSame( 'https://governing.example.com', get_blog_option( $this->brand_a_id, Settings::OPTION_CONSUMER_PARENT_SITE_URL ) );
+	}
+
+	/**
+	 * The error names the site that can't be a brand site.
+	 */
+	public function test_a_refused_brand_site_is_named_in_the_error(): void {
+		update_blog_option( $this->brand_b_id, Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_GOVERNING );
+
+		$response = $this->add_brand_sites( $this->governing_id, [ $this->brand_b_id ] );
+
+		$this->assertSame( 400, $response->get_status() );
+		$this->assertStringContainsString( 'Sales & Marketing', $response->as_error()->get_error_message() );
 	}
 
 	/**

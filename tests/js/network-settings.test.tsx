@@ -214,7 +214,7 @@ describe( 'network settings screen', () => {
 	it( "shows the server's message in the open modal when adding sites fails, and keeps the selection", async () => {
 		mockedApiFetch.mockRejectedValueOnce( {
 			code: 'onedesign_site_cannot_be_brand',
-			message: "Site 3 can't be added as a brand site.",
+			message: "Site Network Brand can't be added as a brand site.",
 			data: { status: 400 },
 		} );
 
@@ -222,7 +222,7 @@ describe( 'network settings screen', () => {
 		addSites( [ unconnectedBrand ] );
 
 		const notice = await findNotice(
-			"Site 3 can't be added as a brand site."
+			"Site Network Brand can't be added as a brand site."
 		);
 		expect( brandSitesModal() ).toContainElement( notice );
 		expect( screen.getByLabelText( 'Governing Site' ) ).toHaveValue(
@@ -294,7 +294,8 @@ describe( 'network settings screen', () => {
 	it( "shows the server's message in the open modal when a site isn't made a governing site, and keeps the selection", async () => {
 		mockedApiFetch.mockRejectedValueOnce( {
 			code: 'onedesign_site_has_type',
-			message: 'Site 2 already has a OneDesign site type.',
+			message:
+				'Site Sales & Marketing already has a OneDesign site type.',
 			data: { status: 400 },
 		} );
 
@@ -303,7 +304,7 @@ describe( 'network settings screen', () => {
 		makeGoverning( salesSite );
 
 		const notice = await findNotice(
-			'Site 2 already has a OneDesign site type.'
+			'Site Sales & Marketing already has a OneDesign site type.'
 		);
 		expect( governingSiteModal() ).toContainElement( notice );
 		expect( screen.getByLabelText( 'Site' ) ).toHaveValue( salesSite.id );
@@ -315,7 +316,8 @@ describe( 'network settings screen', () => {
 	it( "shows the server's message when the first governing site isn't made", async () => {
 		mockedApiFetch.mockRejectedValueOnce( {
 			code: 'onedesign_site_has_type',
-			message: 'Site 2 already has a OneDesign site type.',
+			message:
+				'Site Sales & Marketing already has a OneDesign site type.',
 			data: { status: 400 },
 		} );
 
@@ -323,7 +325,9 @@ describe( 'network settings screen', () => {
 		makeGoverning( salesSite );
 
 		expect(
-			await findNotice( 'Site 2 already has a OneDesign site type.' )
+			await findNotice(
+				'Site Sales & Marketing already has a OneDesign site type.'
+			)
 		).toBeInTheDocument();
 		expect(
 			screen.getByRole( 'button', { name: 'Make Governing Site' } )

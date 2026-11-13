@@ -104,9 +104,9 @@ class Multisite_Controller extends Abstract_REST_Controller {
 			return new \WP_Error(
 				'onedesign_site_has_type',
 				sprintf(
-					/* translators: %d: site ID. */
-					__( 'Site %d already has a OneDesign site type.', 'onedesign' ),
-					$site_id
+					/* translators: %s: site name. */
+					__( 'Site %s already has a OneDesign site type.', 'onedesign' ),
+					wp_specialchars_decode( (string) get_blog_option( $site_id, 'blogname' ), ENT_QUOTES )
 				),
 				[ 'status' => 400 ]
 			);
@@ -155,15 +155,16 @@ class Multisite_Controller extends Abstract_REST_Controller {
 
 			switch_to_blog( $site_id ); // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.switch_to_blog_switch_to_blog -- Only site options are read while switched.
 			$can_add_as_brand_site = MU_Utils::can_add_as_brand_site();
+			$site_name             = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
 			restore_current_blog();
 
 			if ( ! $can_add_as_brand_site ) {
 				return new \WP_Error(
 					'onedesign_site_cannot_be_brand',
 					sprintf(
-						/* translators: %d: site ID. */
-						__( 'Site %d can\'t be added as a brand site.', 'onedesign' ),
-						$site_id
+						/* translators: %s: site name. */
+						__( 'Site %s can\'t be added as a brand site.', 'onedesign' ),
+						$site_name
 					),
 					[ 'status' => 400 ]
 				);
