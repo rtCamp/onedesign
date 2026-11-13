@@ -442,7 +442,7 @@ npm run test:php
 To generate a code coverage report, make sure to start the testing environment with coverage mode enabled:
 
 ```bash
-npm run wp-env:test start -- --xdebug-mode=coverage
+npm run wp-env:test start -- --xdebug=coverage
 
 npm run test:php
 ```
