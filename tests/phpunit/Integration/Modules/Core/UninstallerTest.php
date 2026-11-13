@@ -1,27 +1,29 @@
 <?php
 /**
- * Uninstall tests.
+ * Uninstaller tests.
  *
- * @package OneDesign\Tests\Integration
+ * @package OneDesign\Tests\Integration\Modules\Core
  */
 
 declare( strict_types = 1 );
 
-namespace OneDesign\Tests\Integration;
+namespace OneDesign\Tests\Integration\Modules\Core;
 
+use OneDesign\Modules\Core\Uninstaller;
 use OneDesign\Modules\Library\Patterns;
 use OneDesign\Modules\Library\Templates;
 use OneDesign\Modules\Multisite\Utils as MU_Utils;
 use OneDesign\Modules\Settings\Settings;
 use OneDesign\Tests\TestCase;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use OneDesign\Utils;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * Runs uninstall.php, which is a script rather than a class.
+ * Runs uninstall.php and the deactivation hook, which share the Uninstaller.
  */
-#[CoversNothing]
-final class UninstallTest extends TestCase {
+#[CoversClass( Uninstaller::class )]
+final class UninstallerTest extends TestCase {
 	/**
 	 * The requests uninstall sent, as [method, URL, token].
 	 *
@@ -75,6 +77,7 @@ final class UninstallTest extends TestCase {
 	 */
 	public function test_uninstall_disconnects_the_governing_sites_brand_sites(): void {
 		$this->set_up_governing_site();
+		update_option( Settings::OPTION_DELETE_DATA_ON_DEACTIVATION, true );
 
 		$this->record_requests();
 		$this->run_uninstall();
@@ -87,6 +90,7 @@ final class UninstallTest extends TestCase {
 		);
 
 		$this->assertFalse( get_option( Settings::OPTION_GOVERNING_SHARED_SITES ) );
+		$this->assertFalse( get_option( Settings::OPTION_DELETE_DATA_ON_DEACTIVATION ) );
 	}
 
 	/**
@@ -159,6 +163,140 @@ final class UninstallTest extends TestCase {
 	}
 
 	/**
+	 * Deactivating keeps the plugin's data unless the site chose to delete it.
+	 */
+	public function test_deactivation_keeps_the_data_by_default(): void {
+		$this->set_up_governing_site();
+
+		$this->record_requests();
+		$this->deactivate( false );
+
+		$this->assertSame( [], $this->sent );
+		$this->assertSame( Settings::SITE_TYPE_GOVERNING, Settings::get_site_type() );
+		$this->assertNotEmpty( Settings::get_shared_sites() );
+	}
+
+	/**
+	 * Deactivating deletes the plugin's data, like uninstalling, when the site chose to.
+	 */
+	public function test_deactivation_deletes_the_data_when_the_site_chose_to(): void {
+		$this->set_up_governing_site();
+		update_option( Settings::OPTION_DELETE_DATA_ON_DEACTIVATION, true );
+
+		$this->record_requests();
+		$this->deactivate( false );
+
+		$this->assertSame(
+			[
+				[ 'DELETE', 'https://brand.example.org/wp-json/onedesign/v1/governing-site', 'brand-key' ],
+			],
+			$this->sent
+		);
+
+		$this->assertNull( Settings::get_site_type() );
+		$this->assertFalse( get_option( Settings::OPTION_GOVERNING_SHARED_SITES ) );
+		$this->assertFalse( get_option( Settings::OPTION_DELETE_DATA_ON_DEACTIVATION ) );
+	}
+
+	/**
+	 * Deactivating a governing site that chose to delete its data disconnects its brand sites on the network too, since they keep their data.
+	 */
+	public function test_deactivation_disconnects_the_brand_sites_on_the_network(): void {
+		$this->skipWithoutMultisite();
+
+		$this->set_up_governing_site( [] );
+		update_option( Settings::OPTION_DELETE_DATA_ON_DEACTIVATION, true );
+		$brand_id = self::factory()->blog->create();
+		MU_Utils::add_brand_site( get_current_blog_id(), $brand_id );
+
+		switch_to_blog( $brand_id );
+		$brand_url = untrailingslashit( Utils::get_current_site_url() );
+		$brand_key = Settings::get_api_key();
+		restore_current_blog();
+
+		$this->record_requests();
+		$this->deactivate( false );
+
+		$this->assertSame(
+			[
+				[ 'DELETE', $brand_url . '/wp-json/onedesign/v1/governing-site', $brand_key ],
+			],
+			$this->sent
+		);
+	}
+
+	/**
+	 * Deactivating a brand site that chose to delete its data deregisters it from its governing site on the network too, since that site keeps its data.
+	 */
+	public function test_deactivation_deregisters_from_a_governing_site_on_the_network(): void {
+		$this->skipWithoutMultisite();
+
+		$this->set_up_governing_site( [] );
+		$governing_url = untrailingslashit( Utils::get_current_site_url() );
+		$brand_id      = self::factory()->blog->create();
+		MU_Utils::add_brand_site( get_current_blog_id(), $brand_id );
+
+		switch_to_blog( $brand_id );
+		update_option( Settings::OPTION_DELETE_DATA_ON_DEACTIVATION, true );
+		$brand_key = Settings::get_api_key();
+
+		$this->record_requests();
+		$this->deactivate( false );
+		restore_current_blog();
+
+		$this->assertSame(
+			[
+				[ 'DELETE', $governing_url . '/wp-json/onedesign/v1/brand-site', $brand_key ],
+			],
+			$this->sent
+		);
+	}
+
+	/**
+	 * Deactivating for the whole network only deletes the data of the sites that chose to.
+	 */
+	public function test_network_deactivation_only_deletes_the_data_of_the_sites_that_chose_to(): void {
+		$this->skipWithoutMultisite();
+
+		$kept_site_id    = self::factory()->blog->create();
+		$deleted_site_id = self::factory()->blog->create();
+
+		foreach ( [ $kept_site_id, $deleted_site_id ] as $site_id ) {
+			switch_to_blog( $site_id );
+			$this->set_up_governing_site();
+			restore_current_blog();
+		}
+
+		update_blog_option( $deleted_site_id, Settings::OPTION_DELETE_DATA_ON_DEACTIVATION, true );
+
+		$this->record_requests();
+		$this->deactivate( true );
+
+		$this->assertSame( Settings::SITE_TYPE_GOVERNING, get_blog_option( $kept_site_id, Settings::OPTION_SITE_TYPE ) );
+		$this->assertFalse( get_blog_option( $deleted_site_id, Settings::OPTION_SITE_TYPE ) );
+	}
+
+	/**
+	 * Deactivating for the network keeps the data of the sites on other networks, where the plugin is still active.
+	 */
+	public function test_network_deactivation_keeps_the_data_of_the_sites_on_other_networks(): void {
+		$this->skipWithoutMultisite();
+
+		$other_network_id = self::factory()->network->create();
+		$other_site_id    = self::factory()->blog->create( [ 'network_id' => $other_network_id ] );
+
+		switch_to_blog( $other_site_id );
+		$this->set_up_governing_site();
+		update_option( Settings::OPTION_DELETE_DATA_ON_DEACTIVATION, true );
+		restore_current_blog();
+
+		$this->record_requests();
+		$this->deactivate( true );
+
+		$this->assertSame( Settings::SITE_TYPE_GOVERNING, get_blog_option( $other_site_id, Settings::OPTION_SITE_TYPE ) );
+	}
+
+	/**
 	 * Answers every request with a 200, and records it.
 	 */
 	private function record_requests(): void {
@@ -183,19 +321,23 @@ final class UninstallTest extends TestCase {
 	}
 
 	/**
-	 * Runs uninstall.php. The script declares functions, so it's included once per test run, and its uninstaller is called again after that.
+	 * Fires the plugin's deactivation hook, the way WordPress does.
+	 *
+	 * @param bool $network_wide Whether the plugin is deactivated for the whole network.
+	 */
+	private function deactivate( bool $network_wide ): void {
+		do_action( 'deactivate_' . plugin_basename( ONEDESIGN_FILE ), $network_wide );
+	}
+
+	/**
+	 * Runs uninstall.php the way WordPress does.
 	 */
 	private function run_uninstall(): void {
 		if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 			define( 'WP_UNINSTALL_PLUGIN', 'onedesign/onedesign.php' );
 		}
 
-		if ( function_exists( 'OneDesign\run_uninstaller' ) ) {
-			\OneDesign\run_uninstaller();
-			return;
-		}
-
 		// phpcs:ignore WordPressVIPMinimum.Files.IncludingFile.UsingCustomConstant, WordPressVIPMinimum.Files.IncludingFile.NotAbsolutePath -- Runs the script under test.
-		include dirname( __DIR__, 3 ) . '/uninstall.php';
+		include dirname( __DIR__, 5 ) . '/uninstall.php';
 	}
 }

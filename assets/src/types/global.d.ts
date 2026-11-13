@@ -31,6 +31,7 @@ export interface OneDesignSettings {
 	// Only the network screen and a governing site's settings screen for network admins list the network's sites.
 	multisites?: OneDesignMultisite[];
 	currentSiteId?: string;
+	deleteDataOnDeactivation?: boolean;
 }
 
 declare global {

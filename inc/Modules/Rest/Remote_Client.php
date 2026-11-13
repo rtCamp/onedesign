@@ -105,7 +105,7 @@ class Remote_Client {
 			$site_data['api_key'],
 			[
 				'method'  => \WP_REST_Server::DELETABLE,
-				'timeout' => 5, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout -- Only runs when an admin removes a brand site or uninstalls the plugin.
+				'timeout' => 5, // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout -- Only runs when an admin removes a brand site or the plugin's data is deleted.
 			]
 		);
 
