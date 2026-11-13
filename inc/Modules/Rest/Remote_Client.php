@@ -167,7 +167,7 @@ class Remote_Client {
 	 */
 	public static function request_brand_site( array $site_data, string $route, string $method = \WP_REST_Server::READABLE, ?array $body = null ): array|\WP_Error {
 		if ( empty( $site_data['url'] ) || empty( $site_data['api_key'] ) ) {
-			return new \WP_Error( 'onedesign_missing_site_data', __( 'Missing url or api_key.', 'onedesign' ) );
+			return new \WP_Error( 'onedesign_missing_site_data', __( "This site's URL or API key is missing. Remove the site and add it again.", 'onedesign' ) );
 		}
 
 		$args = [ 'method' => $method ];
@@ -182,7 +182,7 @@ class Remote_Client {
 			return $response;
 		}
 
-		$code = wp_remote_retrieve_response_code( $response );
+		$code = (int) wp_remote_retrieve_response_code( $response );
 		$data = json_decode( wp_remote_retrieve_body( $response ), true );
 
 		if ( 401 === $code || 403 === $code ) {
@@ -192,8 +192,10 @@ class Remote_Client {
 		if ( 200 !== $code ) {
 			return new \WP_Error(
 				'onedesign_rest_failed_to_connect',
-				// translators: %s is the error code.
-				is_string( $data['message'] ?? null ) ? $data['message'] : sprintf( __( 'Failed to connect to the brand site. Error code %s', 'onedesign' ), (string) $code ),
+				is_string( $data['message'] ?? null )
+					? $data['message']
+					/* translators: %d: HTTP status code. */
+					: sprintf( __( 'The brand site answered with error %d.', 'onedesign' ), $code ),
 				[ 'status' => $code ]
 			);
 		}

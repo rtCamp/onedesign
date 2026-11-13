@@ -39,6 +39,7 @@ abstract class Abstract_REST_Controller extends WP_REST_Controller implements Re
 	 */
 	public function register_hooks(): void {
 		add_action( 'rest_api_init', [ $this, 'register_routes' ] );
+		add_filter( 'rest_post_dispatch', [ $this, 'handle_vip_reached_origin' ], 10, 3 );
 	}
 
 	/**
@@ -52,6 +53,30 @@ abstract class Abstract_REST_Controller extends WP_REST_Controller implements Re
 	 */
 	public function register_routes(): void {
 		throw new \Exception( __FUNCTION__ . ' Method not implemented.' );
+	}
+
+	/**
+	 * Marks the 502 and 503 errors of OneDesign's routes as coming from the site, on VIP.
+	 *
+	 * VIP's edge swaps a 502 or 503 body for its error page unless the response says it came from the site.
+	 *
+	 * @see https://docs.wpvip.com/infrastructure/edge-servers/custom-error-pages/.
+	 *
+	 * @param \WP_HTTP_Response $response The response.
+	 * @param \WP_REST_Server   $server   The REST server.
+	 * @param \WP_REST_Request  $request  The request.
+	 * @phpstan-param \WP_REST_Request<array<string,mixed>> $request
+	 */
+	public function handle_vip_reached_origin( \WP_HTTP_Response $response, \WP_REST_Server $server, \WP_REST_Request $request ): \WP_HTTP_Response { // phpcs:ignore SlevomatCodingStandard.Functions.UnusedParameter.UnusedParameter
+		if (
+			in_array( $response->get_status(), [ 502, 503 ], true ) &&
+			str_starts_with( $request->get_route(), '/' . self::NAMESPACE . '/' ) &&
+			defined( 'VIP_GO_APP_ENVIRONMENT' )
+		) {
+			$response->header( 'x-vip-reached-origin', 'true' );
+		}
+
+		return $response;
 	}
 
 	/**
