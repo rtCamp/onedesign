@@ -24,8 +24,8 @@ final class AdminTest extends TestCase {
 	/**
 	 * {@inheritDoc}
 	 */
-	public function set_up(): void {
-		parent::set_up();
+	public function setUp(): void {
+		parent::setUp();
 
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
 	}
@@ -33,7 +33,7 @@ final class AdminTest extends TestCase {
 	/**
 	 * {@inheritDoc}
 	 */
-	public function tear_down(): void {
+	public function tearDown(): void {
 		unset( $GLOBALS['submenu'][ Settings_Admin::MENU_SLUG ] );
 
 		foreach ( [ Assets::PATTERN_LIBRARY_SCRIPT_HANDLE, Assets::TEMPLATE_LIBRARY_SCRIPT_HANDLE, 'wp-editor' ] as $handle ) {
@@ -47,7 +47,7 @@ final class AdminTest extends TestCase {
 		wp_deregister_script( 'lab-block-editor' );
 		unset( $GLOBALS['current_screen'] );
 
-		parent::tear_down();
+		parent::tearDown();
 	}
 
 	/**

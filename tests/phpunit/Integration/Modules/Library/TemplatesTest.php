@@ -23,8 +23,8 @@ final class TemplatesTest extends TestCase {
 	/**
 	 * {@inheritDoc}
 	 */
-	public function set_up(): void {
-		parent::set_up();
+	public function setUp(): void {
+		parent::setUp();
 
 		update_option(
 			Templates::TEMPLATES_OPTION_KEY,
@@ -54,7 +54,7 @@ final class TemplatesTest extends TestCase {
 	/**
 	 * {@inheritDoc}
 	 */
-	public function tear_down(): void {
+	public function tearDown(): void {
 		if ( \WP_Block_Templates_Registry::get_instance()->is_registered( 'gov-brand//landing' ) ) {
 			unregister_block_template( 'gov-brand//landing' );
 		}
@@ -62,7 +62,7 @@ final class TemplatesTest extends TestCase {
 			unregister_block_pattern( 'gov-brand-cta' );
 		}
 
-		parent::tear_down();
+		parent::tearDown();
 	}
 
 	/**

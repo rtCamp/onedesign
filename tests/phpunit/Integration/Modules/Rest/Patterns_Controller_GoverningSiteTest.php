@@ -42,8 +42,8 @@ class Patterns_Controller_GoverningSiteTest extends TestCase {
 	/**
 	 * {@inheritDoc}
 	 */
-	public function set_up(): void {
-		parent::set_up();
+	public function setUp(): void {
+		parent::setUp();
 
 		$this->set_up_two_brand_sites();
 
@@ -60,11 +60,11 @@ class Patterns_Controller_GoverningSiteTest extends TestCase {
 	/**
 	 * {@inheritDoc}
 	 */
-	public function tear_down(): void {
+	public function tearDown(): void {
 		global $wp_rest_server;
 		$wp_rest_server = null;
 
-		parent::tear_down();
+		parent::tearDown();
 	}
 
 	/**
