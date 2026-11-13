@@ -33,14 +33,8 @@ export const defaultBrandSite: BrandSite = {
 
 export type EditingIndex = number | null;
 
-const NONCE = window.OneDesignSettings.nonce;
 const SITE_TYPE = ( window.OneDesignSettings.siteType as SiteType ) || '';
 const SHARED_SITES_ENDPOINT = '/onedesign/v1/shared-sites';
-
-/**
- * Create NONCE middleware for apiFetch
- */
-apiFetch.use( apiFetch.createNonceMiddleware( NONCE ) );
 
 interface DeleteSiteResponse {
 	governing_site_notified?: boolean;

@@ -29,7 +29,6 @@ const SiteSettings = (): JSX.Element => {
 	const [ showDisconnectionModal, setShowDisconnectionModal ] =
 		useState( false );
 
-	// The admin nonce authenticates these same-site requests.
 	const regenerateApiKey = useCallback( async () => {
 		try {
 			const data = await apiFetch< { secret_key?: string } >( {
