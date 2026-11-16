@@ -87,11 +87,7 @@ final class AssetsTest extends TestCase {
 
 		$data = Assets::get_localized_data();
 
-		$this->assertArrayHasKey( 'nonce', $data );
-		$this->assertArrayHasKey( 'api_key', $data );
-		$this->assertArrayHasKey( 'setupUrl', $data );
-		$this->assertArrayHasKey( 'sharedSites', $data );
-		$this->assertArrayHasKey( 'siteType', $data );
+		$this->assertEqualsCanonicalizing( [ 'api_key', 'setupUrl', 'sharedSites', 'siteType' ], array_keys( $data ) );
 	}
 
 	/**

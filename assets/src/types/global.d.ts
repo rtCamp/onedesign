@@ -24,7 +24,6 @@ export interface OneDesignMultisite {
 }
 
 export interface OneDesignSettings {
-	nonce: string;
 	api_key: string;
 	setupUrl: string;
 	siteType: SiteType | null;

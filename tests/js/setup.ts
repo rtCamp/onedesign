@@ -24,7 +24,6 @@ Object.defineProperty( global, 'fetch', {
 
 Object.defineProperty( window, 'OneDesignSettings', {
 	value: {
-		nonce: 'nonce',
 		api_key: 'api-key',
 		siteType: 'governing-site',
 		setupUrl: '/wp-admin/admin.php?page=onedesign-settings',
