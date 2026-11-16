@@ -58,17 +58,19 @@ Built for enterprise teams, OneDesign unifies your design, editorial, and develo
 
 == Installation ==
 
-1. Upload the OneDesign plugin files to the `/wp-content/plugins/onedesign` directory, or install the plugin through the WordPress plugins screen directly
-2. For multisite installations, network activate the plugin through the 'Plugins' menu in WordPress
-3. For single site installations, activate the plugin through the 'Plugins' menu in WordPress
-4. Set up one site as the "Governing Site" for centralized pattern management
-5. Configure other sites as "Brand Sites"
-6. Copy API keys from each Brand Site's settings page
-7. Register all Brand Sites in the Governing Site with their respective:
-   * Site name
-   * URL
-   * Logo
-   * API key
+1. Download the latest OneDesign plugin from the GitHub releases and install it on your WordPress sites
+2. Activate the plugin through the 'Plugins' screen in WordPress
+   * For multisite installations, make sure to Network Activate the plugin
+   * Stored API keys are encrypted with a key derived from your WordPress salts, so rotating the salts empties them. Define `ONEPRESS_ENCRYPTION_KEY` and `ONEPRESS_ENCRYPTION_SALT` in wp-config.php to keep them when you rotate salts. Define them before you add any keys, or enter the keys again after you do
+3. **Choose Site Type (One-time selection):**
+   * **Governing Site:** Central site that shares its patterns and templates with the brand sites it connects
+   * **Brand Site:** Individual sites that connect to a governing site and use the patterns and templates it shares
+4. **For Brand Sites:** Navigate to OneDesign → Settings to get the API key
+5. **For Governing Site:** Go to OneDesign → Settings and add Brand Sites by entering Site Name, Site URL, Site Logo, and the API Key obtained from each Brand Site
+
+On a multisite network, you can instead choose the governing site and add brand sites from Network Admin → Settings → OneDesign.
+
+For detailed installation and configuration instructions, please refer to the [Setup Guide](https://github.com/rtCamp/onedesign/blob/main/docs/guides/setup.md). To learn how to share patterns and templates, see the [Usage Guide](https://github.com/rtCamp/onedesign/blob/main/docs/guides/usage.md).
 
 == Frequently Asked Questions ==
 
@@ -108,11 +110,14 @@ All blocks used in the patterns must be available on all target sites. Ensure co
 4. Bulk Operations - Select and apply patterns to multiple sites
 5. Disabled Sites - Which is already having currently selected patterns
 
+== Upgrade Notice ==
+
+= 2.0.0 =
+This major update rebuilds the plugin and changes how patterns and templates are shared and stored. It is strongly recommended to uninstall 1.x before installing 2.0.0, or to turn on 'Delete plugin data on deactivation' after updating, then deactivate, reactivate and configure it afresh.
+
 == Changelog ==
 
-For the full changelog, please visit <a href="https://github.com/rtCamp/onedesign/blob/main/CHANGELOG.md" target="_blank">GitHub repository</a>.
-
-== Upgrade Notice ==
+See [CHANGELOG.md](https://github.com/rtCamp/onedesign/blob/main/CHANGELOG.md) for the detailed changelog.
 
 == Requirements ==
 
