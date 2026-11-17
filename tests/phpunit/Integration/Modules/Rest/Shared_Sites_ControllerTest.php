@@ -307,6 +307,60 @@ class Shared_Sites_ControllerTest extends TestCase {
 	}
 
 	/**
+	 * Ensures that URLs pasted with spaces around them are trimmed and checked correctly.
+	 */
+	public function test_set_shared_sites_trim_url_whitespace(): void {
+		Settings::set_shared_sites(
+			[
+				[
+					'id'      => 'abc-1',
+					'name'    => 'A',
+					'url'     => 'https://a.example.com',
+					'api_key' => 'key-a',
+				],
+			]
+		);
+
+		$checked_urls = [];
+		$filter       = static function ( $preempt, $args, $url ) use ( &$checked_urls ): array { // phpcs:ignore SlevomatCodingStandard.Functions.UnusedParameter.UnusedParameter
+			$checked_urls[] = $url;
+
+			return [
+				'response' => [
+					'code'    => 200,
+					'message' => 'OK',
+				],
+				'body'     => '',
+				'headers'  => [],
+				'cookies'  => [],
+			];
+		};
+		add_filter( 'pre_http_request', $filter, 10, 3 );
+
+		$response = $this->set_shared_sites(
+			[
+				[
+					'id'   => 'abc-1',
+					'name' => 'A',
+					'url'  => 'https://a.example.com/ ',
+				],
+				[
+					'name'    => 'B',
+					'url'     => ' https://b.example.com ',
+					'api_key' => 'key-b',
+				],
+			]
+		);
+
+		remove_filter( 'pre_http_request', $filter );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( [ 'https://b.example.com/wp-json/onedesign/v1/governing-site' ], $checked_urls );
+		$this->assertSame( [ 'https://a.example.com/', 'https://b.example.com/' ], array_keys( Settings::get_shared_sites() ) );
+		$this->assertSame( 'key-a', Settings::get_shared_sites()['https://a.example.com/']['api_key'] );
+	}
+
+	/**
 	 * Saving health-checks a new site from this server with its key, and leaves the unchanged ones alone.
 	 */
 	public function test_set_shared_sites_checks_new_sites(): void {
