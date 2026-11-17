@@ -83,6 +83,9 @@ class Shared_Sites_Controller extends Abstract_REST_Controller {
 				return new \WP_Error( 'duplicate_site_url', __( 'Brand Site already exists.', 'onedesign' ), [ 'status' => 400 ] );
 			}
 
+			// Use the normalized URL for consistency.
+			$site['url'] = $url;
+
 			// Add a unique ID if it doesn't exist.
 			$site['id'] = $site['id'] ?? wp_generate_uuid4();
 
@@ -105,7 +108,7 @@ class Shared_Sites_Controller extends Abstract_REST_Controller {
 		unset( $site );
 
 		foreach ( $to_check as $site ) {
-			$checked = Remote_Client::check_brand_site( (string) ( $site['url'] ?? '' ), $site['api_key'] );
+			$checked = Remote_Client::check_brand_site( $site['url'], $site['api_key'] );
 
 			if ( is_wp_error( $checked ) ) {
 				return $checked;
