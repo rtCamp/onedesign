@@ -48,6 +48,46 @@ final class AssetsTest extends TestCase {
 	}
 
 	/**
+	 * Scripts take their version from the asset file, and bundles without build files are skipped.
+	 */
+	public function test_register_assets_uses_asset_files_and_skips_missing_bundles(): void {
+		$this->preserve_globals( [ 'wp_scripts', 'wp_styles' ] );
+		$GLOBALS['wp_scripts'] = new \WP_Scripts(); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Isolate registration; restored in tearDown.
+		$GLOBALS['wp_styles']  = new \WP_Styles(); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Isolate registration; restored in tearDown.
+
+		$fixture_dir = trailingslashit( get_temp_dir() ) . uniqid( 'onedesign-assets-', true ) . '/';
+		$files       = [
+			'settings.asset.php' => "<?php return [ 'dependencies' => [ 'wp-element' ], 'version' => 'abc123' ];",
+			'admin.css'          => '',
+		];
+		wp_mkdir_p( $fixture_dir . 'build' );
+		foreach ( $files as $name => $content ) {
+			file_put_contents( $fixture_dir . 'build/' . $name, $content ); // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_ops_file_put_contents
+		}
+
+		try {
+			$assets = new Assets();
+			( new \ReflectionProperty( Assets::class, 'plugin_dir' ) )->setValue( $assets, $fixture_dir );
+			$assets->register_assets();
+
+			$script = wp_scripts()->registered[ Assets::SETTINGS_SCRIPT_HANDLE ];
+			$this->assertSame( [ 'wp-element', 'wp-i18n' ], $script->deps, 'Translations add wp-i18n to the asset file dependencies' );
+			$this->assertSame( 'abc123', $script->ver );
+			$this->assertStringEndsWith( 'build/settings.js', $script->src );
+			$this->assertSame( [ 'wp-components' ], wp_styles()->registered[ Assets::ADMIN_STYLES_HANDLE ]->deps );
+
+			$this->assertFalse( wp_script_is( Assets::PATTERN_LIBRARY_SCRIPT_HANDLE, 'registered' ) );
+			$this->assertFalse( wp_style_is( Assets::LIBRARY_STYLES_HANDLE, 'registered' ) );
+		} finally {
+			foreach ( array_keys( $files ) as $name ) {
+				unlink( $fixture_dir . 'build/' . $name ); // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_ops_unlink
+			}
+			rmdir( $fixture_dir . 'build' ); // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.directory_rmdir
+			rmdir( $fixture_dir ); // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.directory_rmdir
+		}
+	}
+
+	/**
 	 * Ensures plugin scripts receive a defer attribute.
 	 */
 	public function test_defer_scripts_adds_defer_for_plugin_handles(): void {

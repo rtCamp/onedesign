@@ -57,9 +57,9 @@ final class MainTest extends TestCase {
 	}
 
 	/**
-	 * Ensures setup does not load registrable classes when permalinks are disabled.
+	 * Disabled permalinks produce notices in site and network administration.
 	 */
-	public function test_setup_does_not_load_when_permalinks_disabled(): void {
+	public function test_setup_reports_disabled_permalinks(): void {
 		update_option( 'permalink_structure', '' );
 
 		Main::instance();

@@ -278,6 +278,33 @@ final class SettingsTest extends TestCase {
 		$this->assertSame( $new_api_key, Settings::get_api_key() );
 	}
 
+	/** Ensures the registered sanitizers reject unknown site types and normalize the parent URL. */
+	public function test_registered_sanitizers_apply_on_update(): void {
+		update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_CONSUMER );
+		$this->settings->register_settings();
+
+		update_option( Settings::OPTION_SITE_TYPE, 'not-a-site-type' );
+		$this->assertSame( '', get_option( Settings::OPTION_SITE_TYPE ) );
+
+		update_option( Settings::OPTION_CONSUMER_PARENT_SITE_URL, 'https://governing.example/' );
+		$this->assertSame( 'https://governing.example', Settings::get_parent_site_url() );
+
+		foreach ( [ Settings::OPTION_SITE_TYPE, Settings::OPTION_CONSUMER_API_KEY, Settings::OPTION_CONSUMER_PARENT_SITE_URL ] as $option ) {
+			unregister_setting( Settings::SETTING_GROUP, $option );
+		}
+	}
+
+	/** Ensures changing the site type generates an API key only for brand sites. */
+	public function test_site_type_changes_generate_keys_only_for_brand_sites(): void {
+		$this->settings->register_hooks();
+
+		update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_GOVERNING );
+		$this->assertFalse( get_option( Settings::OPTION_CONSUMER_API_KEY ) );
+
+		update_option( Settings::OPTION_SITE_TYPE, Settings::SITE_TYPE_CONSUMER );
+		$this->assertNotEmpty( get_option( Settings::OPTION_CONSUMER_API_KEY ) );
+	}
+
 	/**
 	 * Ensures a setting is registered.
 	 *
