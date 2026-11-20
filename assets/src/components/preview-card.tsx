@@ -1,8 +1,9 @@
-import { memo, useMemo } from '@wordpress/element';
-import { CheckboxControl } from '@wordpress/components';
-import { __ } from '@wordpress/i18n';
-import { parse } from '@wordpress/blocks';
 import { BlockPreview } from '@wordpress/block-editor';
+import { parse } from '@wordpress/blocks';
+import { CheckboxControl } from '@wordpress/components';
+import { memo, useMemo } from '@wordpress/element';
+import { __ } from '@wordpress/i18n';
+import type { MouseEvent } from 'react';
 
 export interface LibraryItem {
 	// The pattern's name, which selects and removes it, and tells which brand sites have it.
@@ -33,11 +34,22 @@ const PreviewCard = ( { item, isSelected, onToggle }: PreviewCardProps ) => {
 	const blocks = useMemo( () => parse( item.content ), [ item.content ] );
 	const categories = Object.entries( item.categoryLabels ?? {} );
 
+	const onCardClick = ( event: MouseEvent< HTMLDivElement > ) => {
+		// The checkbox and its label toggle it already; counting their clicks here too would undo that.
+		if ( ( event.target as HTMLElement ).closest( 'input, label' ) ) {
+			return;
+		}
+
+		onToggle( item.key );
+	};
+
 	return (
 		<div
 			className={ `onedesign-preview-card${
 				isSelected ? ' is-selected' : ''
 			}` }
+			onClick={ onCardClick }
+			role="presentation"
 		>
 			<CheckboxControl
 				className="onedesign-preview-card-title"
