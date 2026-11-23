@@ -1,3 +1,4 @@
+import { LIBRARY_PAGES, navigateBack } from '@/js/navigation';
 import { registerCoreBlocks } from '@wordpress/block-library';
 import { Button, Modal } from '@wordpress/components';
 import { createRoot } from '@wordpress/element';
@@ -8,21 +9,16 @@ import PatternLibrary from './page';
 // The cards preview blocks, and outside the block editor nothing else registers them.
 registerCoreBlocks();
 
-// Closing the library goes back to where the admin came from, or to the dashboard when it was opened on its own.
-const close = () => {
-	if ( window.history.length > 1 ) {
-		window.history.back();
-	} else {
-		window.location.assign( 'index.php' );
-	}
-};
-
 const target = document.getElementById( 'onedesign-pattern-library' );
 if ( target ) {
-	createRoot( target ).render(
+	const root = createRoot( target );
+	root.render(
 		<Modal
 			title={ __( 'Pattern Library', 'onedesign' ) }
-			onRequestClose={ close }
+			onRequestClose={ () => {
+				root.unmount();
+				navigateBack( LIBRARY_PAGES );
+			} }
 			headerActions={
 				<Button
 					icon={ cog }
