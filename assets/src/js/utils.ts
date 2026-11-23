@@ -79,31 +79,3 @@ export const MULTISITES = window.OneDesignSettings.multisites ?? [];
  * The current site's id, which the settings screen sends with the sites to add.
  */
 export const CURRENT_SITE_ID = window.OneDesignSettings.currentSiteId ?? '';
-
-const LIBRARY_PAGES = [
-	'onedesign-pattern-library',
-	'onedesign-template-library',
-];
-
-/**
- * Leaves a library screen for the admin page that linked to it, or the dashboard.
- */
-export const closeLibrary = (): void => {
-	let destination = 'index.php';
-
-	try {
-		const referrer = new URL( document.referrer );
-		const page = referrer.searchParams.get( 'page' ) ?? '';
-		if (
-			referrer.origin === window.location.origin &&
-			referrer.pathname.includes( '/wp-admin/' ) &&
-			! LIBRARY_PAGES.includes( page )
-		) {
-			destination = referrer.href;
-		}
-	} catch {
-		// No referrer, e.g. opened from a bookmark or a new tab.
-	}
-
-	window.location.assign( destination );
-};

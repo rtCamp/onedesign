@@ -1,4 +1,4 @@
-import { closeLibrary } from '@/js/utils';
+import { LIBRARY_PAGES, navigateBack } from '@/js/navigation';
 import { registerCoreBlocks } from '@wordpress/block-library';
 import { Button, Modal } from '@wordpress/components';
 import { createRoot } from '@wordpress/element';
@@ -17,7 +17,7 @@ if ( target ) {
 			title={ __( 'Pattern Library', 'onedesign' ) }
 			onRequestClose={ () => {
 				root.unmount();
-				closeLibrary();
+				navigateBack( LIBRARY_PAGES );
 			} }
 			headerActions={
 				<Button
