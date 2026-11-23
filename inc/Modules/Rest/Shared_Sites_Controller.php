@@ -75,11 +75,12 @@ class Shared_Sites_Controller extends Abstract_REST_Controller {
 		$stored_sites = array_column( Settings::get_shared_sites(), null, 'id' );
 
 		// check if same url exists more than once or not.
-		$urls     = [];
-		$to_check = [];
+		$site_keys = [];
+		$to_check  = [];
 		foreach ( $sites_data as &$site ) {
 			$url = Utils::normalize_url( (string) ( $site['url'] ?? '' ) );
-			if ( isset( $site['url'] ) && in_array( $url, $urls, true ) ) {
+			$key = self::get_site_key( $url );
+			if ( isset( $site['url'] ) && in_array( $key, $site_keys, true ) ) {
 				return new \WP_Error( 'duplicate_site_url', __( 'Brand Site already exists.', 'onedesign' ), [ 'status' => 400 ] );
 			}
 
@@ -103,7 +104,7 @@ class Shared_Sites_Controller extends Abstract_REST_Controller {
 				$to_check[] = $site;
 			}
 
-			$urls[] = $url;
+			$site_keys[] = $key;
 		}
 		unset( $site );
 
@@ -122,6 +123,15 @@ class Shared_Sites_Controller extends Abstract_REST_Controller {
 				'shared_sites' => Settings::get_shared_sites_without_keys(),
 			]
 		);
+	}
+
+	/**
+	 * Identifies a site by its normalized URL without the scheme, so http and https duplicates match.
+	 *
+	 * @param string $url A normalized site URL.
+	 */
+	private static function get_site_key( string $url ): string {
+		return (string) preg_replace( '#^https?://#i', '', $url );
 	}
 
 	/**

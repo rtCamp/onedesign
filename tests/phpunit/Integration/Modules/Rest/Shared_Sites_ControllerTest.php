@@ -131,6 +131,40 @@ class Shared_Sites_ControllerTest extends TestCase {
 	}
 
 	/**
+	 * URLs that differ only by http and https are the same site, so they're rejected and nothing is saved or checked.
+	 */
+	public function test_set_shared_sites_rejects_urls_that_differ_by_scheme(): void {
+		$requested_urls = [];
+		$filter         = static function ( $preempt, $args, $url ) use ( &$requested_urls ) { // phpcs:ignore SlevomatCodingStandard.Functions.UnusedParameter.UnusedParameter
+			$requested_urls[] = $url;
+			return new \WP_Error( 'blocked', 'Intercepted' );
+		};
+		add_filter( 'pre_http_request', $filter, 10, 3 );
+
+		$response = $this->set_shared_sites(
+			[
+				[
+					'url'     => 'http://dup.example.com/',
+					'name'    => 'Dup 1',
+					'api_key' => 'k1',
+				],
+				[
+					'url'     => 'https://dup.example.com/',
+					'name'    => 'Dup 2',
+					'api_key' => 'k2',
+				],
+			]
+		);
+
+		remove_filter( 'pre_http_request', $filter );
+
+		$this->assertSame( 400, $response->get_status() );
+		$this->assertSame( 'duplicate_site_url', $response->get_data()['code'] );
+		$this->assertSame( [], $requested_urls );
+		$this->assertSame( [], Settings::get_shared_sites() );
+	}
+
+	/**
 	 * Saves valid sites data successfully.
 	 */
 	public function test_set_shared_sites_returns_success_for_valid_data(): void {

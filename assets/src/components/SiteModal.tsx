@@ -12,6 +12,14 @@ import { useMemo, useState } from '@wordpress/element';
 import type { defaultBrandSite } from '@/admin/settings/page';
 import { isValidUrl, withTrailingSlash } from '@/js/utils';
 
+/**
+ * Identifies a site by its URL, ignoring the scheme so http and https duplicates match.
+ *
+ * @param url - The site URL.
+ */
+const siteKey = ( url: string ): string =>
+	withTrailingSlash( url.trim() ).replace( /^https?:\/\//i, '' );
+
 interface ErrorsType {
 	name: string;
 	url: string;
@@ -143,15 +151,12 @@ const SiteModal = ( {
 			return;
 		}
 
-		const formUrl = withTrailingSlash( formData.url );
+		const formKey = siteKey( formData.url );
 		const isAlreadyExists = sites.some(
 			( site ) =>
-				withTrailingSlash( site.url ) === formUrl &&
+				siteKey( site.url ) === formKey &&
 				// Allow keeping the original url in editing mode.
-				! (
-					editing &&
-					withTrailingSlash( originalData?.url ?? '' ) === formUrl
-				)
+				! ( editing && siteKey( originalData?.url ?? '' ) === formKey )
 		);
 
 		if ( isAlreadyExists ) {
