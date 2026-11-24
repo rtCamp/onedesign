@@ -113,7 +113,7 @@ All blocks used in the patterns must be available on all target sites. Ensure co
 == Upgrade Notice ==
 
 = 2.0.0 =
-This major update rebuilds the plugin and changes how patterns and templates are shared and stored. It is strongly recommended to uninstall 1.x before installing 2.0.0, or to turn on 'Delete plugin data on deactivation' after updating, then deactivate, reactivate and configure it afresh.
+This major update rebuilds the plugin and changes how patterns and templates are shared and stored. It is strongly recommended to turn on 'OnsDesign > Settings > Delete plugin data on deactivation' after updating, then deactivate, reactivate and configure it afresh.
 
 == Changelog ==
 
