@@ -4,7 +4,7 @@ Tags: OnePress, block patterns, templates, pattern sync, multisite
 Requires at least: 6.9
 Tested up to: 7.1
 <!-- x-release-please-start-version: -->
-Stable tag: 1.1.3
+Stable tag: 2.0.0
 <!-- x-release-please-end: -->
 Requires PHP: 8.2
 License: GPLv2 or later
@@ -113,7 +113,7 @@ All blocks used in the patterns must be available on all target sites. Ensure co
 == Upgrade Notice ==
 
 = 2.0.0 =
-This major update rebuilds the plugin and changes how patterns and templates are shared and stored. It is strongly recommended to uninstall 1.x before installing 2.0.0, or to turn on 'Delete plugin data on deactivation' after updating, then deactivate, reactivate and configure it afresh.
+This major update rebuilds the plugin and changes how patterns and templates are shared and stored. It is strongly recommended to turn on 'OnsDesign > Settings > Delete plugin data on deactivation' after updating, then deactivate, reactivate and configure it afresh.
 
 == Changelog ==
 
