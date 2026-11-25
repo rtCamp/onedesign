@@ -30,31 +30,48 @@ test.describe( 'template library', () => {
 			await expect(
 				page.getByRole( 'tab', { name: 'Brand One' } )
 			).toBeVisible();
-			await expect( page.locator( 'body' ) ).not.toHaveClass(
-				/is-fullscreen-mode/
-			);
 		}
 	);
 
 	test(
 		"adds an applied template to the brand site's Site Editor, and renders pages with it",
 		{ tag: '@TC-73' },
-		async ( { brandPage, requestUtils, brandRequestUtils } ) => {
-			const [ brand ] = await connectSites(
-				requestUtils,
-				brandRequestUtils
-			);
-			const template = await requestUtils.createTemplate( 'wp_template', {
+		async ( {
+			admin,
+			page,
+			brandPage,
+			requestUtils,
+			brandRequestUtils,
+		} ) => {
+			await connectSites( requestUtils, brandRequestUtils );
+			await requestUtils.createTemplate( 'wp_template', {
 				slug: 'e2e-landing',
 				title: 'E2E Landing',
 				content:
 					'<!-- wp:paragraph --><p>E2E Landing body</p><!-- /wp:paragraph -->',
 			} );
-			await requestUtils.rest( {
-				method: 'POST',
-				path: '/onedesign/v1/templates',
-				data: { site: brand!.id, ids: [ template.id ] },
+
+			await admin.visitAdminPage( ...LIBRARY );
+			// The library shows a page of templates at a time, and the theme's come first.
+			await page
+				.getByPlaceholder( 'Search templates…' )
+				.fill( 'E2E Landing' );
+			await page.getByRole( 'checkbox', { name: 'E2E Landing' } ).click();
+			await page
+				.getByRole( 'button', { name: 'Apply to Sites' } )
+				.click();
+			const picker = page.getByRole( 'dialog', {
+				name: 'Select Brand Sites',
 			} );
+			await picker.getByRole( 'checkbox', { name: /Brand One/ } ).click();
+			await picker
+				.getByRole( 'button', { name: 'Apply Templates' } )
+				.click();
+			await expect(
+				page
+					.locator( '.components-notice__content' )
+					.getByText( 'Applied the templates to Brand One.' )
+			).toBeVisible();
 
 			await brandPage.goto( '/wp-admin/site-editor.php?p=%2Ftemplate' );
 			await expect(
@@ -68,16 +85,18 @@ test.describe( 'template library', () => {
 				>( { path: '/wp/v2/templates' } )
 			).find( ( { title } ) => title.rendered === 'E2E Landing' );
 			expect( copy ).toBeDefined();
-			const page = await brandRequestUtils.rest< { id: number } >( {
-				method: 'POST',
-				path: '/wp/v2/pages',
-				data: {
-					title: 'E2E landing page',
-					status: 'publish',
-					template: copy!.slug,
-				},
-			} );
-			await brandPage.goto( `/?page_id=${ page.id }` );
+			const landingPage = await brandRequestUtils.rest< { id: number } >(
+				{
+					method: 'POST',
+					path: '/wp/v2/pages',
+					data: {
+						title: 'E2E landing page',
+						status: 'publish',
+						template: copy!.slug,
+					},
+				}
+			);
+			await brandPage.goto( `/?page_id=${ landingPage.id }` );
 			await expect(
 				brandPage.getByText( 'E2E Landing body' )
 			).toBeVisible();

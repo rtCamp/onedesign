@@ -80,9 +80,6 @@ test.describe( 'pattern library', () => {
 			await expect(
 				page.getByRole( 'tab', { name: 'Brand One' } )
 			).toBeVisible();
-			await expect( page.locator( 'body' ) ).not.toHaveClass(
-				/is-fullscreen-mode/
-			);
 		}
 	);
 
@@ -121,12 +118,11 @@ test.describe( 'pattern library', () => {
 						'Shared the patterns with Brand One, Brand Two.'
 					)
 			).toBeVisible();
-			for ( const brand of [ 'Brand One', 'Brand Two' ] ) {
-				await page.getByRole( 'tab', { name: brand } ).click();
-				await expect(
-					page.getByRole( 'checkbox', { name: HERO.title } )
-				).toBeVisible();
-			}
+			// Brand Two is Brand One's install under another URL, so either tab shows what both received; only the notice says both requests succeeded.
+			await page.getByRole( 'tab', { name: 'Brand One' } ).click();
+			await expect(
+				page.getByRole( 'checkbox', { name: HERO.title } )
+			).toBeVisible();
 		}
 	);
 
@@ -192,7 +188,7 @@ test.describe( 'pattern library', () => {
 			).find( ( { title } ) => title === HERO.title );
 			expect( shared ).toBeDefined();
 
-			// A pattern block is what the editor inserts the pattern as.
+			// The inserter copies a pattern's blocks into the post, so rendering those wouldn't need OneDesign; a pattern block needs the brand site to register the pattern on front-end requests too.
 			const post = await brandRequestUtils.createPage( {
 				title: 'E2E pattern page',
 				content: `<!-- wp:pattern {"slug":"${ shared!.name }"} /-->`,

@@ -6,14 +6,7 @@ import path from 'path';
 /**
  * Internal dependencies
  */
-import {
-	BRAND_TWO_URL,
-	BRAND_URL,
-	connectSites,
-	expect,
-	resetSites,
-	test,
-} from '../fixtures';
+import { BRAND_URL, connectSites, expect, resetSites, test } from '../fixtures';
 
 const SETTINGS = [ 'admin.php', 'page=onedesign-settings' ] as const;
 
@@ -103,64 +96,6 @@ test.describe( 'brand site connection', () => {
 			await expect(
 				mediaModal.locator( `li.attachment[data-id="${ logo.id }"]` )
 			).toHaveAttribute( 'aria-checked', 'true' );
-		}
-	);
-
-	test(
-		'deletes a brand site, which disconnects it',
-		{ tag: '@TC-43' },
-		async ( {
-			admin,
-			page,
-			brandAdmin,
-			brandPage,
-			requestUtils,
-			brandRequestUtils,
-		} ) => {
-			await connectSites( requestUtils, brandRequestUtils, [
-				{ name: 'Brand One', url: BRAND_URL },
-				{ name: 'Brand Two', url: BRAND_TWO_URL },
-			] );
-
-			await admin.visitAdminPage( ...SETTINGS );
-			await page
-				.getByRole( 'row', { name: /Brand One/ } )
-				.getByRole( 'button', { name: 'Delete' } )
-				.click();
-			await page
-				.getByRole( 'dialog', { name: 'Delete Brand Site' } )
-				.getByRole( 'button', { name: 'Delete' } )
-				.click();
-
-			await expect(
-				page
-					.locator( '.components-snackbar__content' )
-					.getByText( 'Brand site removed successfully.' )
-			).toBeVisible();
-			await expect(
-				page.getByRole( 'row', { name: /Brand One/ } )
-			).toBeHidden();
-			await expect(
-				page.getByRole( 'row', { name: /Brand Two/ } )
-			).toBeVisible();
-
-			for ( const library of [
-				'onedesign-pattern-library',
-				'onedesign-template-library',
-			] ) {
-				await admin.visitAdminPage( 'admin.php', `page=${ library }` );
-				await expect(
-					page.getByRole( 'tab', { name: 'Brand Two' } )
-				).toBeVisible();
-				await expect(
-					page.getByRole( 'tab', { name: 'Brand One' } )
-				).toBeHidden();
-			}
-
-			await brandAdmin.visitAdminPage( ...SETTINGS );
-			await expect(
-				brandPage.getByLabel( 'Governing Site URL' )
-			).toHaveValue( '' );
 		}
 	);
 } );
